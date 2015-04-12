@@ -1,0 +1,8 @@
+[package]
+name = "tempfile"
+version = "0.0.1"
+authors = ["Steven Allen <steven@stebalien.com>"]
+
+[dependencies]
+libc = "*"
+rand = "*"
