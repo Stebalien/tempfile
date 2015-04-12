@@ -1,6 +1,6 @@
 use std::os::windows::fs::OpenOptionsExt;
 use libc::DWORD;
-use ::util::tmpnam;
+use ::util::tmpname;
 
 const ACCESS: DWORD     = libc::FILE_GENERIC_READ
                         | libc::FILE_GENERIC_WRITE;
