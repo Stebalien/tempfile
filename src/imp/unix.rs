@@ -7,6 +7,9 @@ use std::path::Path;
 use std::ffi::{OsStr, CString};
 use ::util::tmpname;
 
+const O_CLOEXEC: libc::c_int = 0o2000000;
+const O_TMPFILE: libc::c_int = 0o20200000;
+
 // Stolen from std.
 fn cstr(path: &Path) -> io::Result<CString> {
     path.as_os_str().to_cstring().ok_or(
@@ -41,7 +44,6 @@ fn create_unix(dir: &Path) -> io::Result<File> {
 
 #[cfg(target_os = "linux")]
 fn create_linux(dir: &Path) -> io::Result<File> {
-    const O_TMPFILE: libc::c_int = 4259840;
     let dir = try!(cstr(dir));
 
     match unsafe {
@@ -54,6 +56,7 @@ fn create_linux(dir: &Path) -> io::Result<File> {
 
 #[cfg(target_os = "linux")]
 pub fn create(dir: &Path) -> io::Result<File> {
+    // Fallback on unix create in case the kernel version is < 3.11.
     create_linux(dir).or_else(|_| create_unix(dir))
 }
 
