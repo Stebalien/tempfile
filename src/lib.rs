@@ -29,29 +29,12 @@ impl TempFile {
         imp::create(dir.as_ref()).map(|f| TempFile(f))
     }
 
-    /*
-    /// Create a new temporary file and return a vector of open files pointing to this file
-    /// descriptor.
-    ///
-    /// Note: This function exists because `TempFile::reopen` will not work on FreeBSD without
-    /// fdescfs mounted.
-    ///
-    /// This function may go away if I stop caring.
-    #[inline(always)]
-    pub fn shared(count: usize) -> io::Result<Vec<TempFile>> {
-        Self::shared_in(&env::temp_dir(), count)
-    }
-    /// Same as above but lets you specify the directory.
-    #[inline(always)]
-    pub fn shared_in(count: usize) -> io::Result<Vec<TempFile>> {
-        imp::create_shared(dir.as_ref(), count).map(|v| v.map(|f| TempFile(f)))
-    }
-    */
     /// Number of bytes in the file.
     #[inline(always)]
     pub fn len(&self) -> io::Result<u64> {
         self.0.metadata().map(|m| m.len())
     }
+
     /// Truncate the file to `size` bytes.
     #[inline(always)]
     pub fn set_len(&self, size: u64) -> io::Result<()> {
