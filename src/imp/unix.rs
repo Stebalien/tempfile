@@ -8,6 +8,7 @@ use std::ffi::{OsStr, CString};
 use ::util::tmpname;
 
 const O_CLOEXEC: libc::c_int = 0o2000000;
+#[cfg(target_os = "linux")]
 const O_TMPFILE: libc::c_int = 0o20200000;
 
 // Stolen from std.
@@ -62,8 +63,8 @@ pub fn create(dir: &Path) -> io::Result<File> {
 
 #[cfg(not(target_os = "linux"))]
 #[inline(always)]
-pub fn create(dir: &Path, num_readers: usize) -> io::Result<File> {
-    create_unix(dir, num_readers)
+pub fn create(dir: &Path) -> io::Result<File> {
+    create_unix(dir)
 }
 
 pub fn reopen(f: &File) -> io::Result<File> {
