@@ -42,7 +42,8 @@ impl TempFile {
         self.0.set_len(size)
     }
 
-    /// Create a new temporary file that references 
+    /// Re-open the temporary file. The returned TempFile will refer to the same underlying
+    /// temporary file but will have an independent offset.
     ///
     /// On unix systems, this requires access to `/dev/fd/`. On freebsd/macosx, this requires that
     /// the fdescfs filesystem be mounted.
