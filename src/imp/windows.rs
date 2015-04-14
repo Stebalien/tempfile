@@ -18,9 +18,9 @@ const FLAGS: DWORD      = libc::FILE_ATTRIBUTE_HIDDEN
 pub fn create(dir: &Path) -> io::Result<File> {
     let opts = OpenOptions::new()
         .desired_access(ACCESS)
-        .share_mode(SHARE)
+        .share_mode(SHARE_MODE)
         .creation_disposition(libc::CREATE_NEW)
-        .flags_and_attributes(ATTRS);
+        .flags_and_attributes(FLAGS);
 
     loop {
         return match opts.open(dir.join(tmpname())) {
