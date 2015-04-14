@@ -1,4 +1,4 @@
-#![feature(convert, from_raw_os)]
+#![feature(convert, from_raw_os, collections)]
 #![cfg_attr(windows, feature(fs_ext))]
 //! Securely create and manage temporary files. Temporary files created by this create are
 //! automatically deleted on exit (actually, they're usually deleted immediately after they are
@@ -30,6 +30,25 @@ impl TempFile {
         imp::create(dir.as_ref()).map(|f| TempFile(f))
     }
 
+    /// Create a new temporary file and open it `count` times returning `count` independent
+    /// references to the same file.
+    ///
+    /// This can be useful if you want multiple seek positions in the same temporary file.
+    /// Additionally, this function guarentees that all of the returned temporary file objects
+    /// refer to the same underlying temporary file even in the presence of a pathological
+    /// temporary file cleaner.
+    #[inline(always)]
+    pub fn shared(count: usize) -> io::Result<Vec<TempFile>> {
+        Self::shared_in(&env::temp_dir(), count)
+    }
+
+    /// Same as `shared` but creates the file in the specified directory.
+    #[inline(always)]
+    pub fn shared_in<P: AsRef<Path>>(dir: P, count: usize) -> io::Result<Vec<TempFile>> {
+        imp::create_shared(dir.as_ref(), count).map(|files| files.map_in_place(|f|TempFile(f)))
+    }
+
+
     /// Number of bytes in the file.
     #[inline(always)]
     pub fn len(&self) -> io::Result<u64> {
@@ -45,10 +64,13 @@ impl TempFile {
     /// Re-open the temporary file. The returned TempFile will refer to the same underlying
     /// temporary file but will have an independent offset.
     ///
-    /// On unix systems, this requires access to `/dev/fd/`. On freebsd/macosx, this requires that
-    /// the fdescfs filesystem be mounted.
+    /// This method is only available on windows and linux, not FreeBSD/MacOS. Unfortunately, it is
+    /// impossible to reliably implement this method on those operating systems.
+    ///
+    /// If you need your code to be cross-platform, please use `shared`/`shared_in` defined above.
+    #[cfg(any(windows, target_os = "linux"))]
     #[inline(always)]
-    pub fn share(&self) -> io::Result<TempFile> {
+    pub fn reopen(&self) -> io::Result<TempFile> {
         imp::reopen(&self.0).map(|f|TempFile(f))
     }
 }

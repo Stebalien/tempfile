@@ -40,6 +40,16 @@ pub fn create(dir: &Path) -> io::Result<File> {
     }
 }
 
+pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
+    if count == 0 {
+        return Ok(vec![]);
+    }
+    let first = try!(create(dir));
+    let mut files: Vec<File> = try!((1..count).map(|_| reopen(&first)).collect());
+    files.push(first);
+    Ok(files)
+}
+
 pub fn reopen(f: &File) -> io::Result<File> {
     let h = f.as_raw_handle();
     unsafe {

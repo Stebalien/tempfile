@@ -1,6 +1,9 @@
 use std::ffi::OsString;
 use ::rand;
 use ::rand::Rng;
+use std::ffi::CString;
+use std::path::Path;
+use std::io;
 
 pub fn tmpname() -> OsString {
     let mut bytes = vec!['.' as u8; 7];
@@ -15,5 +18,11 @@ pub fn tmpname() -> OsString {
         }
     }
     OsString::from_bytes(bytes).unwrap()
+}
+
+// Stolen from std.
+pub fn cstr(path: &Path) -> io::Result<CString> {
+    path.as_os_str().to_cstring().ok_or(
+        io::Error::new(io::ErrorKind::InvalidInput, "path contained a null"))
 }
 
