@@ -1,7 +1,10 @@
 tempfile
 ========
 
-A secure cross-platform temporary file library for rust.
+A secure cross-platform temporary file library for rust. In addition to creating
+temporary files, this library also allows users to securely open multiple
+independent references to the same temporary file (useful for consumer/producer
+patterns and surprisingly difficult to implement securely).
 
 Example
 -------
@@ -31,5 +34,5 @@ https://stebalien.github.com/tempfile/tempfile/
 Security
 --------
 
-This library should be race free and secure in the presence of pathological
-temporary file cleaners.
+This library should be race free, reliable, and secure in the presence of
+pathological temporary file cleaners.
