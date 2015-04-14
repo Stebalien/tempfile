@@ -3,7 +3,7 @@ use std::os::windows::io::{FromRawHandle, AsRawHandle};
 use std::path::Path;
 use std::io;
 use std::fs::{File, OpenOptions};
-use ::libc::{self, DWORD};
+use ::libc::{self, DWORD, HANDLE};
 use ::util::tmpname;
 
 const ACCESS: DWORD     = libc::FILE_GENERIC_READ
@@ -14,6 +14,14 @@ const SHARE_MODE: DWORD = libc::FILE_SHARE_DELETE
 const FLAGS: DWORD      = libc::FILE_ATTRIBUTE_HIDDEN
                         | libc::FILE_ATTRIBUTE_TEMPORARY
                         | libc::FILE_FLAG_DELETE_ON_CLOSE; 
+
+extern "system" {
+    // TODO: move to external crate.
+    fn ReOpenFile(hOriginalFile: HANDLE,
+                  dwDesiredAccess: DWORD,
+                  dwShareMode: DWORD,
+                  dwFlags: DWORD) -> HANDLE;
+}
 
 pub fn create(dir: &Path) -> io::Result<File> {
     let opts = OpenOptions::new()
