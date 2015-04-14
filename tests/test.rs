@@ -4,7 +4,7 @@ use std::io::{Write, Read, Seek, SeekFrom};
 
 #[test]
 fn test_basic() {
-    let mut tmpfile = TempFile::new_in("/tmp").unwrap();
+    let mut tmpfile = TempFile::new().unwrap();
     write!(tmpfile, "abcde").unwrap();
     tmpfile.seek(SeekFrom::Start(0)).unwrap();
     let mut buf = String::new();
@@ -14,7 +14,7 @@ fn test_basic() {
 
 #[test]
 fn test_share() {
-    let mut tmpfile = TempFile::new_in("/tmp").unwrap();
+    let mut tmpfile = TempFile::new().unwrap();
     write!(tmpfile, "abcde").unwrap();
     let mut shared = tmpfile.share().unwrap();
     let mut buf = String::new();
