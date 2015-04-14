@@ -2,9 +2,8 @@ use ::libc::{self, c_int, O_EXCL, O_RDWR, O_CREAT};
 use std::io;
 use std::os::unix::io::{AsRawFd, FromRawFd};
 use std::fs::{self, File, OpenOptions};
-use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
-use std::ffi::{OsStr, CString};
+use std::ffi::CString;
 use ::util::tmpname;
 
 const O_CLOEXEC: libc::c_int = 0o2000000;
@@ -19,8 +18,7 @@ fn cstr(path: &Path) -> io::Result<CString> {
 
 fn create_unix(dir: &Path) -> io::Result<File> {
     loop {
-        let name = tmpname();
-        let tmp_path = dir.join(OsStr::from_bytes(&name));
+        let tmp_path = dir.join(&tmpname());
         return match unsafe {
             libc::open(try!(cstr(&tmp_path)).as_ptr(), O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT, 0o600)
         } {
