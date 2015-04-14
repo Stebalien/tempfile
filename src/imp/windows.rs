@@ -1,5 +1,9 @@
 use std::os::windows::fs::OpenOptionsExt;
-use libc::DWORD;
+use std::os::windows::io::{FromRawHandle, AsRawHandle};
+use std::path::Path;
+use std::io;
+use std::fs::{File, OpenOptions};
+use ::libc::{self, DWORD};
 use ::util::tmpname;
 
 const ACCESS: DWORD     = libc::FILE_GENERIC_READ
