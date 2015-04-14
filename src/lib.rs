@@ -1,4 +1,5 @@
 #![feature(convert, from_raw_os)]
+#![cfg_attr(windows, feature(fs_ext))]
 //! Securely create and manage temporary files. Temporary files created by this create are
 //! automatically deleted on exit (actually, they're usually deleted immediately after they are
 //! created).
@@ -88,6 +89,6 @@ impl std::os::unix::io::AsRawFd for TempFile {
 impl std::os::windows::io::AsRawHandle for TempFile {
     #[inline(always)]
     fn as_raw_handle(&self) -> std::os::windows::io::RawHandle {
-        self.0.as_raw_fd()
+        self.0.as_raw_handle()
     }
 }
