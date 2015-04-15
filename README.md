@@ -1,6 +1,8 @@
 tempfile
 ========
 
+![Build Status](https://travis-ci.org/Stebalien/tempfile.svg)
+
 A secure cross-platform temporary file library for rust. In addition to creating
 temporary files, this library also allows users to securely open multiple
 independent references to the same temporary file (useful for consumer/producer
