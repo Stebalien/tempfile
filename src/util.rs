@@ -21,6 +21,8 @@ pub fn tmpname() -> OsString {
 }
 
 // Stolen from std.
+#[allow(dead_code)] // Not used on windows.
+#[inline(always)]
 pub fn cstr(path: &Path) -> io::Result<CString> {
     path.as_os_str().to_cstring().ok_or(
         io::Error::new(io::ErrorKind::InvalidInput, "path contained a null"))
