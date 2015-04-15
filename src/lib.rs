@@ -26,7 +26,7 @@ impl TempFile {
     /// Create a new temporary file.
     #[inline(always)]
     pub fn new() -> io::Result<TempFile> {
-        Self::new_in(&env::temp_dir())
+        <Self>::new_in(&env::temp_dir())
     }
 
     /// Create a new temporary file in the specified directory.
@@ -44,7 +44,7 @@ impl TempFile {
     /// temporary file cleaner.
     #[inline(always)]
     pub fn shared(count: usize) -> io::Result<Vec<TempFile>> {
-        Self::shared_in(&env::temp_dir(), count)
+        <Self>::shared_in(&env::temp_dir(), count)
     }
 
     /// Same as `shared` but creates the file in the specified directory.
