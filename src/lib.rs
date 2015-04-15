@@ -1,9 +1,14 @@
 #![feature(convert, from_raw_os, collections)]
 #![cfg_attr(windows, feature(fs_ext))]
 //! Securely create and manage temporary files. Temporary files created by this create are
-//! automatically deleted on exit (actually, they're usually deleted immediately after they are
-//! created).
+//! automatically deleted. When they are deleted depends on the platform:
 //!
+//! *nix: The temporary file is immediately unlinked. The OS will delete it when the last open
+//! copy of it is closed (the last TempFile reference to it is dropped).
+//!
+//! Windows: The temporary file is marked DeleteOnClose and, again, will be deleted when the last
+//! open copy of it is closed. Unlike *nix operating systems, the file is not immediately unlinked
+//! from the filesystem.
 extern crate libc;
 extern crate rand;
 
