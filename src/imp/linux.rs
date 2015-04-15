@@ -6,6 +6,7 @@ use std::path::Path;
 use ::util::cstr;
 use super::unix_common::O_CLOEXEC;
 use super::unix_common::create as create_unix;
+pub use super::unix_common::create_named;
 
 const O_TMPFILE: libc::c_int = 0o20200000;
 

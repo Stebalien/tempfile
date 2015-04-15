@@ -11,9 +11,11 @@ const ACCESS: DWORD     = libc::FILE_GENERIC_READ
 const SHARE_MODE: DWORD = libc::FILE_SHARE_DELETE
                         | libc::FILE_SHARE_READ
                         | libc::FILE_SHARE_WRITE;
-const FLAGS: DWORD      = libc::FILE_ATTRIBUTE_HIDDEN
+const FLAGS_DEL: DWORD  = libc::FILE_ATTRIBUTE_HIDDEN
                         | libc::FILE_ATTRIBUTE_TEMPORARY
                         | libc::FILE_FLAG_DELETE_ON_CLOSE; 
+const FLAGS: DWORD      = libc::FILE_ATTRIBUTE_HIDDEN
+                        | libc::FILE_ATTRIBUTE_TEMPORARY;
 
 extern "system" {
     // TODO: move to external crate.
@@ -23,16 +25,22 @@ extern "system" {
                   dwFlags: DWORD) -> HANDLE;
 }
 
-pub fn create(dir: &Path) -> io::Result<File> {
 
+pub fn create_named(path: &Path) -> io::Result<File> {
+    OpenOptions::new().desired_access(ACCESS as i32)
+        .share_mode(SHARE_MODE as i32)
+        .creation_disposition(libc::CREATE_NEW as i32)
+        .flags_and_attributes(FLAGS as i32).open(path)
+}
+
+pub fn create(dir: &Path) -> io::Result<File> {
     let mut opts = OpenOptions::new();
     opts.desired_access(ACCESS as i32)
         .share_mode(SHARE_MODE as i32)
         .creation_disposition(libc::CREATE_NEW as i32)
-        .flags_and_attributes(FLAGS as i32);
-
+        .flags_and_attributes(FLAGS_DEL as i32);
     loop {
-        return match opts.open(dir.join(&tmpname())) {
+        return match opts.open(&dir.join(&tmpname())) {
             Ok(f) => Ok(f),
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(e) => Err(e),

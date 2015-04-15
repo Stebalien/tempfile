@@ -1,25 +1,32 @@
 #![feature(convert, from_raw_os, collections)]
 #![cfg_attr(windows, feature(fs_ext))]
 //! Securely create and manage temporary files. Temporary files created by this create are
-//! automatically deleted. When they are deleted depends on the platform:
-//!
-//! *nix: The temporary file is immediately unlinked. The OS will delete it when the last open
-//! copy of it is closed (the last TempFile reference to it is dropped).
-//!
-//! Windows: The temporary file is marked DeleteOnClose and, again, will be deleted when the last
-//! open copy of it is closed. Unlike *nix operating systems, the file is not immediately unlinked
-//! from the filesystem.
+//! automatically deleted.
 extern crate libc;
 extern crate rand;
 
 use std::io::{self, Read, Write, Seek, SeekFrom};
-use std::fs::File;
-use std::path::Path;
+use std::fs::{self, File};
+use std::path::{Path, PathBuf};
 use std::env;
 
 mod imp;
 mod util;
 
+/// An unnamed temporary file.
+///
+/// This variant is secure/reliable in the presence of a pathological temporary file cleaner.
+///
+/// Deletion:
+///
+/// Linux >= 3.11: The temporary file is never linked into the filesystem so it can't be leaked.
+///
+/// Other *nix: The temporary file is immediately unlinked on create. The OS will delete it when
+/// the last open copy of it is closed (the last TempFile reference to it is dropped).
+///
+/// Windows: The temporary file is marked DeleteOnClose and, again, will be deleted when the last
+/// open copy of it is closed. Unlike *nix operating systems, the file is not immediately unlinked
+/// from the filesystem.
 pub struct TempFile(File);
 
 impl TempFile {
@@ -118,5 +125,129 @@ impl std::os::windows::io::AsRawHandle for TempFile {
     #[inline(always)]
     fn as_raw_handle(&self) -> std::os::windows::io::RawHandle {
         self.0.as_raw_handle()
+    }
+}
+
+/// A named temporary file.
+///
+/// This variant is *NOT* secure/reliable in the presence of a pathological temporary file cleaner.
+///
+/// NamedTempFiles are deleted on drop. As rust doesn't guarantee that a struct will ever be
+/// dropped, these temporary files will not be deleted on abort, resource leak, early exit, etc.
+///
+/// Please use TempFile unless you absolutely need a named file.
+///
+pub struct NamedTempFile(Option<NamedTempFileInner>);
+
+struct NamedTempFileInner {
+    file: File,
+    path: PathBuf,
+}
+
+impl NamedTempFile {
+    /// Create a new temporary file.
+    #[inline(always)]
+    pub fn new() -> io::Result<NamedTempFile> {
+        Self::new_in(&env::temp_dir())
+    }
+
+    /// Create a new temporary file in the specified directory.
+    #[inline(always)]
+    pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
+        loop {
+            let path = dir.as_ref().join(&util::tmpname());
+            return match imp::create_named(&path) {
+                Ok(file) => Ok(NamedTempFile(Some(NamedTempFileInner { path: path, file: file, }))),
+                Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+                Err(e) => Err(e),
+            }
+        }
+    }
+
+    /// Number of bytes in the file.
+    #[inline(always)]
+    pub fn len(&self) -> io::Result<u64> {
+        self.0.as_ref().unwrap().file.metadata().map(|m| m.len())
+    }
+
+    /// Truncate the file to `size` bytes.
+    #[inline(always)]
+    pub fn set_len(&self, size: u64) -> io::Result<()> {
+        self.0.as_ref().unwrap().file.set_len(size)
+    }
+
+    /// Get the temporary file's path.
+    #[inline(always)]
+    pub fn path(&self) -> &Path {
+        &self.0.as_ref().unwrap().path
+    }
+
+    /// Close and remove the temporary file.
+    ///
+    /// Use this if you want to detect errors in deleting the file.
+    #[inline(always)]
+    pub fn close(mut self) -> io::Result<()> {
+        let NamedTempFileInner { path, file } = self.0.take().unwrap();
+        drop(file);
+        fs::remove_file(path)
+    }
+
+    /// Extract the path to the temporary file. Calling this will prevent the temporary file from
+    /// being automatically deleted.
+    #[inline(always)]
+    pub fn into_path(mut self) -> PathBuf {
+        let NamedTempFileInner { path, .. } = self.0.take().unwrap();
+        path
+    }
+}
+
+impl Drop for NamedTempFile {
+    #[inline(always)]
+    fn drop(&mut self) {
+        if let Some(NamedTempFileInner { file, path }) = self.0.take() {
+            drop(file);
+            let _ = fs::remove_file(path);
+        }
+    }
+}
+
+impl Read for NamedTempFile {
+    #[inline(always)]
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.0.as_mut().unwrap().file.read(buf)
+    }
+}
+
+impl Write for NamedTempFile {
+    #[inline(always)]
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.as_mut().unwrap().file.write(buf)
+    }
+    #[inline(always)]
+    fn flush(&mut self) -> io::Result<()> {
+        self.0.as_mut().unwrap().file.flush()
+    }
+}
+
+impl Seek for NamedTempFile {
+    #[inline(always)]
+    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        self.0.as_mut().unwrap().file.seek(pos)
+    }
+}
+
+#[cfg(unix)]
+impl std::os::unix::io::AsRawFd for NamedTempFile {
+    #[inline(always)]
+    fn as_raw_fd(&self) -> std::os::unix::io::RawFd {
+        self.0.as_ref().unwrap().file.as_raw_fd()
+    }
+}
+
+#[cfg(windows)]
+impl std::os::windows::io::AsRawHandle for NamedTempFile {
+    #[inline(always)]
+    fn as_raw_handle(&self) -> std::os::windows::io::RawHandle {
+        self.0.as_ref().unwrap().file.as_raw_handle()
     }
 }

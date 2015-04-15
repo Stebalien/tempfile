@@ -6,7 +6,7 @@ use std::fs::{self, File, OpenOptions};
 use std::path::Path;
 use ::util::{tmpname, cstr};
 use super::unix_common::O_CLOEXEC;
-pub use super::unix_common::create;
+pub use super::unix_common::{create, create_named};
 
 unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {
     let mut meta: stat_t = ::std::mem::zeroed();
