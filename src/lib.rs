@@ -34,7 +34,7 @@ impl TempFile {
     /// references to the same file.
     ///
     /// This can be useful if you want multiple seek positions in the same temporary file.
-    /// Additionally, this function guarentees that all of the returned temporary file objects
+    /// Additionally, this function guarantees that all of the returned temporary file objects
     /// refer to the same underlying temporary file even in the presence of a pathological
     /// temporary file cleaner.
     #[inline(always)]
@@ -64,7 +64,7 @@ impl TempFile {
     /// Re-open the temporary file. The returned TempFile will refer to the same underlying
     /// temporary file but will have an independent offset.
     ///
-    /// This method is only available on windows and linux, not FreeBSD/MacOS. Unfortunately, it is
+    /// This method is only available on windows and Linux, not FreeBSD/MacOS. Unfortunately, it is
     /// impossible to reliably implement this method on those operating systems.
     ///
     /// If you need your code to be cross-platform, please use `shared`/`shared_in` defined above.
