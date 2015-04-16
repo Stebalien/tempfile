@@ -1,10 +1,9 @@
-use ::libc::{self, c_int, O_EXCL, O_RDWR, O_CREAT};
+use ::libc::{self, O_EXCL, O_RDWR, O_CREAT};
 use ::libc::types::os::arch::posix01::stat as stat_t;
 use std::io;
-use std::os::unix::io::{RawFd, FromRawFd};
+use std::os::unix::io::{RawFd, FromRawFd, AsRawFd};
 use std::fs::{self, File, OpenOptions};
 use std::path::Path;
-use std::ffi::CString;
 use ::util::{tmpname, cstr};
 use super::unix_common::O_CLOEXEC;
 pub use super::unix_common::create;
@@ -49,7 +48,7 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
             },
             fd => unsafe {
                 let first = FromRawFd::from_raw_fd(fd);
-                let dg = DeleteGuard(&tmp_path);
+                let _dg = DeleteGuard(&tmp_path);
 
                 let target_meta = try!(stat(fd));
                 let mut files: Vec<File> = try!((1..count).map(|_| opts.open(&tmp_path)).collect());
