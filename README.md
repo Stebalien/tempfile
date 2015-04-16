@@ -33,8 +33,8 @@ Documentation
 
 https://stebalien.github.com/tempfile/tempfile/
 
-Security
---------
+TODO
+----
 
-This library should be race free, reliable, and secure in the presence of
-pathological temporary file cleaners.
+Discuss security/reliability and the trade-offs between the named/unnamed
+variants.
