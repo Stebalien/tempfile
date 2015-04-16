@@ -53,8 +53,8 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
 
                 let target_meta = try!(stat(fd));
                 let mut files: Vec<File> = try!((1..count).map(|_| opts.open(&tmp_path)).collect());
-                for f in &files {
-                    let meta = try!(stat(fd));
+                for file in &files {
+                    let meta = try!(stat(file.as_raw_fd()));
                     if meta.st_dev != target_meta.st_dev ||
                        meta.st_ino != target_meta.st_ino ||
                        // Even if the device information get's reused, the owner should actually be
