@@ -33,13 +33,13 @@ pub struct TempFile(File);
 
 impl TempFile {
     /// Create a new temporary file.
-    #[inline(always)]
+    #[inline]
     pub fn new() -> io::Result<TempFile> {
         Self::new_in(&env::temp_dir())
     }
 
     /// Create a new temporary file in the specified directory.
-    #[inline(always)]
+    #[inline]
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<TempFile> {
         imp::create(dir.as_ref()).map(|f| TempFile(f))
     }
@@ -51,20 +51,20 @@ impl TempFile {
     /// Additionally, this function guarantees that all of the returned temporary file objects
     /// refer to the same underlying temporary file even in the presence of a pathological
     /// temporary file cleaner.
-    #[inline(always)]
+    #[inline]
     pub fn shared(count: usize) -> io::Result<Vec<TempFile>> {
         Self::shared_in(&env::temp_dir(), count)
     }
 
     /// Same as `shared` but creates the file in the specified directory.
-    #[inline(always)]
+    #[inline]
     pub fn shared_in<P: AsRef<Path>>(dir: P, count: usize) -> io::Result<Vec<TempFile>> {
         imp::create_shared(dir.as_ref(), count).map(|files| files.map_in_place(|f|TempFile(f)))
     }
 
 
     /// Number of bytes in the file.
-    #[inline(always)]
+    #[inline]
     pub fn len(&self) -> io::Result<u64> {
         self.0.metadata().map(|m| m.len())
     }
@@ -85,7 +85,7 @@ impl TempFile {
     ///
     /// **Unstable**: This is platform specific and may go away in the future.
     #[cfg(any(windows, target_os = "linux"))]
-    #[inline(always)]
+    #[inline]
     pub fn reopen(&self) -> io::Result<TempFile> {
         imp::reopen(&self.0).map(|f|TempFile(f))
     }
@@ -149,6 +149,7 @@ struct NamedTempFileInner {
 }
 
 impl fmt::Debug for NamedTempFile {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "NamedTempFile({:?})", self.0.as_ref().unwrap().path)
     }
@@ -161,21 +162,25 @@ pub struct PersistError {
 }
 
 impl From<PersistError> for io::Error {
+    #[inline]
     fn from(error: PersistError) -> io::Error {
         error.error
     }
 }
 
 impl fmt::Display for PersistError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "failed to persist temporary file: {}", self.error)
     }
 }
 
 impl error::Error for PersistError {
+    #[inline]
     fn description(&self) -> &str {
         "failed to persist temporary file"
     }
+    #[inline]
     fn cause(&self) -> Option<&error::Error> {
         Some(&self.error)
     }
@@ -183,13 +188,13 @@ impl error::Error for PersistError {
 
 impl NamedTempFile {
     /// Create a new temporary file.
-    #[inline(always)]
+    #[inline]
     pub fn new() -> io::Result<NamedTempFile> {
         Self::new_in(&env::temp_dir())
     }
 
     /// Create a new temporary file in the specified directory.
-    #[inline(always)]
+    #[inline]
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
         loop {
             let path = dir.as_ref().join(&util::tmpname());
@@ -202,19 +207,19 @@ impl NamedTempFile {
     }
 
     /// Number of bytes in the file.
-    #[inline(always)]
+    #[inline]
     pub fn len(&self) -> io::Result<u64> {
         self.0.as_ref().unwrap().file.metadata().map(|m| m.len())
     }
 
     /// Truncate the file to `size` bytes.
-    #[inline(always)]
+    #[inline]
     pub fn set_len(&self, size: u64) -> io::Result<()> {
         self.0.as_ref().unwrap().file.set_len(size)
     }
 
     /// Get the temporary file's path.
-    #[inline(always)]
+    #[inline]
     pub fn path(&self) -> &Path {
         &self.0.as_ref().unwrap().path
     }
@@ -222,7 +227,7 @@ impl NamedTempFile {
     /// Close and remove the temporary file.
     ///
     /// Use this if you want to detect errors in deleting the file.
-    #[inline(always)]
+    #[inline]
     pub fn close(mut self) -> io::Result<()> {
         let NamedTempFileInner { path, file } = self.0.take().unwrap();
         drop(file);
@@ -231,7 +236,7 @@ impl NamedTempFile {
 
     /// Extract the path to the temporary file. Calling this will prevent the temporary file from
     /// being automatically deleted.
-    #[inline(always)]
+    #[inline]
     pub fn into_path(mut self) -> PathBuf {
         let NamedTempFileInner { path, .. } = self.0.take().unwrap();
         path
@@ -241,6 +246,7 @@ impl NamedTempFile {
     ///
     /// If a file exists at the target path, persist will atomically replace it. If this method
     /// fails, it will return `self` in the resulting PersistError.
+    #[inline]
     pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
         match fs::rename(&self.0.as_ref().unwrap().path, new_path) {
             Ok(_) => Ok(self.0.take().unwrap().file),
@@ -250,7 +256,7 @@ impl NamedTempFile {
 }
 
 impl Drop for NamedTempFile {
-    #[inline(always)]
+    #[inline]
     fn drop(&mut self) {
         if let Some(NamedTempFileInner { file, path }) = self.0.take() {
             drop(file);
@@ -260,25 +266,25 @@ impl Drop for NamedTempFile {
 }
 
 impl Read for NamedTempFile {
-    #[inline(always)]
+    #[inline]
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.0.as_mut().unwrap().file.read(buf)
     }
 }
 
 impl Write for NamedTempFile {
-    #[inline(always)]
+    #[inline]
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.0.as_mut().unwrap().file.write(buf)
     }
-    #[inline(always)]
+    #[inline]
     fn flush(&mut self) -> io::Result<()> {
         self.0.as_mut().unwrap().file.flush()
     }
 }
 
 impl Seek for NamedTempFile {
-    #[inline(always)]
+    #[inline]
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.0.as_mut().unwrap().file.seek(pos)
     }
@@ -286,7 +292,7 @@ impl Seek for NamedTempFile {
 
 #[cfg(unix)]
 impl std::os::unix::io::AsRawFd for NamedTempFile {
-    #[inline(always)]
+    #[inline]
     fn as_raw_fd(&self) -> std::os::unix::io::RawFd {
         self.0.as_ref().unwrap().file.as_raw_fd()
     }
@@ -294,7 +300,7 @@ impl std::os::unix::io::AsRawFd for NamedTempFile {
 
 #[cfg(windows)]
 impl std::os::windows::io::AsRawHandle for NamedTempFile {
-    #[inline(always)]
+    #[inline]
     fn as_raw_handle(&self) -> std::os::windows::io::RawHandle {
         self.0.as_ref().unwrap().file.as_raw_handle()
     }
