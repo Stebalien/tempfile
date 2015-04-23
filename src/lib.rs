@@ -8,6 +8,8 @@ extern crate rand;
 use std::io::{self, Read, Write, Seek, SeekFrom};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
+use std::error;
+use std::fmt;
 use std::env;
 
 mod imp;
@@ -144,6 +146,39 @@ struct NamedTempFileInner {
     path: PathBuf,
 }
 
+impl fmt::Debug for NamedTempFile {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "NamedTempFile({:?})", self.0.as_ref().unwrap().path)
+    }
+}
+
+#[derive(Debug)]
+pub struct PersistError {
+    pub error: io::Error,
+    pub file: NamedTempFile,
+}
+
+impl From<PersistError> for io::Error {
+    fn from(error: PersistError) -> io::Error {
+        error.error
+    }
+}
+
+impl fmt::Display for PersistError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "failed to persist temporary file: {}", self.error)
+    }
+}
+
+impl error::Error for PersistError {
+    fn description(&self) -> &str {
+        "failed to persist temporary file"
+    }
+    fn cause(&self) -> Option<&error::Error> {
+        Some(&self.error)
+    }
+}
+
 impl NamedTempFile {
     /// Create a new temporary file.
     #[inline(always)]
@@ -198,6 +233,17 @@ impl NamedTempFile {
     pub fn into_path(mut self) -> PathBuf {
         let NamedTempFileInner { path, .. } = self.0.take().unwrap();
         path
+    }
+
+    /// Persist the temporary file at the target path.
+    ///
+    /// If a file exists at the target path, persist will atomically replace it. If this method
+    /// fails, it will return `self` in the resulting PersistError.
+    pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
+        match fs::rename(&self.0.as_ref().unwrap().path, new_path) {
+            Ok(_) => Ok(self.0.take().unwrap().file),
+            Err(e) => Err(PersistError { file: self, error: e }),
+        }
     }
 }
 
