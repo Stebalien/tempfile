@@ -1,4 +1,4 @@
-#![feature(convert, from_raw_os, collections)]
+#![feature(convert, from_raw_os)]
 #![cfg_attr(windows, feature(fs_ext))]
 //! Securely create and manage temporary files. Temporary files created by this create are
 //! automatically deleted.
@@ -59,7 +59,9 @@ impl TempFile {
     /// Same as `shared` but creates the file in the specified directory.
     #[inline]
     pub fn shared_in<P: AsRef<Path>>(dir: P, count: usize) -> io::Result<Vec<TempFile>> {
-        imp::create_shared(dir.as_ref(), count).map(|files| files.map_in_place(|f|TempFile(f)))
+        imp::create_shared(dir.as_ref(), count).map(|files| {
+            files.into_iter().map(|f|TempFile(f)).collect()
+        })
     }
 
 
