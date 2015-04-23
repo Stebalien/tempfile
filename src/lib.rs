@@ -82,6 +82,8 @@ impl TempFile {
     /// impossible to reliably implement this method on those operating systems.
     ///
     /// If you need your code to be cross-platform, please use `shared`/`shared_in` defined above.
+    ///
+    /// **Unstable**: This is platform specific and may go away in the future.
     #[cfg(any(windows, target_os = "linux"))]
     #[inline(always)]
     pub fn reopen(&self) -> io::Result<TempFile> {
