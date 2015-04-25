@@ -248,6 +248,8 @@ impl NamedTempFile {
     ///
     /// If a file exists at the target path, persist will atomically replace it. If this method
     /// fails, it will return `self` in the resulting PersistError.
+    ///
+    /// Note: Temporary files cannot be persisted across filesystems.
     #[inline]
     pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
         match fs::rename(&self.0.as_ref().unwrap().path, new_path) {
