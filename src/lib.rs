@@ -189,6 +189,16 @@ impl error::Error for PersistError {
 }
 
 impl NamedTempFile {
+    #[inline]
+    fn inner(&self) -> &NamedTempFileInner {
+        self.0.as_ref().unwrap()
+    }
+
+    #[inline]
+    fn inner_mut(&mut self) -> &mut NamedTempFileInner {
+        self.0.as_mut().unwrap()
+    }
+
     /// Create a new temporary file.
     #[inline]
     pub fn new() -> io::Result<NamedTempFile> {
@@ -208,22 +218,22 @@ impl NamedTempFile {
         }
     }
 
-    /// Number of bytes in the file.
+    /// Queries metadata about the underlying file.
     #[inline]
-    pub fn len(&self) -> io::Result<u64> {
-        self.0.as_ref().unwrap().file.metadata().map(|m| m.len())
+    pub fn metadata(&self) -> io::Result<fs::Metadata> {
+        self.inner().file.metadata()
     }
 
     /// Truncate the file to `size` bytes.
     #[inline]
     pub fn set_len(&self, size: u64) -> io::Result<()> {
-        self.0.as_ref().unwrap().file.set_len(size)
+        self.inner().file.set_len(size)
     }
 
     /// Get the temporary file's path.
     #[inline]
     pub fn path(&self) -> &Path {
-        &self.0.as_ref().unwrap().path
+        &self.inner().path
     }
 
     /// Close and remove the temporary file.
@@ -252,7 +262,7 @@ impl NamedTempFile {
     /// Note: Temporary files cannot be persisted across filesystems.
     #[inline]
     pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
-        match fs::rename(&self.0.as_ref().unwrap().path, new_path) {
+        match fs::rename(&self.inner().path, new_path) {
             Ok(_) => Ok(self.0.take().unwrap().file),
             Err(e) => Err(PersistError { file: self, error: e }),
         }
@@ -272,25 +282,25 @@ impl Drop for NamedTempFile {
 impl Read for NamedTempFile {
     #[inline]
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.as_mut().unwrap().file.read(buf)
+        self.inner_mut().file.read(buf)
     }
 }
 
 impl Write for NamedTempFile {
     #[inline]
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.0.as_mut().unwrap().file.write(buf)
+        self.inner_mut().file.write(buf)
     }
     #[inline]
     fn flush(&mut self) -> io::Result<()> {
-        self.0.as_mut().unwrap().file.flush()
+        self.inner_mut().file.flush()
     }
 }
 
 impl Seek for NamedTempFile {
     #[inline]
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
-        self.0.as_mut().unwrap().file.seek(pos)
+        self.inner_mut().file.seek(pos)
     }
 }
 
@@ -298,7 +308,7 @@ impl Seek for NamedTempFile {
 impl std::os::unix::io::AsRawFd for NamedTempFile {
     #[inline]
     fn as_raw_fd(&self) -> std::os::unix::io::RawFd {
-        self.0.as_ref().unwrap().file.as_raw_fd()
+        self.inner().file.as_raw_fd()
     }
 }
 
@@ -306,6 +316,6 @@ impl std::os::unix::io::AsRawFd for NamedTempFile {
 impl std::os::windows::io::AsRawHandle for NamedTempFile {
     #[inline]
     fn as_raw_handle(&self) -> std::os::windows::io::RawHandle {
-        self.0.as_ref().unwrap().file.as_raw_handle()
+        self.inner().file.as_raw_handle()
     }
 }
