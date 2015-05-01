@@ -157,9 +157,12 @@ impl fmt::Debug for NamedTempFile {
     }
 }
 
+/// Error returned when persisting a temporary file fails
 #[derive(Debug)]
 pub struct PersistError {
+    /// The underlying IO error.
     pub error: io::Error,
+    /// The temporary file that couldn't be persisted.
     pub file: NamedTempFile,
 }
 
