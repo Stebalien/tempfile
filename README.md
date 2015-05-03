@@ -32,9 +32,3 @@ Documentation
 -------------
 
 https://stebalien.github.com/tempfile/tempfile/
-
-TODO
-----
-
-Discuss security/reliability and the trade-offs between the named/unnamed
-variants.
