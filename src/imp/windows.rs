@@ -39,13 +39,14 @@ pub fn create(dir: &Path) -> io::Result<File> {
         .share_mode(SHARE_MODE as i32)
         .creation_disposition(libc::CREATE_NEW as i32)
         .flags_and_attributes(FLAGS_DEL as i32);
-    loop {
+    for _ in 0..::NUM_RETRIES {
         return match opts.open(&dir.join(&tmpname())) {
             Ok(f) => Ok(f),
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(e) => Err(e),
         };
     }
+    Err(io::Error::new(io::ErrorKind::AlreadyExists, "too many temporary directories already exist"))
 }
 
 pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {

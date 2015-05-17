@@ -25,6 +25,9 @@
 extern crate libc;
 extern crate rand;
 
+const NUM_RETRIES: u32 = 1 << 31;
+const NUM_RAND_CHARS: usize = 12;
+
 mod imp;
 mod util;
 mod named;

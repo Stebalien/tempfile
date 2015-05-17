@@ -6,7 +6,7 @@ use std::path::Path;
 use std::io;
 
 pub fn tmpname() -> OsString {
-    let mut bytes = [b'.'; 7];
+    let mut bytes = [b'.'; ::NUM_RAND_CHARS+1];
     rand::thread_rng().fill_bytes(&mut bytes[1..]);
 
     for byte in bytes[1..].iter_mut() {

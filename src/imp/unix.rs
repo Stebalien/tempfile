@@ -33,7 +33,7 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
     if count == 0 {
         return Ok(vec![]);
     }
-    'outer: loop {
+    'outer: for _ in 0..::NUM_RETRIES {
         let tmp_path = dir.join(&tmpname());
         return match unsafe {
             libc::open(try!(cstr(&tmp_path)).as_ptr(), O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT, 0o600)
@@ -72,4 +72,5 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
             },
         }
     }
+    Err(io::Error::new(io::ErrorKind::AlreadyExists, "too many temporary directories already exist"))
 }

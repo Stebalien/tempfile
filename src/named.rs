@@ -105,7 +105,7 @@ impl NamedTempFile {
     /// Create a new temporary file in the specified directory.
     #[inline]
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
-        loop {
+        for _ in 0..::NUM_RETRIES {
             let path = dir.as_ref().join(&util::tmpname());
             return match imp::create_named(&path) {
                 Ok(file) => Ok(NamedTempFile(Some(NamedTempFileInner { path: path, file: file, }))),
@@ -113,6 +113,7 @@ impl NamedTempFile {
                 Err(e) => Err(e),
             }
         }
+        Err(io::Error::new(io::ErrorKind::AlreadyExists, "too many temporary directories already exist"))
     }
 
     /// Queries metadata about the underlying file.

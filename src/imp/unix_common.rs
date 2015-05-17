@@ -8,7 +8,7 @@ use ::util::{tmpname, cstr};
 pub const O_CLOEXEC: libc::c_int = 0o2000000;
 
 pub fn create(dir: &Path) -> io::Result<File> {
-    loop {
+    for _ in 0..::NUM_RETRIES {
         let tmp_path = dir.join(&tmpname());
         return match create_named(&tmp_path) {
             Ok(file) => {
@@ -21,6 +21,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
             Err(e) => Err(e),
         }
     }
+    Err(io::Error::new(io::ErrorKind::AlreadyExists, "too many temporary directories already exist"))
 }
 
 pub fn create_named(path: &Path) -> io::Result<File> {
