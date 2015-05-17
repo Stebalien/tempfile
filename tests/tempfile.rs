@@ -13,17 +13,6 @@ fn test_basic() {
 }
 
 #[test]
-#[cfg(any(target_os = "linux", windows))]
-fn test_reopen() {
-    let mut tmpfile = TempFile::new().unwrap();
-    write!(tmpfile, "abcde").unwrap();
-    let mut shared = tmpfile.reopen().unwrap();
-    let mut buf = String::new();
-    shared.read_to_string(&mut buf).unwrap();
-    assert_eq!("abcde", buf);
-}
-
-#[test]
 fn test_shared() {
     let mut tmpfiles = TempFile::shared(2).unwrap();
     write!(tmpfiles[0], "abcde").unwrap();

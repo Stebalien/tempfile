@@ -67,21 +67,6 @@ impl TempFile {
     pub fn set_len(&self, size: u64) -> io::Result<()> {
         self.0.set_len(size)
     }
-
-    /// Re-open the temporary file. The returned TempFile will refer to the same underlying
-    /// temporary file but will have an independent offset.
-    ///
-    /// This method is only available on windows and Linux, not FreeBSD/MacOS. Unfortunately, it is
-    /// impossible to reliably implement this method on those operating systems.
-    ///
-    /// If you need your code to be cross-platform, please use `shared`/`shared_in` defined above.
-    ///
-    /// **Unstable**: This is platform specific and may go away in the future.
-    #[cfg(any(windows, target_os = "linux"))]
-    #[inline]
-    pub fn reopen(&self) -> io::Result<TempFile> {
-        imp::reopen(&self.0).map(|f|TempFile(f))
-    }
 }
 
 impl Read for TempFile {
