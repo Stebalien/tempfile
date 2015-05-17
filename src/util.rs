@@ -1,4 +1,4 @@
-use std::ffi::OsString;
+use std::ffi::{OsString, OsStr};
 use ::rand;
 use ::rand::Rng;
 use std::ffi::CString;
@@ -6,7 +6,7 @@ use std::path::Path;
 use std::io;
 
 pub fn tmpname() -> OsString {
-    let mut bytes = vec!['.' as u8; 7];
+    let mut bytes = [b'.'; 7];
     rand::thread_rng().fill_bytes(&mut bytes[1..]);
 
     for byte in bytes[1..].iter_mut() {
@@ -17,14 +17,17 @@ pub fn tmpname() -> OsString {
             _ => unreachable!(),
         }
     }
-    OsString::from_bytes(bytes).unwrap()
+    // TODO: Use OsStr::to_cstring (convert)
+    OsStr::new(unsafe { ::std::str::from_utf8_unchecked(&bytes) }).to_os_string()
 }
 
 // Stolen from std.
-#[allow(dead_code)] // Not used on windows.
 #[inline(always)]
+#[cfg(not(windows))]
 pub fn cstr(path: &Path) -> io::Result<CString> {
-    path.as_os_str().to_cstring().ok_or(
+    use std::os::unix::ffi::OsStrExt;
+    // TODO: Use OsStr::to_cstring (convert)
+    CString::new(path.as_os_str().as_bytes()).map_err(|_|
         io::Error::new(io::ErrorKind::InvalidInput, "path contained a null"))
 }
 

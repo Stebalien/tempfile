@@ -1,4 +1,3 @@
-#![feature(convert)]
 #![cfg_attr(windows, feature(fs_ext))]
 //! Securely create and manage temporary files. Temporary files created by this create are
 //! automatically deleted.
