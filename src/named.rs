@@ -78,6 +78,25 @@ impl NamedTempFile {
     }
 
     /// Create a new temporary file.
+    ///
+    /// *SECURITY WARNING:* This will create a temporary file in the default temporary file
+    /// directory (platform dependent). These directories are often patrolled by temporary file
+    /// cleaners so only use this method if you're *positive* that the temporary file cleaner won't
+    /// delete your file.
+    ///
+    /// Reasons to use this method:
+    ///   1. The file has a short lifetime and your temporary file cleaner is sane (doesn't delete
+    ///      recently accessed files).
+    ///   2. You trust every user on your system (i.e. you are the only user).
+    ///   3. You have disabled your system's temporary file cleaner or verified that your system
+    ///      doesn't have a temporary file cleaner.
+    ///
+    /// Reasons not to use this method:
+    ///   1. You'll fix it later. No you won't.
+    ///   2. You don't care about the security of the temporary file. If none of the "reasons to
+    ///      use this method" apply, referring to a temporary file by name may allow an attacker
+    ///      to create/overwrite your non-temporary files. There are exceptions but if you don't
+    ///      already know them, don't use this method.
     #[inline]
     pub fn new() -> io::Result<NamedTempFile> {
         Self::new_in(&env::temp_dir())
@@ -109,6 +128,10 @@ impl NamedTempFile {
     }
 
     /// Get the temporary file's path.
+    ///
+    /// *SECURITY WARNING:* Only use this method if you're positive that a temporary file cleaner
+    /// won't have deleted your file. Otherwise, the path returned by this method may refer to an
+    /// attacker controlled file.
     #[inline]
     pub fn path(&self) -> &Path {
         &self.inner().path
@@ -130,6 +153,10 @@ impl NamedTempFile {
     /// fails, it will return `self` in the resulting PersistError.
     ///
     /// Note: Temporary files cannot be persisted across filesystems.
+    ///
+    /// *SECURITY WARNING:* Only use this method if you're positive that a temporary file cleaner
+    /// won't have deleted your file. Otherwise, you might end up persisting an attacker controlled
+    /// file.
     #[inline]
     pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
         match fs::rename(&self.inner().path, new_path) {
