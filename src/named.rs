@@ -124,14 +124,6 @@ impl NamedTempFile {
         fs::remove_file(path)
     }
 
-    /// Extract the path to the temporary file. Calling this will prevent the temporary file from
-    /// being automatically deleted.
-    #[inline]
-    pub fn into_path(mut self) -> PathBuf {
-        let NamedTempFileInner { path, .. } = self.0.take().unwrap();
-        path
-    }
-
     /// Persist the temporary file at the target path.
     ///
     /// If a file exists at the target path, persist will atomically replace it. If this method

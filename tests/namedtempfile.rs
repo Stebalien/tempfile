@@ -25,15 +25,6 @@ fn test_deleted() {
 }
 
 #[test]
-fn test_into_path() {
-    let tmpfile = NamedTempFile::new().unwrap();
-    assert!(tmpfile.path().exists());
-    let pathbuf = tmpfile.into_path();
-    assert!(pathbuf.exists());
-    std::fs::remove_file(pathbuf).unwrap();
-}
-
-#[test]
 fn test_persist() {
     let mut tmpfile = NamedTempFile::new().unwrap();
     let old_path = tmpfile.path().to_path_buf();
