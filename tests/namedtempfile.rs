@@ -1,9 +1,14 @@
-#![feature(path_ext)]
 extern crate tempfile;
 use tempfile::NamedTempFile;
 use std::env;
 use std::io::{Write, Read, Seek, SeekFrom};
-use std::fs::{PathExt, File};
+use std::fs::File;
+use std::path::Path;
+
+fn exists<P: AsRef<Path>>(path: P) -> bool {
+    std::fs::metadata(path.as_ref()).is_ok()
+}
+
 
 #[test]
 fn test_basic() {
@@ -19,9 +24,9 @@ fn test_basic() {
 fn test_deleted() {
     let tmpfile = NamedTempFile::new().unwrap();
     let path = tmpfile.path().to_path_buf();
-    assert!(path.exists());
+    assert!(exists(&path));
     drop(tmpfile);
-    assert!(!path.exists());
+    assert!(!exists(&path));
 }
 
 #[test]
@@ -31,9 +36,9 @@ fn test_persist() {
     let persist_path = env::temp_dir().join("persisted_temporary_file");
     write!(tmpfile, "abcde").unwrap();
     {
-        assert!(old_path.exists());
+        assert!(exists(&old_path));
         let mut f = tmpfile.persist(&persist_path).unwrap();
-        assert!(!old_path.exists());
+        assert!(!exists(&old_path));
 
         // Check original file
         f.seek(SeekFrom::Start(0)).unwrap();
