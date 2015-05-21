@@ -1,9 +1,6 @@
 use std::ffi::{OsString, OsStr};
 use ::rand;
 use ::rand::Rng;
-use std::ffi::CString;
-use std::path::Path;
-use std::io;
 
 pub fn tmpname() -> OsString {
     let mut bytes = [b'.'; ::NUM_RAND_CHARS+1];
@@ -19,15 +16,5 @@ pub fn tmpname() -> OsString {
     }
     // TODO: Use OsStr::to_cstring (convert)
     OsStr::new(unsafe { ::std::str::from_utf8_unchecked(&bytes) }).to_os_string()
-}
-
-// Stolen from std.
-#[inline(always)]
-#[cfg(not(windows))]
-pub fn cstr(path: &Path) -> io::Result<CString> {
-    use std::os::unix::ffi::OsStrExt;
-    // TODO: Use OsStr::to_cstring (convert)
-    CString::new(path.as_os_str().as_bytes()).map_err(|_|
-        io::Error::new(io::ErrorKind::InvalidInput, "path contained a null"))
 }
 

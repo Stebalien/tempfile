@@ -1,12 +1,66 @@
-use ::libc::{self, O_EXCL, O_RDWR, O_CREAT};
+use ::libc::{self, c_int, O_EXCL, O_RDWR, O_CREAT};
 use ::libc::types::os::arch::posix01::stat as stat_t;
+use std::os::unix::ffi::OsStrExt;
+use std::ffi::CString;
 use std::io;
 use std::os::unix::io::{RawFd, FromRawFd, AsRawFd};
 use std::fs::{self, File, OpenOptions};
 use std::path::Path;
-use ::util::{tmpname, cstr};
-use super::unix_common::O_CLOEXEC;
-pub use super::unix_common::{create, create_named};
+use ::util::tmpname;
+
+pub const O_CLOEXEC: libc::c_int = 0o2000000;
+
+// Stolen from std.
+#[inline]
+pub fn cstr(path: &Path) -> io::Result<CString> {
+    // TODO: Use OsStr::to_cstring (convert)
+    CString::new(path.as_os_str().as_bytes()).map_err(|_|
+        io::Error::new(io::ErrorKind::InvalidInput, "path contained a null"))
+}
+
+pub fn create_named(path: &Path) -> io::Result<File> {
+    return match unsafe {
+        libc::open(try!(cstr(&path)).as_ptr(), O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT, 0o600)
+    } {
+        -1 => Err(io::Error::last_os_error()),
+        fd => Ok(unsafe { FromRawFd::from_raw_fd(fd) }),
+    }
+}
+
+
+#[cfg(target_os = "linux")]
+pub fn create(dir: &Path) -> io::Result<File> {
+    const O_TMPFILE: libc::c_int = 0o20200000;
+    match unsafe {
+        libc::open(try!(cstr(dir)).as_ptr(), O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR, 0o600)
+    } {
+        -1 => create_unix(dir),
+        fd => Ok(unsafe { FromRawFd::from_raw_fd(fd) }),
+    }
+}
+
+#[inline(always)]
+#[cfg(not(target_os = "linux"))]
+pub fn create(dir: &Path) -> io::Result<File> {
+    create_unix(path)
+}
+
+fn create_unix(dir: &Path) -> io::Result<File> {
+    for _ in 0..::NUM_RETRIES {
+        let tmp_path = dir.join(&tmpname());
+        return match create_named(&tmp_path) {
+            Ok(file) => {
+                // I should probably tell the user this failed but the temporary file creation
+                // didn't really fail...
+                let _ = fs::remove_file(tmp_path);
+                Ok(file)
+            },
+            Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(e) => Err(e),
+        }
+    }
+    Err(io::Error::new(io::ErrorKind::AlreadyExists, "too many temporary directories already exist"))
+}
 
 unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {
     let mut meta: stat_t = ::std::mem::zeroed();
@@ -26,6 +80,7 @@ impl<'a> Drop for DeleteGuard<'a> {
     }
 }
 
+// One can do this on linux using proc but that doesn't play well with sandboxing...
 pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
     let mut opts = OpenOptions::new();
     opts.read(true).write(true).create(false);

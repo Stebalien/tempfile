@@ -1,9 +1,10 @@
-use std::os::windows::fs::OpenOptionsExt;
+use std::os::windows::ffi::OsStrExt;
 use std::os::windows::io::{FromRawHandle, AsRawHandle, RawHandle};
 use std::path::Path;
 use std::io;
-use std::fs::{File, OpenOptions};
-use ::libc::{self, DWORD, HANDLE};
+use std::ptr;
+use std::fs::File;
+use ::libc::{self, DWORD, HANDLE, CreateFileW};
 use ::util::tmpname;
 
 const ACCESS: DWORD     = libc::FILE_GENERIC_READ
@@ -17,6 +18,11 @@ const FLAGS_DEL: DWORD  = libc::FILE_ATTRIBUTE_HIDDEN
 const FLAGS: DWORD      = libc::FILE_ATTRIBUTE_HIDDEN
                         | libc::FILE_ATTRIBUTE_TEMPORARY;
 
+
+fn to_utf16(s: &Path) -> Vec<u16> {
+    s.as_os_str().encode_wide().chain(Some(0).into_iter()).collect()
+}
+
 extern "system" {
     // TODO: move to external crate.
     fn ReOpenFile(hOriginalFile: HANDLE,
@@ -26,21 +32,43 @@ extern "system" {
 }
 
 
+fn win_create(path: &Path,
+                     access: DWORD,
+                     share_mode: DWORD,
+                     disp: DWORD,
+                     flags: DWORD) -> io::Result<File> {
+
+    let path = to_utf16(path);
+    let handle = unsafe {
+        CreateFileW(
+            path.as_ptr(),
+            access,
+            share_mode,
+            0 as *mut _,
+            disp,
+            flags,
+            ptr::null_mut())
+    };
+    if handle == libc::INVALID_HANDLE_VALUE {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(unsafe { File::from_raw_handle(handle as RawHandle) })
+    }
+}
+
 pub fn create_named(path: &Path) -> io::Result<File> {
-    OpenOptions::new().desired_access(ACCESS as i32)
-        .share_mode(SHARE_MODE as i32)
-        .creation_disposition(libc::CREATE_NEW as i32)
-        .flags_and_attributes(FLAGS as i32).open(path)
+    win_create(path, ACCESS, SHARE_MODE, libc::CREATE_NEW, FLAGS)
 }
 
 pub fn create(dir: &Path) -> io::Result<File> {
-    let mut opts = OpenOptions::new();
-    opts.desired_access(ACCESS as i32)
-        .share_mode(SHARE_MODE as i32)
-        .creation_disposition(libc::CREATE_NEW as i32)
-        .flags_and_attributes(FLAGS_DEL as i32);
     for _ in 0..::NUM_RETRIES {
-        return match opts.open(&dir.join(&tmpname())) {
+        return match win_create(
+            &dir.join(&tmpname()),
+            ACCESS,
+            SHARE_MODE,
+            libc::CREATE_NEW,
+            FLAGS_DEL)
+        {
             Ok(f) => Ok(f),
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(e) => Err(e),
@@ -59,7 +87,7 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
     Ok(files)
 }
 
-pub fn reopen(f: &File) -> io::Result<File> {
+fn reopen(f: &File) -> io::Result<File> {
     let h = f.as_raw_handle();
     unsafe {
         let h = ReOpenFile(h as HANDLE, ACCESS, SHARE_MODE, 0);
