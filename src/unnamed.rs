@@ -1,5 +1,6 @@
 use std::io::{self, Read, Write, Seek, SeekFrom};
 use std::fs::File;
+use std::fmt;
 use std::path::Path;
 use std::env;
 use std;
@@ -21,6 +22,23 @@ use super::imp;
 /// open copy of it is closed. Unlike *nix operating systems, the file is not immediately unlinked
 /// from the filesystem.
 pub struct TempFile(File);
+
+impl fmt::Debug for TempFile {
+    #[cfg(unix)]
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use std::os::unix::io::AsRawFd;
+        write!(f, "TempFile({})", self.0.as_raw_fd())
+    }
+
+    #[cfg(windows)]
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use std::os::windows::io::AsRawHandle;
+        write!(f, "TempFile({})", self.0.as_raw_handle() as usize)
+    }
+}
+
 
 impl TempFile {
     /// Create a new temporary file.
