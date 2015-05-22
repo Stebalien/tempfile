@@ -42,7 +42,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
 #[inline(always)]
 #[cfg(not(target_os = "linux"))]
 pub fn create(dir: &Path) -> io::Result<File> {
-    create_unix(path)
+    create_unix(dir)
 }
 
 fn create_unix(dir: &Path) -> io::Result<File> {
