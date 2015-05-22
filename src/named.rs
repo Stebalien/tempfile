@@ -160,7 +160,7 @@ impl NamedTempFile {
     /// file.
     #[inline]
     pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
-        match fs::rename(&self.inner().path, new_path) {
+        match imp::persist(&self.inner().path, new_path.as_ref()) {
             Ok(_) => Ok(self.0.take().unwrap().file),
             Err(e) => Err(PersistError { file: self, error: e }),
         }

@@ -24,6 +24,12 @@
 extern crate libc;
 extern crate rand;
 
+#[cfg(windows)]
+extern crate winapi;
+
+#[cfg(windows)]
+extern crate kernel32;
+
 const NUM_RETRIES: u32 = 1 << 31;
 const NUM_RAND_CHARS: usize = 12;
 

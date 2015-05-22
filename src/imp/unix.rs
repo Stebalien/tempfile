@@ -129,3 +129,7 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
     }
     Err(io::Error::new(io::ErrorKind::AlreadyExists, "too many temporary directories already exist"))
 }
+
+pub fn persist(old_path: &Path, new_path: &Path) -> io::Result<()> {
+    fs::rename(old_path, new_path)
+}
