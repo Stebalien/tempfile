@@ -2,3 +2,6 @@ language: rust
 rust:
   - nightly
   - beta
+os:
+  - linux
+  - osx
