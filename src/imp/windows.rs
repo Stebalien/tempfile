@@ -72,7 +72,8 @@ pub fn create(dir: &Path) -> io::Result<File> {
             Err(e) => Err(e),
         };
     }
-    Err(io::Error::new(io::ErrorKind::AlreadyExists, "too many temporary directories already exist"))
+    Err(io::Error::new(io::ErrorKind::AlreadyExists,
+                       "too many temporary directories already exist"))
 }
 
 pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {

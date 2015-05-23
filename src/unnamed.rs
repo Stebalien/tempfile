@@ -127,4 +127,3 @@ impl std::os::windows::io::AsRawHandle for TempFile {
         self.0.as_raw_handle()
     }
 }
-

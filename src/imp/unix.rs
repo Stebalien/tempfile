@@ -59,7 +59,8 @@ fn create_unix(dir: &Path) -> io::Result<File> {
             Err(e) => Err(e),
         }
     }
-    Err(io::Error::new(io::ErrorKind::AlreadyExists, "too many temporary directories already exist"))
+    Err(io::Error::new(io::ErrorKind::AlreadyExists,
+                       "too many temporary directories already exist"))
 }
 
 unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {
@@ -127,7 +128,8 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
             },
         }
     }
-    Err(io::Error::new(io::ErrorKind::AlreadyExists, "too many temporary directories already exist"))
+    Err(io::Error::new(io::ErrorKind::AlreadyExists,
+                       "too many temporary directories already exist"))
 }
 
 pub fn persist(old_path: &Path, new_path: &Path) -> io::Result<()> {

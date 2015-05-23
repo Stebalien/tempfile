@@ -1,3 +1,4 @@
+
 use std::io::{self, Read, Write, Seek, SeekFrom};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
@@ -113,7 +114,8 @@ impl NamedTempFile {
                 Err(e) => Err(e),
             }
         }
-        Err(io::Error::new(io::ErrorKind::AlreadyExists, "too many temporary directories already exist"))
+        Err(io::Error::new(io::ErrorKind::AlreadyExists,
+                           "too many temporary directories already exist"))
     }
 
     /// Queries metadata about the underlying file.
