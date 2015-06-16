@@ -12,10 +12,5 @@ license = "MIT/Apache-2.0"
 [dependencies]
 libc = "*"
 rand = "*"
-
-[target.x86_64-pc-windows-gnu.dependencies]
-winapi = "*"
-kernel32-sys = "*"
-
-[target.i686-pc-windows-gnu.dependencies]
-kernel32-sys = "*"
+winapi = "0.1"
+kernel32-sys = "0.1"
