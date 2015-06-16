@@ -4,9 +4,9 @@ use std::path::Path;
 use std::io;
 use std::ptr;
 use std::fs::{self, File};
-use ::winapi::{self, DWORD, HANDLE};
-use ::kernel32::{CreateFileW, SetFileAttributesW};
-use ::util::tmpname;
+use winapi::{self, DWORD, HANDLE};
+use kernel32::{CreateFileW, ReOpenFile, SetFileAttributesW};
+use util::tmpname;
 
 const ACCESS: DWORD     = winapi::FILE_GENERIC_READ
                         | winapi::FILE_GENERIC_WRITE;
@@ -20,15 +20,6 @@ const FLAGS: DWORD      = winapi::FILE_ATTRIBUTE_HIDDEN
 fn to_utf16(s: &Path) -> Vec<u16> {
     s.as_os_str().encode_wide().chain(Some(0).into_iter()).collect()
 }
-
-extern "system" {
-    // TODO: Wait for new kernel32 crate...
-    fn ReOpenFile(hOriginalFile: HANDLE,
-                  dwDesiredAccess: DWORD,
-                  dwShareMode: DWORD,
-                  dwFlags: DWORD) -> HANDLE;
-}
-
 
 fn win_create(path: &Path,
                      access: DWORD,
