@@ -2,6 +2,7 @@
 use std::io::{self, Read, Write, Seek, SeekFrom};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
+use std::ops::{Deref, DerefMut};
 use std::error;
 use std::fmt;
 use std::env;
@@ -30,6 +31,21 @@ impl fmt::Debug for NamedTempFile {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "NamedTempFile({:?})", self.0.as_ref().unwrap().path)
+    }
+}
+
+impl Deref for NamedTempFile {
+    type Target = File;
+    #[inline]
+    fn deref(&self) -> &File {
+        &self.inner().file
+    }
+}
+
+impl DerefMut for NamedTempFile {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut File {
+        &mut self.inner_mut().file
     }
 }
 
@@ -118,18 +134,6 @@ impl NamedTempFile {
                            "too many temporary directories already exist"))
     }
 
-    /// Queries metadata about the underlying file.
-    #[inline]
-    pub fn metadata(&self) -> io::Result<fs::Metadata> {
-        self.inner().file.metadata()
-    }
-
-    /// Truncate the file to `size` bytes.
-    #[inline]
-    pub fn set_len(&self, size: u64) -> io::Result<()> {
-        self.inner().file.set_len(size)
-    }
-
     /// Get the temporary file's path.
     ///
     /// *SECURITY WARNING:* Only use this method if you're positive that a temporary file cleaner
@@ -182,25 +186,25 @@ impl Drop for NamedTempFile {
 impl Read for NamedTempFile {
     #[inline]
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.inner_mut().file.read(buf)
+        (**self).read(buf)
     }
 }
 
 impl Write for NamedTempFile {
     #[inline]
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.inner_mut().file.write(buf)
+        (**self).write(buf)
     }
     #[inline]
     fn flush(&mut self) -> io::Result<()> {
-        self.inner_mut().file.flush()
+        (**self).flush()
     }
 }
 
 impl Seek for NamedTempFile {
     #[inline]
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
-        self.inner_mut().file.seek(pos)
+        (**self).seek(pos)
     }
 }
 
@@ -208,7 +212,7 @@ impl Seek for NamedTempFile {
 impl std::os::unix::io::AsRawFd for NamedTempFile {
     #[inline]
     fn as_raw_fd(&self) -> std::os::unix::io::RawFd {
-        self.inner().file.as_raw_fd()
+        (**self).as_raw_fd()
     }
 }
 
@@ -216,6 +220,6 @@ impl std::os::unix::io::AsRawFd for NamedTempFile {
 impl std::os::windows::io::AsRawHandle for NamedTempFile {
     #[inline]
     fn as_raw_handle(&self) -> std::os::windows::io::RawHandle {
-        self.inner().file.as_raw_handle()
+        (**self).as_raw_handle()
     }
 }
