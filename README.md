@@ -1,7 +1,8 @@
 tempfile
 ========
 
-[![Build Status](https://travis-ci.org/Stebalien/tempfile.svg?branch=master)](https://travis-ci.org/Stebalien/tempfile)
+Linux: [![Build Status](https://travis-ci.org/Stebalien/tempfile.svg?branch=master)](https://travis-ci.org/Stebalien/tempfile)
+Windows: [![Build status](https://ci.appveyor.com/api/projects/status/5q00b8rvvg46i5tf/branch/master?svg=true)](https://ci.appveyor.com/project/Stebalien/tempfile/branch/master)
 
 A secure cross-platform temporary file library for rust. In addition to creating
 temporary files, this library also allows users to securely open multiple
