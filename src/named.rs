@@ -28,7 +28,6 @@ struct NamedTempFileInner {
 }
 
 impl fmt::Debug for NamedTempFile {
-    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "NamedTempFile({:?})", self.0.as_ref().unwrap().path)
     }
@@ -66,18 +65,15 @@ impl From<PersistError> for io::Error {
 }
 
 impl fmt::Display for PersistError {
-    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "failed to persist temporary file: {}", self.error)
     }
 }
 
 impl error::Error for PersistError {
-    #[inline]
     fn description(&self) -> &str {
         "failed to persist temporary file"
     }
-    #[inline]
     fn cause(&self) -> Option<&error::Error> {
         Some(&self.error)
     }
@@ -114,13 +110,11 @@ impl NamedTempFile {
     ///      use this method" apply, referring to a temporary file by name may allow an attacker
     ///      to create/overwrite your non-temporary files. There are exceptions but if you don't
     ///      already know them, don't use this method.
-    #[inline]
     pub fn new() -> io::Result<NamedTempFile> {
         Self::new_in(&env::temp_dir())
     }
 
     /// Create a new temporary file in the specified directory.
-    #[inline]
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
         for _ in 0..::NUM_RETRIES {
             let path = dir.as_ref().join(&util::tmpname());
@@ -147,7 +141,6 @@ impl NamedTempFile {
     /// Close and remove the temporary file.
     ///
     /// Use this if you want to detect errors in deleting the file.
-    #[inline]
     pub fn close(mut self) -> io::Result<()> {
         let NamedTempFileInner { path, file } = self.0.take().unwrap();
         drop(file);
@@ -164,7 +157,6 @@ impl NamedTempFile {
     /// *SECURITY WARNING:* Only use this method if you're positive that a temporary file cleaner
     /// won't have deleted your file. Otherwise, you might end up persisting an attacker controlled
     /// file.
-    #[inline]
     pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
         match imp::persist(&self.inner().path, new_path.as_ref()) {
             Ok(_) => Ok(self.0.take().unwrap().file),
@@ -174,7 +166,6 @@ impl NamedTempFile {
 }
 
 impl Drop for NamedTempFile {
-    #[inline]
     fn drop(&mut self) {
         if let Some(NamedTempFileInner { file, path }) = self.0.take() {
             drop(file);
@@ -184,14 +175,12 @@ impl Drop for NamedTempFile {
 }
 
 impl Read for NamedTempFile {
-    #[inline]
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         (**self).read(buf)
     }
 }
 
 impl Write for NamedTempFile {
-    #[inline]
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         (**self).write(buf)
     }
@@ -202,7 +191,6 @@ impl Write for NamedTempFile {
 }
 
 impl Seek for NamedTempFile {
-    #[inline]
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         (**self).seek(pos)
     }

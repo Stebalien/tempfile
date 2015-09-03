@@ -11,7 +11,6 @@ use ::util::tmpname;
 pub const O_CLOEXEC: libc::c_int = 0o2000000;
 
 // Stolen from std.
-#[inline]
 pub fn cstr(path: &Path) -> io::Result<CString> {
     // TODO: Use OsStr::to_cstring (convert)
     CString::new(path.as_os_str().as_bytes()).map_err(|_|
@@ -39,7 +38,6 @@ pub fn create(dir: &Path) -> io::Result<File> {
     }
 }
 
-#[inline(always)]
 #[cfg(not(target_os = "linux"))]
 pub fn create(dir: &Path) -> io::Result<File> {
     create_unix(dir)

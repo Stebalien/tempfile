@@ -25,14 +25,12 @@ pub struct TempFile(File);
 
 impl fmt::Debug for TempFile {
     #[cfg(unix)]
-    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use std::os::unix::io::AsRawFd;
         write!(f, "TempFile({})", self.0.as_raw_fd())
     }
 
     #[cfg(windows)]
-    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use std::os::windows::io::AsRawHandle;
         write!(f, "TempFile({})", self.0.as_raw_handle() as usize)
@@ -42,13 +40,11 @@ impl fmt::Debug for TempFile {
 
 impl TempFile {
     /// Create a new temporary file.
-    #[inline]
     pub fn new() -> io::Result<TempFile> {
         Self::new_in(&env::temp_dir())
     }
 
     /// Create a new temporary file in the specified directory.
-    #[inline]
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<TempFile> {
         imp::create(dir.as_ref()).map(|f| TempFile(f))
     }
@@ -60,13 +56,11 @@ impl TempFile {
     /// Additionally, this function guarantees that all of the returned temporary file objects
     /// refer to the same underlying temporary file even in the presence of a pathological
     /// temporary file cleaner.
-    #[inline]
     pub fn shared(count: usize) -> io::Result<Vec<TempFile>> {
         Self::shared_in(&env::temp_dir(), count)
     }
 
     /// Same as `shared` but creates the file in the specified directory.
-    #[inline]
     pub fn shared_in<P: AsRef<Path>>(dir: P, count: usize) -> io::Result<Vec<TempFile>> {
         imp::create_shared(dir.as_ref(), count).map(|files| {
             files.into_iter().map(|f|TempFile(f)).collect()
@@ -75,38 +69,33 @@ impl TempFile {
 
 
     /// Number of bytes in the file.
-    #[inline]
     pub fn len(&self) -> io::Result<u64> {
         self.0.metadata().map(|m| m.len())
     }
 
     /// Truncate the file to `size` bytes.
-    #[inline(always)]
     pub fn set_len(&self, size: u64) -> io::Result<()> {
         self.0.set_len(size)
     }
 }
 
 impl Read for TempFile {
-    #[inline(always)]
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.0.read(buf)
     }
 }
 
 impl Write for TempFile {
-    #[inline(always)]
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.0.write(buf)
     }
-    #[inline(always)]
+    #[inline]
     fn flush(&mut self) -> io::Result<()> {
         self.0.flush()
     }
 }
 
 impl Seek for TempFile {
-    #[inline(always)]
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.0.seek(pos)
     }
@@ -114,7 +103,7 @@ impl Seek for TempFile {
 
 #[cfg(unix)]
 impl std::os::unix::io::AsRawFd for TempFile {
-    #[inline(always)]
+    #[inline]
     fn as_raw_fd(&self) -> std::os::unix::io::RawFd {
         self.0.as_raw_fd()
     }
@@ -122,7 +111,7 @@ impl std::os::unix::io::AsRawFd for TempFile {
 
 #[cfg(windows)]
 impl std::os::windows::io::AsRawHandle for TempFile {
-    #[inline(always)]
+    #[inline]
     fn as_raw_handle(&self) -> std::os::windows::io::RawHandle {
         self.0.as_raw_handle()
     }
