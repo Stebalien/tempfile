@@ -38,7 +38,6 @@ impl fmt::Debug for TempFile {
 }
 
 
-#[allow(len_without_is_empty)]
 impl TempFile {
     /// Create a new temporary file.
     pub fn new() -> io::Result<TempFile> {
