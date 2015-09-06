@@ -38,6 +38,7 @@ impl fmt::Debug for TempFile {
 }
 
 
+#[allow(len_without_is_empty)]
 impl TempFile {
     /// Create a new temporary file.
     pub fn new() -> io::Result<TempFile> {
@@ -46,7 +47,7 @@ impl TempFile {
 
     /// Create a new temporary file in the specified directory.
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<TempFile> {
-        imp::create(dir.as_ref()).map(|f| TempFile(f))
+        imp::create(dir.as_ref()).map(TempFile)
     }
 
     /// Create a new temporary file and open it `count` times returning `count` independent
@@ -63,7 +64,7 @@ impl TempFile {
     /// Same as `shared` but creates the file in the specified directory.
     pub fn shared_in<P: AsRef<Path>>(dir: P, count: usize) -> io::Result<Vec<TempFile>> {
         imp::create_shared(dir.as_ref(), count).map(|files| {
-            files.into_iter().map(|f|TempFile(f)).collect()
+            files.into_iter().map(TempFile).collect()
         })
     }
 

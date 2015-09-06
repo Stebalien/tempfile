@@ -18,7 +18,7 @@ pub fn cstr(path: &Path) -> io::Result<CString> {
 }
 
 pub fn create_named(path: &Path) -> io::Result<File> {
-    return match unsafe {
+    match unsafe {
         libc::open(try!(cstr(&path)).as_ptr(), O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT, 0o600)
     } {
         -1 => Err(io::Error::last_os_error()),
