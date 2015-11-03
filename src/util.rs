@@ -13,14 +13,20 @@ impl FromStr for Template {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.contains('/') {
+            return Err("template must not contain any '/'".to_string)
+        }
+
         let start = s.find('X').unwrap_or(0);
         let end =  match s.rfind('X') {
             Some(i) => i + 1,
             None => start
         };
+
         if s[start..end].contains(|c| c != 'X') {
             return Err("The number of the sequence of 'X' must be 1.".to_string())
         }
+
         Ok(Template{
             random_len: end - start,
             prefix: s[..start].to_string(),
@@ -31,6 +37,7 @@ impl FromStr for Template {
 
 impl Template {
     pub fn new<S: Into<String>>(random_len: usize, prefix: S, suffix: S) -> Template {
+        // not checking if prefix or suffix contain '/'s. Need better name than `new`.
         Template{random_len: random_len, prefix: prefix.into(), suffix: suffix.into()}
     }
 }
