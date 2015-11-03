@@ -6,7 +6,7 @@ use std::io;
 use std::os::unix::io::{RawFd, FromRawFd, AsRawFd};
 use std::fs::{self, File, OpenOptions};
 use std::path::Path;
-use ::util::tmpname;
+use ::util::{tmpname, Template};
 
 pub const O_CLOEXEC: libc::c_int = 0o2000000;
 
@@ -45,7 +45,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
 
 fn create_unix(dir: &Path) -> io::Result<File> {
     for _ in 0..::NUM_RETRIES {
-        let tmp_path = dir.join(&tmpname());
+        let tmp_path = dir.join(&tmpname(&Template::new(::NUM_RAND_CHARS, ".", "")));
         return match create_named(&tmp_path) {
             Ok(file) => {
                 // I should probably tell the user this failed but the temporary file creation
@@ -88,7 +88,7 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
         return Ok(vec![]);
     }
     'outer: for _ in 0..::NUM_RETRIES {
-        let tmp_path = dir.join(&tmpname());
+        let tmp_path = dir.join(&tmpname(&Template::new(::NUM_RAND_CHARS, ".", "")));
         return match unsafe {
             libc::open(try!(cstr(&tmp_path)).as_ptr(), O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT, 0o600)
         } {

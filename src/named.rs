@@ -116,8 +116,29 @@ impl NamedTempFile {
 
     /// Create a new temporary file in the specified directory.
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
+        Self::template_in(dir, &util::Template::new(::NUM_RAND_CHARS, ".", ""))
+    }
+
+    /// Create a new temporary file with file name template
+    /// `template` must not any contain '/'s and must contain a sequence of "X".
+    /// The sequence of "X" should be longer than 5
+    ///
+    /// # Examples
+    /// ```
+    /// use tempfile::NamedTempFile;
+    /// 
+    /// let template = "hogehogeXXXXXX.rs".parse().unwrap();
+    /// let named_temp_file = NamedTempFile::template(&template).unwrap();
+    /// println!("{}", named_temp_file.path().display());    //Something like "/tmp/hogehoge65R8Y.rs" 
+    /// ```
+    pub fn template(template: &util::Template) -> io::Result<NamedTempFile> {
+        Self::template_in(&env::temp_dir(), template)
+    }
+
+    /// Create a new temporary file from the template in the specified directory.
+    pub fn template_in<P: AsRef<Path>>(dir: P, template: &util::Template) -> io::Result<NamedTempFile> {
         for _ in 0..::NUM_RETRIES {
-            let path = dir.as_ref().join(&util::tmpname());
+            let path = dir.as_ref().join(&util::tmpname(template));
             return match imp::create_named(&path) {
                 Ok(file) => Ok(NamedTempFile(Some(NamedTempFileInner { path: path, file: file, }))),
                 Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
@@ -126,6 +147,7 @@ impl NamedTempFile {
         }
         Err(io::Error::new(io::ErrorKind::AlreadyExists,
                            "too many temporary directories already exist"))
+        
     }
 
     /// Get the temporary file's path.

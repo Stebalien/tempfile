@@ -40,3 +40,4 @@ mod unnamed;
 
 pub use ::named::NamedTempFile;
 pub use ::unnamed::TempFile;
+pub use ::util::Template;
