@@ -14,7 +14,7 @@ impl FromStr for Template {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.contains('/') {
-            return Err("template must not contain any '/'".to_string)
+            return Err("template must not contain any '/'".to_string())
         }
 
         let start = s.find('X').unwrap_or(0);
