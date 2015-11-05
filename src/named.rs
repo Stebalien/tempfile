@@ -1,4 +1,5 @@
 
+use std::ffi::{OsString, OsStr};
 use std::io::{self, Read, Write, Seek, SeekFrom};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
@@ -7,9 +8,10 @@ use std::error;
 use std::fmt;
 use std::env;
 use std;
+use ::rand;
+use ::rand::Rng;
 
 use super::imp;
-use super::util;
 
 /// A named temporary file.
 ///
@@ -116,39 +118,9 @@ impl NamedTempFile {
 
     /// Create a new temporary file in the specified directory.
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
-        Self::template_in(dir, &util::Template::new(::NUM_RAND_CHARS, ".", ""))
+        CustomNamedTempFile::new().create_in(dir)
     }
 
-    /// Create a new temporary file with file name template
-    /// `template` must not any contain '/'s and must contain a sequence of "X".
-    /// The sequence of "X" should be longer than 5
-    ///
-    /// # Examples
-    /// ```
-    /// use tempfile::NamedTempFile;
-    /// 
-    /// let template = "hogehogeXXXXXX.rs".parse().unwrap();
-    /// let named_temp_file = NamedTempFile::template(&template).unwrap();
-    /// println!("{}", named_temp_file.path().display());    //Something like "/tmp/hogehoge65R8Y.rs" 
-    /// ```
-    pub fn template(template: &util::Template) -> io::Result<NamedTempFile> {
-        Self::template_in(&env::temp_dir(), template)
-    }
-
-    /// Create a new temporary file from the template in the specified directory.
-    pub fn template_in<P: AsRef<Path>>(dir: P, template: &util::Template) -> io::Result<NamedTempFile> {
-        for _ in 0..::NUM_RETRIES {
-            let path = dir.as_ref().join(&util::tmpname(template));
-            return match imp::create_named(&path) {
-                Ok(file) => Ok(NamedTempFile(Some(NamedTempFileInner { path: path, file: file, }))),
-                Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
-                Err(e) => Err(e),
-            }
-        }
-        Err(io::Error::new(io::ErrorKind::AlreadyExists,
-                           "too many temporary directories already exist"))
-        
-    }
 
     /// Get the temporary file's path.
     ///
@@ -232,4 +204,90 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
     fn as_raw_handle(&self) -> std::os::windows::io::RawHandle {
         (**self).as_raw_handle()
     }
+}
+
+
+
+#[derive(Debug, Clone)]
+pub struct CustomNamedTempFile {
+    random_len: usize,
+    prefix: String,
+    postfix: String    
+}
+
+impl CustomNamedTempFile {
+    pub fn new() -> CustomNamedTempFile {
+        CustomNamedTempFile {
+            random_len: ::NUM_RAND_CHARS,
+            prefix: ".".to_string(),
+            postfix: "".to_string()
+        }
+    }
+
+    pub fn prefix<S: Into<String>>(&mut self, prefix: S) -> &mut CustomNamedTempFile {
+        self.prefix = prefix.into();
+        self
+    }
+    pub fn postfix<S: Into<String>>(&mut self, postfix: S) -> &mut CustomNamedTempFile {
+        self.postfix = postfix.into();
+        self
+    }
+    pub fn rand(&mut self, rand: usize) -> &mut CustomNamedTempFile {
+        self.random_len = rand;
+        self
+    }
+
+    /// Create a new temporary file with file name template
+    /// `template` must not any contain '/'s and must contain a sequence of "X".
+    /// The sequence of "X" should be longer than 5
+    ///
+    /// # Examples
+    /// ```
+    /// use tempfile::NamedTempFile;
+    /// 
+    /// let template = "hogehogeXXXXXX.rs".parse().unwrap();
+    /// let named_temp_file = NamedTempFile::template(&template).unwrap();
+    /// println!("{}", named_temp_file.path().display());    //Something like "/tmp/hogehoge65R8Y.rs" 
+    /// ```
+    pub fn create(&self) -> io::Result<NamedTempFile> {
+        self.create_in(&env::temp_dir())
+    }
+
+    /// Create a new temporary file from the template in the specified directory.
+    pub fn create_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
+        for _ in 0..::NUM_RETRIES {
+            let path = dir.as_ref().join(&self.tmpname());
+            return match imp::create_named(&path) {
+                Ok(file) => Ok(NamedTempFile(Some(NamedTempFileInner { path: path, file: file, }))),
+                Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+                Err(e) => Err(e),
+            }
+        }
+        Err(io::Error::new(io::ErrorKind::AlreadyExists,
+                           "too many temporary directories already exist"))
+        
+    }
+
+    pub fn tmpname(&self) -> OsString {
+        let mut bytes = Vec::new();
+        for _ in 0..self.random_len {
+            bytes.push(b'.');
+        }
+        rand::thread_rng().fill_bytes(&mut bytes[..]);
+
+        for byte in bytes.iter_mut() {
+            *byte = match *byte % 62 {
+                v @ 0...9 => (v + '0' as u8),
+                v @ 10...35 => (v - 10 + 'a' as u8),
+                v @ 36...61 => (v - 36 + 'A' as u8),
+                _ => unreachable!(),
+            }
+        }
+        let s = unsafe { ::std::str::from_utf8_unchecked(&bytes) };
+
+        let res = format!("{}{}{}", self.prefix, s, self.postfix);
+        // TODO: Use OsStr::to_cstring (convert)
+        OsStr::new(&res[..]).to_os_string()
+    }
+
 }
