@@ -216,7 +216,9 @@ pub struct CustomNamedTempFile {
 }
 
 impl CustomNamedTempFile {
-    pub fn new() -> CustomNamedTempFile {
+
+    /// Start building CustomNamedTempFile. See `create` for more information.
+    pub fn new() -> Self {
         CustomNamedTempFile {
             random_len: ::NUM_RAND_CHARS,
             prefix: ".".to_string(),
@@ -224,30 +226,46 @@ impl CustomNamedTempFile {
         }
     }
 
-    pub fn prefix<S: Into<String>>(&mut self, prefix: S) -> &mut CustomNamedTempFile {
+    /// Set prefix to the CustomNamedTempFile builder. The prefix MUST NOT contain any '/'s.
+    /// The default value is ".".
+    /// See `create` for more information.
+    pub fn prefix<S: Into<String>>(&mut self, prefix: S) -> &mut Self {
+        // TODO check '/'
         self.prefix = prefix.into();
         self
     }
-    pub fn postfix<S: Into<String>>(&mut self, postfix: S) -> &mut CustomNamedTempFile {
+
+    /// Set postfix to the CustomNamedTempFile builder. The post MUST NOT contain any '/'s.
+    /// The default value is ""
+    /// See `create` for more information.
+    pub fn postfix<S: Into<String>>(&mut self, postfix: S) -> &mut Self {
+        // TODO check '/'
         self.postfix = postfix.into();
         self
     }
-    pub fn rand(&mut self, rand: usize) -> &mut CustomNamedTempFile {
+
+    /// Set the length of random generated part of file name to the CustomNamedTempFile builder.
+    /// The default value is
+    /// It is recommended to set it larger than 5.
+    /// See `create` for more information.
+    pub fn rand(&mut self, rand: usize) -> &mut Self {
         self.random_len = rand;
         self
     }
 
-    /// Create a new temporary file with file name template
-    /// `template` must not any contain '/'s and must contain a sequence of "X".
-    /// The sequence of "X" should be longer than 5
+    /// Create a new temporary file with Custom format.
     ///
     /// # Examples
-    /// ```
-    /// use tempfile::NamedTempFile;
+    /// ```no_run
+    /// use tempfile::CustomNamedTempFile;
     /// 
-    /// let template = "hogehogeXXXXXX.rs".parse().unwrap();
-    /// let named_temp_file = NamedTempFile::template(&template).unwrap();
-    /// println!("{}", named_temp_file.path().display());    //Something like "/tmp/hogehoge65R8Y.rs" 
+    /// let named_temp_file = CustomNamedTempFile::new()
+    ///                         .prefix("hogehoge")
+    ///                         .postfix(".rs")
+    ///                         .rand(5)
+    ///                         .create_in("/tmp")
+    ///                         .unwrap();
+    /// println!("{:?}", named_temp_file);        //Something like "NamedTempFile(\"/tmp/hogehoge65R8Y.rs\")" 
     /// ```
     pub fn create(&self) -> io::Result<NamedTempFile> {
         self.create_in(&env::temp_dir())
@@ -268,6 +286,7 @@ impl CustomNamedTempFile {
         
     }
 
+    // for crate internal usage.
     pub fn tmpname(&self) -> OsString {
         let mut bytes = Vec::new();
         for _ in 0..self.random_len {

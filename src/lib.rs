@@ -37,5 +37,5 @@ mod imp;
 mod named;
 mod unnamed;
 
-pub use ::named::NamedTempFile;
+pub use ::named::{NamedTempFile, CustomNamedTempFile};
 pub use ::unnamed::TempFile;
