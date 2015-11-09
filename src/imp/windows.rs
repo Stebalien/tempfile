@@ -52,7 +52,7 @@ pub fn create_named(path: &Path) -> io::Result<File> {
 pub fn create(dir: &Path) -> io::Result<File> {
     for _ in 0..::NUM_RETRIES {
         return match win_create(
-            &dir.join(&CustomNamedTempFile::new().tmpname()),
+            &dir.join(&CustomNamedTempFile::start().tmpname()),
             ACCESS,
             SHARE_MODE,
             winapi::CREATE_NEW,

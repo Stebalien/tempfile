@@ -118,7 +118,7 @@ impl NamedTempFile {
 
     /// Create a new temporary file in the specified directory.
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
-        CustomNamedTempFile::new().create_in(dir)
+        CustomNamedTempFile::start().new_in(dir)
     }
 
 
@@ -217,8 +217,8 @@ pub struct CustomNamedTempFile {
 
 impl CustomNamedTempFile {
 
-    /// Start building CustomNamedTempFile. See `create` for more information.
-    pub fn new() -> Self {
+    /// Start building CustomNamedTempFile. See `new` for more information.
+    pub fn start() -> Self {
         CustomNamedTempFile {
             random_len: ::NUM_RAND_CHARS,
             prefix: ".".to_string(),
@@ -228,7 +228,7 @@ impl CustomNamedTempFile {
 
     /// Set prefix to the CustomNamedTempFile builder. The prefix MUST NOT contain any '/'s.
     /// The default value is ".".
-    /// See `create` for more information.
+    /// See `new` for more information.
     pub fn prefix<S: Into<String>>(&mut self, prefix: S) -> &mut Self {
         // TODO check '/'
         self.prefix = prefix.into();
@@ -237,7 +237,7 @@ impl CustomNamedTempFile {
 
     /// Set postfix to the CustomNamedTempFile builder. The post MUST NOT contain any '/'s.
     /// The default value is ""
-    /// See `create` for more information.
+    /// See `new` for more information.
     pub fn postfix<S: Into<String>>(&mut self, postfix: S) -> &mut Self {
         // TODO check '/'
         self.postfix = postfix.into();
@@ -247,32 +247,32 @@ impl CustomNamedTempFile {
     /// Set the length of random generated part of file name to the CustomNamedTempFile builder.
     /// The default value is
     /// It is recommended to set it larger than 5.
-    /// See `create` for more information.
+    /// See `new` for more information.
     pub fn rand(&mut self, rand: usize) -> &mut Self {
         self.random_len = rand;
         self
     }
 
-    /// Create a new temporary file with Custom format.
+    /// New a new temporary file with Custom format.
     ///
     /// # Examples
     /// ```no_run
     /// use tempfile::CustomNamedTempFile;
     /// 
-    /// let named_temp_file = CustomNamedTempFile::new()
+    /// let named_temp_file = CustomNamedTempFile::start()
     ///                         .prefix("hogehoge")
     ///                         .postfix(".rs")
     ///                         .rand(5)
-    ///                         .create_in("/tmp")
+    ///                         .new_in("/tmp")
     ///                         .unwrap();
     /// println!("{:?}", named_temp_file);        //Something like "NamedTempFile(\"/tmp/hogehoge65R8Y.rs\")" 
     /// ```
-    pub fn create(&self) -> io::Result<NamedTempFile> {
-        self.create_in(&env::temp_dir())
+    pub fn new(&self) -> io::Result<NamedTempFile> {
+        self.new_in(&env::temp_dir())
     }
 
-    /// Create a new temporary file from the template in the specified directory.
-    pub fn create_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
+    /// New a new temporary file from the template in the specified directory.
+    pub fn new_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
         for _ in 0..::NUM_RETRIES {
             let path = dir.as_ref().join(&self.tmpname());
             return match imp::create_named(&path) {

@@ -45,7 +45,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
 
 fn create_unix(dir: &Path) -> io::Result<File> {
     for _ in 0..::NUM_RETRIES {
-        let tmp_path = dir.join(&CustomNamedTempFile::new().tmpname());
+        let tmp_path = dir.join(&CustomNamedTempFile::start().tmpname());
         return match create_named(&tmp_path) {
             Ok(file) => {
                 // I should probably tell the user this failed but the temporary file creation
@@ -88,7 +88,7 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
         return Ok(vec![]);
     }
     'outer: for _ in 0..::NUM_RETRIES {
-        let tmp_path = dir.join(&CustomNamedTempFile::new().tmpname());
+        let tmp_path = dir.join(&CustomNamedTempFile::start().tmpname());
         return match unsafe {
             libc::open(try!(cstr(&tmp_path)).as_ptr(), O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT, 0o600)
         } {
