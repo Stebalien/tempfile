@@ -209,38 +209,38 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
 
 
 #[derive(Debug, Clone)]
-pub struct CustomNamedTempFile {
+pub struct CustomNamedTempFile<'a , 'b> {
     random_len: usize,
-    prefix: String,
-    postfix: String    
+    prefix: &'a str,
+    postfix: &'b str    
 }
 
-impl CustomNamedTempFile {
+impl <'a , 'b>CustomNamedTempFile<'a , 'b> {
 
-    /// Start building CustomNamedTempFile. See `new` for more information.
+    /// Start building a CustomNamedTempFile. See `new` for more information.
     pub fn start() -> Self {
         CustomNamedTempFile {
             random_len: ::NUM_RAND_CHARS,
-            prefix: ".".to_string(),
-            postfix: "".to_string()
+            prefix: ".",
+            postfix: ""
         }
     }
 
     /// Set prefix to the CustomNamedTempFile builder. The prefix MUST NOT contain any '/'s.
     /// The default value is ".".
     /// See `new` for more information.
-    pub fn prefix<S: Into<String>>(&mut self, prefix: S) -> &mut Self {
+    pub fn prefix(&mut self, prefix: &'a str) -> &mut Self {
         // TODO check '/'
-        self.prefix = prefix.into();
+        self.prefix = prefix;
         self
     }
 
     /// Set postfix to the CustomNamedTempFile builder. The post MUST NOT contain any '/'s.
     /// The default value is ""
     /// See `new` for more information.
-    pub fn postfix<S: Into<String>>(&mut self, postfix: S) -> &mut Self {
+    pub fn postfix(&mut self, postfix: &'b str) -> &mut Self {
         // TODO check '/'
-        self.postfix = postfix.into();
+        self.postfix = postfix;
         self
     }
 

@@ -1,9 +1,10 @@
 extern crate tempfile;
-use tempfile::NamedTempFile;
+use tempfile::{NamedTempFile, CustomNamedTempFile};
 use std::env;
 use std::io::{Write, Read, Seek, SeekFrom};
 use std::fs::File;
 use std::path::Path;
+use std::convert::From;
 
 fn exists<P: AsRef<Path>>(path: P) -> bool {
     std::fs::metadata(path.as_ref()).is_ok()
@@ -56,4 +57,17 @@ fn test_persist() {
         assert_eq!("abcde", buf);
     }
     std::fs::remove_file(&persist_path).unwrap();
+}
+
+#[test]
+fn test_customnamed() {
+    let mut tmpfile = CustomNamedTempFile::start()
+        .prefix("tmp")
+        .postfix(&".rs".to_string())
+        .rand(12)
+        .new_in("./")
+        .unwrap();
+    assert!(tmpfile.path().to_str().unwrap().starts_with(("./tmp")));
+    assert!(tmpfile.path().to_str().unwrap().ends_with(".rs"));
+    assert_eq!(tmpfile.path().to_str().unwrap().len(), 20);
 }
