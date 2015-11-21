@@ -19,7 +19,11 @@ pub fn cstr(path: &Path) -> io::Result<CString> {
 
 pub fn create_named(path: &Path) -> io::Result<File> {
     match unsafe {
-        libc::open(try!(cstr(&path)).as_ptr(), O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT, 0o600)
+        let path = try!(cstr(&path));
+        libc::open(
+            path.as_ptr() as *const libc::c_char,
+            O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
+            0o600)
     } {
         -1 => Err(io::Error::last_os_error()),
         fd => Ok(unsafe { FromRawFd::from_raw_fd(fd) }),
@@ -31,7 +35,11 @@ pub fn create_named(path: &Path) -> io::Result<File> {
 pub fn create(dir: &Path) -> io::Result<File> {
     const O_TMPFILE: libc::c_int = 0o20200000;
     match unsafe {
-        libc::open(try!(cstr(dir)).as_ptr(), O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR, 0o600)
+        let path = try!(cstr(dir));
+        libc::open(
+            path.as_ptr() as *const libc::c_char,
+            O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR,
+            0o600)
     } {
         -1 => create_unix(dir),
         fd => Ok(unsafe { FromRawFd::from_raw_fd(fd) }),
@@ -90,7 +98,11 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
     'outer: for _ in 0..::NUM_RETRIES {
         let tmp_path = dir.join(&tmpname());
         return match unsafe {
-            libc::open(try!(cstr(&tmp_path)).as_ptr(), O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT, 0o600)
+            let tmp_path = try!(cstr(&tmp_path));
+            libc::open(
+                tmp_path.as_ptr() as *const libc::c_char,
+                O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
+                0o600)
         } {
             -1 => {
                 let err = io::Error::last_os_error();
