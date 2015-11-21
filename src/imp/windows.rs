@@ -6,7 +6,7 @@ use std::ptr;
 use std::fs::{self, File};
 use winapi::{self, DWORD, HANDLE};
 use kernel32::{CreateFileW, ReOpenFile, SetFileAttributesW};
-use util::tmpname;
+use named::CustomNamedTempFile;
 
 const ACCESS: DWORD     = winapi::FILE_GENERIC_READ
                         | winapi::FILE_GENERIC_WRITE;
@@ -52,7 +52,7 @@ pub fn create_named(path: &Path) -> io::Result<File> {
 pub fn create(dir: &Path) -> io::Result<File> {
     for _ in 0..::NUM_RETRIES {
         return match win_create(
-            &dir.join(&tmpname()),
+            &dir.join(&CustomNamedTempFile::start().tmpname()),
             ACCESS,
             SHARE_MODE,
             winapi::CREATE_NEW,

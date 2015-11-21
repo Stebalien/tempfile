@@ -34,9 +34,8 @@ const NUM_RETRIES: u32 = 1 << 31;
 const NUM_RAND_CHARS: usize = 12;
 
 mod imp;
-mod util;
 mod named;
 mod unnamed;
 
-pub use ::named::NamedTempFile;
+pub use ::named::{NamedTempFile, CustomNamedTempFile};
 pub use ::unnamed::TempFile;

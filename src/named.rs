@@ -1,4 +1,5 @@
 
+use std::ffi::{OsString, OsStr};
 use std::io::{self, Read, Write, Seek, SeekFrom};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
@@ -7,9 +8,10 @@ use std::error;
 use std::fmt;
 use std::env;
 use std;
+use ::rand;
+use ::rand::Rng;
 
 use super::imp;
-use super::util;
 
 /// A named temporary file.
 ///
@@ -116,17 +118,9 @@ impl NamedTempFile {
 
     /// Create a new temporary file in the specified directory.
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
-        for _ in 0..::NUM_RETRIES {
-            let path = dir.as_ref().join(&util::tmpname());
-            return match imp::create_named(&path) {
-                Ok(file) => Ok(NamedTempFile(Some(NamedTempFileInner { path: path, file: file, }))),
-                Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
-                Err(e) => Err(e),
-            }
-        }
-        Err(io::Error::new(io::ErrorKind::AlreadyExists,
-                           "too many temporary directories already exist"))
+        CustomNamedTempFile::start().new_in(dir)
     }
+
 
     /// Get the temporary file's path.
     ///
@@ -210,4 +204,109 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
     fn as_raw_handle(&self) -> std::os::windows::io::RawHandle {
         (**self).as_raw_handle()
     }
+}
+
+
+
+#[derive(Debug, Clone)]
+pub struct CustomNamedTempFile<'a , 'b> {
+    random_len: usize,
+    prefix: &'a str,
+    postfix: &'b str    
+}
+
+impl <'a , 'b>CustomNamedTempFile<'a , 'b> {
+
+    /// Start building a CustomNamedTempFile. See `new` for more information.
+    pub fn start() -> Self {
+        CustomNamedTempFile {
+            random_len: ::NUM_RAND_CHARS,
+            prefix: ".",
+            postfix: ""
+        }
+    }
+
+    /// Set prefix to the CustomNamedTempFile builder. The prefix MUST NOT contain any '/'s.
+    /// The default value is ".".
+    /// See `new` for more information.
+    pub fn prefix(&mut self, prefix: &'a str) -> &mut Self {
+        // TODO check '/'
+        self.prefix = prefix;
+        self
+    }
+
+    /// Set postfix to the CustomNamedTempFile builder. The post MUST NOT contain any '/'s.
+    /// The default value is ""
+    /// See `new` for more information.
+    pub fn postfix(&mut self, postfix: &'b str) -> &mut Self {
+        // TODO check '/'
+        self.postfix = postfix;
+        self
+    }
+
+    /// Set the length of random generated part of file name to the CustomNamedTempFile builder.
+    /// The default value is
+    /// It is recommended to set it larger than 5.
+    /// See `new` for more information.
+    pub fn rand(&mut self, rand: usize) -> &mut Self {
+        self.random_len = rand;
+        self
+    }
+
+    /// New a new temporary file with Custom format.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use tempfile::CustomNamedTempFile;
+    /// 
+    /// let named_temp_file = CustomNamedTempFile::start()
+    ///                         .prefix("hogehoge")
+    ///                         .postfix(".rs")
+    ///                         .rand(5)
+    ///                         .new_in("/tmp")
+    ///                         .unwrap();
+    /// println!("{:?}", named_temp_file);        //Something like "NamedTempFile(\"/tmp/hogehoge65R8Y.rs\")" 
+    /// ```
+    pub fn new(&self) -> io::Result<NamedTempFile> {
+        self.new_in(&env::temp_dir())
+    }
+
+    /// New a new temporary file from the template in the specified directory.
+    pub fn new_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
+        for _ in 0..::NUM_RETRIES {
+            let path = dir.as_ref().join(&self.tmpname());
+            return match imp::create_named(&path) {
+                Ok(file) => Ok(NamedTempFile(Some(NamedTempFileInner { path: path, file: file, }))),
+                Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+                Err(e) => Err(e),
+            }
+        }
+        Err(io::Error::new(io::ErrorKind::AlreadyExists,
+                           "too many temporary directories already exist"))
+        
+    }
+
+    // for crate internal usage.
+    pub fn tmpname(&self) -> OsString {
+        let mut bytes = Vec::new();
+        for _ in 0..self.random_len {
+            bytes.push(b'.');
+        }
+        rand::thread_rng().fill_bytes(&mut bytes[..]);
+
+        for byte in bytes.iter_mut() {
+            *byte = match *byte % 62 {
+                v @ 0...9 => (v + '0' as u8),
+                v @ 10...35 => (v - 10 + 'a' as u8),
+                v @ 36...61 => (v - 36 + 'A' as u8),
+                _ => unreachable!(),
+            }
+        }
+        let s = unsafe { ::std::str::from_utf8_unchecked(&bytes) };
+
+        let res = format!("{}{}{}", self.prefix, s, self.postfix);
+        // TODO: Use OsStr::to_cstring (convert)
+        OsStr::new(&res[..]).to_os_string()
+    }
+
 }
