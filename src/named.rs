@@ -64,6 +64,13 @@ impl From<PersistError> for io::Error {
     }
 }
 
+impl From<PersistError> for NamedTempFile {
+    #[inline]
+    fn from(error: PersistError) -> NamedTempFile {
+        error.file
+    }
+}
+
 impl fmt::Display for PersistError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "failed to persist temporary file: {}", self.error)
