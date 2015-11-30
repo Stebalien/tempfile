@@ -1,4 +1,4 @@
-use ::libc::{self, c_int, O_EXCL, O_RDWR, O_CREAT};
+use ::libc::{self, c_int, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
 use ::libc::stat as stat_t;
 use std::os::unix::ffi::OsStrExt;
 use std::ffi::CString;
@@ -7,8 +7,6 @@ use std::os::unix::io::{RawFd, FromRawFd, AsRawFd};
 use std::fs::{self, File, OpenOptions};
 use std::path::Path;
 use ::util::tmpname;
-
-pub const O_CLOEXEC: libc::c_int = 0o2000000;
 
 // Stolen from std.
 pub fn cstr(path: &Path) -> io::Result<CString> {
