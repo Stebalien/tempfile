@@ -140,6 +140,22 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
                        "too many temporary directories already exist"))
 }
 
-pub fn persist(old_path: &Path, new_path: &Path) -> io::Result<()> {
-    fs::rename(old_path, new_path)
+pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
+    unsafe {
+        let old_path = try!(cstr(old_path));
+        let new_path = try!(cstr(new_path));
+        if overwrite {
+            if libc::rename(old_path.as_ptr(), new_path.as_ptr()) != 0 {
+                return Err(io::Error::last_os_error())
+            }
+        } else {
+            if libc::link(old_path.as_ptr(), new_path.as_ptr()) != 0 {
+                return Err(io::Error::last_os_error());
+            }
+            // Ignore unlink errors. Can we do better?
+            // On recent linux, we can use renameat2 to do this atomically.
+            let _ = libc::unlink(old_path.as_ptr());
+        }
+        Ok(())
+    }
 }

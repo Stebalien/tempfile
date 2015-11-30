@@ -3,9 +3,9 @@ use std::os::windows::io::{FromRawHandle, AsRawHandle, RawHandle};
 use std::path::Path;
 use std::io;
 use std::ptr;
-use std::fs::{self, File};
+use std::fs::File;
 use winapi::{self, DWORD, HANDLE};
-use kernel32::{CreateFileW, ReOpenFile, SetFileAttributesW};
+use kernel32::{CreateFileW, ReOpenFile, SetFileAttributesW, MoveFileExW};
 use util::tmpname;
 
 const ACCESS: DWORD     = winapi::FILE_GENERIC_READ
@@ -89,24 +89,34 @@ fn reopen(f: &File) -> io::Result<File> {
     }
 }
 
-pub fn persist(old_path: &Path, new_path: &Path) -> io::Result<()> {
+pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
     // TODO: We should probably do this in one-shot using SetFileInformationByHandle but the API is
     // really painful.
 
-    let old_path_w = to_utf16(old_path);
+    unsafe {
+        let old_path_w = to_utf16(old_path);
+        let new_path_w = to_utf16(new_path);
 
-    // Don't succeed if this fails. We don't want to claim to have successfully persisted a file
-    // still marked as temporary because this file won't have the same consistency guarantees.
-    if unsafe { SetFileAttributesW(old_path_w.as_ptr(), winapi::FILE_ATTRIBUTE_NORMAL) == 0 } {
-        return Err(io::Error::last_os_error());
-    }
-    return match fs::rename(old_path, new_path) {
-        Ok(()) => Ok(()),
-        Err(e) => {
+        // Don't succeed if this fails. We don't want to claim to have successfully persisted a file
+        // still marked as temporary because this file won't have the same consistency guarantees.
+        if SetFileAttributesW(old_path_w.as_ptr(), winapi::FILE_ATTRIBUTE_NORMAL) == 0 {
+            return Err(io::Error::last_os_error());
+        }
+
+        let mut flags = 0;
+
+        if overwrite {
+            flags |= winapi::MOVEFILE_REPLACE_EXISTING;
+        }
+
+        if MoveFileExW(old_path_w.as_ptr(), new_path_w.as_ptr(), flags) == 0 {
+            let e = io::Error::last_os_error();
             // If this fails, the temporary file is now un-hidden and no longer marked temporary
             // (slightly less efficient) but it will still work.
-            let _ = unsafe { SetFileAttributesW(old_path_w.as_ptr(), FLAGS) };
+            let _ = SetFileAttributesW(old_path_w.as_ptr(), FLAGS);
             Err(e)
+        } else {
+            Ok(())
         }
     }
 }

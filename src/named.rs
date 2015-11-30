@@ -165,7 +165,26 @@ impl NamedTempFile {
     /// won't have deleted your file. Otherwise, you might end up persisting an attacker controlled
     /// file.
     pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
-        match imp::persist(&self.inner().path, new_path.as_ref()) {
+        match imp::persist(&self.inner().path, new_path.as_ref(), true) {
+            Ok(_) => Ok(self.0.take().unwrap().file),
+            Err(e) => Err(PersistError { file: self, error: e }),
+        }
+    }
+
+    /// Persist the temporary file at the target path iff no file exists there.
+    ///
+    /// If a file exists at the target path, fail. If this method fails, it will return `self` in
+    /// the resulting PersistError.
+    ///
+    /// Note: Temporary files cannot be persisted across filesystems.
+    /// Also Note: This method is not atomic. It can leave the original link to the temporary file
+    /// behind.
+    ///
+    /// *SECURITY WARNING:* Only use this method if you're positive that a temporary file cleaner
+    /// won't have deleted your file. Otherwise, you might end up persisting an attacker controlled
+    /// file.
+    pub fn persist_noclobber<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
+        match imp::persist(&self.inner().path, new_path.as_ref(), false) {
             Ok(_) => Ok(self.0.take().unwrap().file),
             Err(e) => Err(PersistError { file: self, error: e }),
         }
