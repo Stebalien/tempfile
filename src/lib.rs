@@ -31,11 +31,12 @@ extern crate winapi;
 extern crate kernel32;
 
 const NUM_RETRIES: u32 = 1 << 31;
-const NUM_RAND_CHARS: usize = 12;
+const NUM_RAND_CHARS: usize = 6;
 
+mod util;
 mod imp;
 mod named;
 mod unnamed;
 
-pub use ::named::{NamedTempFile, CustomNamedTempFile};
+pub use ::named::{NamedTempFile, NamedTempFileOptions};
 pub use ::unnamed::TempFile;

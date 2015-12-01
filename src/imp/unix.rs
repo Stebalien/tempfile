@@ -1,12 +1,12 @@
-use ::libc::{self, c_int, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
-use ::libc::stat as stat_t;
+use libc::{self, c_int, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
+use libc::stat as stat_t;
 use std::os::unix::ffi::OsStrExt;
 use std::ffi::CString;
 use std::io;
 use std::os::unix::io::{RawFd, FromRawFd, AsRawFd};
 use std::fs::{self, File, OpenOptions};
 use std::path::Path;
-use named::CustomNamedTempFile;
+use util;
 
 // Stolen from std.
 pub fn cstr(path: &Path) -> io::Result<CString> {
@@ -16,18 +16,17 @@ pub fn cstr(path: &Path) -> io::Result<CString> {
 }
 
 pub fn create_named(path: &Path) -> io::Result<File> {
-    match unsafe {
-        let path = try!(cstr(&path));
-        libc::open(
+    unsafe {
+        let path = try!(cstr(path));
+        match libc::open(
             path.as_ptr() as *const libc::c_char,
             O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
-            0o600)
-    } {
-        -1 => Err(io::Error::last_os_error()),
-        fd => Ok(unsafe { FromRawFd::from_raw_fd(fd) }),
+            0o600) {
+            -1 => Err(io::Error::last_os_error()),
+            fd => Ok(FromRawFd::from_raw_fd(fd)),
+        }
     }
 }
-
 
 #[cfg(target_os = "linux")]
 pub fn create(dir: &Path) -> io::Result<File> {
@@ -51,7 +50,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
 
 fn create_unix(dir: &Path) -> io::Result<File> {
     for _ in 0..::NUM_RETRIES {
-        let tmp_path = dir.join(&CustomNamedTempFile::start().tmpname());
+        let tmp_path = dir.join(util::tmpname(".tmp", "", ::NUM_RAND_CHARS));
         return match create_named(&tmp_path) {
             Ok(file) => {
                 // I should probably tell the user this failed but the temporary file creation
@@ -94,7 +93,7 @@ pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
         return Ok(vec![]);
     }
     'outer: for _ in 0..::NUM_RETRIES {
-        let tmp_path = dir.join(&CustomNamedTempFile::start().tmpname());
+        let tmp_path = dir.join(util::tmpname(".tmp", "", ::NUM_RAND_CHARS));
         return match unsafe {
             let tmp_path = try!(cstr(&tmp_path));
             libc::open(

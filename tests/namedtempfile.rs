@@ -1,10 +1,9 @@
 extern crate tempfile;
-use tempfile::{NamedTempFile, CustomNamedTempFile};
+use tempfile::{NamedTempFile, NamedTempFileOptions};
 use std::env;
 use std::io::{Write, Read, Seek, SeekFrom};
 use std::fs::File;
 use std::path::Path;
-use std::convert::From;
 
 fn exists<P: AsRef<Path>>(path: P) -> bool {
     std::fs::metadata(path.as_ref()).is_ok()
@@ -85,13 +84,14 @@ fn test_persist_noclobber() {
 
 #[test]
 fn test_customnamed() {
-    let mut tmpfile = CustomNamedTempFile::start()
+    let tmpfile = NamedTempFileOptions::new()
         .prefix("tmp")
-        .postfix(&".rs".to_string())
-        .rand(12)
-        .new_in("./")
+        .suffix(&".rs".to_string())
+        .rand_bytes(12)
+        .create()
         .unwrap();
-    assert!(tmpfile.path().to_str().unwrap().starts_with(("./tmp")));
-    assert!(tmpfile.path().to_str().unwrap().ends_with(".rs"));
-    assert_eq!(tmpfile.path().to_str().unwrap().len(), 20);
+    let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
+    assert!(name.starts_with(("tmp")));
+    assert!(name.ends_with(".rs"));
+    assert_eq!(name.len(), 18);
 }
