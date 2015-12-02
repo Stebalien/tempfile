@@ -240,7 +240,7 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
 ///                         .prefix("hogehoge")
 ///                         .suffix(".rs")
 ///                         .rand_bytes(5)
-///                         .create_in("/tmp")
+///                         .create()
 ///                         .unwrap();
 /// println!("{:?}", named_temp_file);        //Something like "NamedTempFile(\"/tmp/hogehoge65R8Y.rs\")"
 /// ```
