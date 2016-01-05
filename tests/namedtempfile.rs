@@ -95,3 +95,17 @@ fn test_customnamed() {
     assert!(name.ends_with(".rs"));
     assert_eq!(name.len(), 18);
 }
+
+
+#[test]
+fn test_reopen() {
+    let source = NamedTempFile::new().unwrap();
+    let mut first = source.reopen().unwrap();
+    let mut second = source.reopen().unwrap();
+    drop(source);
+
+    write!(first, "abcde").expect("write failed");
+    let mut buf = String::new();
+    second.read_to_string(&mut buf).unwrap();
+    assert_eq!("abcde", buf);
+}

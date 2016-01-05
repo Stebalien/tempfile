@@ -54,7 +54,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
         return match win_create(
             &dir.join(&util::tmpname(".tmp", "", ::NUM_RAND_CHARS)),
             ACCESS,
-            SHARE_MODE,
+            0, // Exclusive
             winapi::CREATE_NEW,
             FLAGS | winapi::FILE_FLAG_DELETE_ON_CLOSE)
         {
@@ -67,24 +67,14 @@ pub fn create(dir: &Path) -> io::Result<File> {
                        "too many temporary directories already exist"))
 }
 
-pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
-    if count == 0 {
-        return Ok(vec![]);
-    }
-    let first = try!(create(dir));
-    let mut files: Vec<File> = try!((1..count).map(|_| reopen(&first)).collect());
-    files.push(first);
-    Ok(files)
-}
-
-fn reopen(f: &File) -> io::Result<File> {
-    let h = f.as_raw_handle();
+pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
+    let handle = file.as_raw_handle();
     unsafe {
-        let h = ReOpenFile(h as HANDLE, ACCESS, SHARE_MODE, 0);
-        if h == winapi::INVALID_HANDLE_VALUE {
+        let handle = ReOpenFile(handle as HANDLE, ACCESS, SHARE_MODE, 0);
+        if handle == winapi::INVALID_HANDLE_VALUE {
             Err(io::Error::last_os_error())
         } else {
-            Ok(FromRawHandle::from_raw_handle(h as RawHandle))
+            Ok(FromRawHandle::from_raw_handle(handle as RawHandle))
         }
     }
 }

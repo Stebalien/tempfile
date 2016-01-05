@@ -180,6 +180,16 @@ impl NamedTempFile {
             Err(e) => Err(PersistError { file: self, error: e }),
         }
     }
+
+    /// Reopen the temporary file.
+    ///
+    /// This function is useful when you need multiple independent handles to the same file.
+    /// It's perfectly fine to drop the original `NamedTempFile` while holding on to `File`s
+    /// returned by this function; the `File`s will remain usable. However, they may not be
+    /// nameable.
+    pub fn reopen(&self) -> io::Result<File> {
+        imp::reopen(&self, self.path())
+    }
 }
 
 impl Drop for NamedTempFile {

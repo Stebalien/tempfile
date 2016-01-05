@@ -75,68 +75,17 @@ unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {
     }
 }
 
-// Helper for ensuring that the temporary file gets deleted.
-struct DeleteGuard<'a>(&'a Path);
-
-impl<'a> Drop for DeleteGuard<'a> {
-    fn drop(&mut self) {
-        let _ = fs::remove_file(self.0);
-    }
-}
-
-// One can do this on linux using proc but that doesn't play well with sandboxing...
-pub fn create_shared(dir: &Path, count: usize) -> io::Result<Vec<File>> {
-    let mut opts = OpenOptions::new();
-    opts.read(true).write(true).create(false);
-
-    if count == 0 {
-        return Ok(vec![]);
-    }
-    'outer: for _ in 0..::NUM_RETRIES {
-        let tmp_path = dir.join(util::tmpname(".tmp", "", ::NUM_RAND_CHARS));
-        return match unsafe {
-            let tmp_path = try!(cstr(&tmp_path));
-            libc::open(
-                tmp_path.as_ptr() as *const libc::c_char,
-                O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
-                0o600)
-        } {
-            -1 => {
-                let err = io::Error::last_os_error();
-                if err.kind() == io::ErrorKind::AlreadyExists {
-                    continue;
-                } else {
-                    Err(err)
-                }
-            },
-            fd => unsafe {
-                let first = FromRawFd::from_raw_fd(fd);
-                let _dg = DeleteGuard(&tmp_path);
-
-                let target_meta = try!(stat(fd));
-                let mut files: Vec<File> = try!((1..count).map(|_| opts.open(&tmp_path)).collect());
-                for file in &files {
-                    let meta = try!(stat(file.as_raw_fd()));
-                    if meta.st_dev != target_meta.st_dev ||
-                       meta.st_ino != target_meta.st_ino ||
-                       // Even if the device information get's reused, the owner should actually be
-                       // sufficient.
-                       meta.st_uid != target_meta.st_uid ||
-                       meta.st_gid != target_meta.st_gid {
-
-                        // Error? Panic? If we hit this, we're likely under attack (or a hardware
-                        // glitch/reconfiguration?.
-                        continue 'outer;
-                    }
-
-                }
-                files.push(first);
-                Ok(files)
-            },
+pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
+    let new_file = try!(OpenOptions::new().read(true).write(true).open(path));
+    unsafe {
+        let old_meta = try!(stat(file.as_raw_fd()));
+        let new_meta = try!(stat(new_file.as_raw_fd()));
+        if old_meta.st_dev != new_meta.st_dev ||
+           old_meta.st_ino != new_meta.st_ino {
+            return Err(io::Error::new(io::ErrorKind::NotFound, "original tempfile has been replaced"));
         }
+        Ok(new_file)
     }
-    Err(io::Error::new(io::ErrorKind::AlreadyExists,
-                       "too many temporary directories already exist"))
 }
 
 pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {

@@ -13,11 +13,11 @@ Example
 -------
 
 ```rust
-use tempfile::TempFile;
+extern crate tempfile;
 use std::io::{Write, Read, Seek, SeekFrom};
 
 // Write
-let mut tmpfile = TempFile::new().unwrap();
+let mut tmpfile: File = tempfile::tempfile().unwrap();
 write!(tmpfile, "Hello World!").unwrap();
 
 // Seek to start
