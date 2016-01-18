@@ -1,6 +1,6 @@
 [package]
 name = "tempfile"
-version = "2.0.0"
+version = "2.0.1"
 authors = ["Steven Allen <steven@stebalien.com>"]
 description = "Securely create temporary files."
 
