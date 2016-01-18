@@ -6,6 +6,7 @@ description = "Securely create temporary files."
 
 documentation = "https://stebalien.github.io/tempfile/tempfile/"
 repository = "https://github.com/Stebalien/tempfile"
+homepage = "http://stebalien.com/projects/tempfile-rs"
 keywords = ["tempfile", "tmpfile"]
 license = "MIT/Apache-2.0"
 
