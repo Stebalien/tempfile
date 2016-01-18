@@ -93,16 +93,18 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
         let old_path = try!(cstr(old_path));
         let new_path = try!(cstr(new_path));
         if overwrite {
-            if libc::rename(old_path.as_ptr(), new_path.as_ptr()) != 0 {
+            if libc::rename(old_path.as_ptr() as *const libc::c_char,
+                            new_path.as_ptr() as *const libc::c_char) != 0 {
                 return Err(io::Error::last_os_error())
             }
         } else {
-            if libc::link(old_path.as_ptr(), new_path.as_ptr()) != 0 {
+            if libc::link(old_path.as_ptr() as *const libc::c_char,
+                          new_path.as_ptr() as *const libc::c_char) != 0 {
                 return Err(io::Error::last_os_error());
             }
             // Ignore unlink errors. Can we do better?
             // On recent linux, we can use renameat2 to do this atomically.
-            let _ = libc::unlink(old_path.as_ptr());
+            let _ = libc::unlink(old_path.as_ptr() as *const libc::c_char);
         }
         Ok(())
     }
