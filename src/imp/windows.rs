@@ -8,11 +8,14 @@ use winapi::{self, DWORD, HANDLE};
 use kernel32::{CreateFileW, ReOpenFile, SetFileAttributesW, MoveFileExW};
 use util;
 
+#[cfg_attr(irustfmt, rustfmt_skip)]
 const ACCESS: DWORD     = winapi::FILE_GENERIC_READ
                         | winapi::FILE_GENERIC_WRITE;
+#[cfg_attr(irustfmt, rustfmt_skip)]
 const SHARE_MODE: DWORD = winapi::FILE_SHARE_DELETE
                         | winapi::FILE_SHARE_READ
                         | winapi::FILE_SHARE_WRITE;
+#[cfg_attr(irustfmt, rustfmt_skip)]
 const FLAGS: DWORD      = winapi::FILE_ATTRIBUTE_HIDDEN
                         | winapi::FILE_ATTRIBUTE_TEMPORARY;
 
@@ -22,21 +25,21 @@ fn to_utf16(s: &Path) -> Vec<u16> {
 }
 
 fn win_create(path: &Path,
-                     access: DWORD,
-                     share_mode: DWORD,
-                     disp: DWORD,
-                     flags: DWORD) -> io::Result<File> {
+              access: DWORD,
+              share_mode: DWORD,
+              disp: DWORD,
+              flags: DWORD)
+              -> io::Result<File> {
 
     let path = to_utf16(path);
     let handle = unsafe {
-        CreateFileW(
-            path.as_ptr(),
-            access,
-            share_mode,
-            0 as *mut _,
-            disp,
-            flags,
-            ptr::null_mut())
+        CreateFileW(path.as_ptr(),
+                    access,
+                    share_mode,
+                    0 as *mut _,
+                    disp,
+                    flags,
+                    ptr::null_mut())
     };
     if handle == winapi::INVALID_HANDLE_VALUE {
         Err(io::Error::last_os_error())
@@ -51,13 +54,11 @@ pub fn create_named(path: &Path) -> io::Result<File> {
 
 pub fn create(dir: &Path) -> io::Result<File> {
     for _ in 0..::NUM_RETRIES {
-        return match win_create(
-            &dir.join(&util::tmpname(".tmp", "", ::NUM_RAND_CHARS)),
-            ACCESS,
-            0, // Exclusive
-            winapi::CREATE_NEW,
-            FLAGS | winapi::FILE_FLAG_DELETE_ON_CLOSE)
-        {
+        return match win_create(&dir.join(&util::tmpname(".tmp", "", ::NUM_RAND_CHARS)),
+                                ACCESS,
+                                0, // Exclusive
+                                winapi::CREATE_NEW,
+                                FLAGS | winapi::FILE_FLAG_DELETE_ON_CLOSE) {
             Ok(f) => Ok(f),
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(e) => Err(e),

@@ -38,5 +38,5 @@ mod imp;
 mod named;
 mod unnamed;
 
-pub use ::named::{NamedTempFile, NamedTempFileOptions};
-pub use ::unnamed::{tempfile, tempfile_in};
+pub use named::{NamedTempFile, NamedTempFileOptions};
+pub use unnamed::{tempfile, tempfile_in};

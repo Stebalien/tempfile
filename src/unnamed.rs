@@ -29,4 +29,3 @@ pub fn tempfile() -> io::Result<File> {
 pub fn tempfile_in<P: AsRef<Path>>(dir: P) -> io::Result<File> {
     imp::create(dir.as_ref())
 }
-

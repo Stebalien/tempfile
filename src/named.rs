@@ -158,7 +158,12 @@ impl NamedTempFile {
     pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
         match imp::persist(&self.inner().path, new_path.as_ref(), true) {
             Ok(_) => Ok(self.0.take().unwrap().file),
-            Err(e) => Err(PersistError { file: self, error: e }),
+            Err(e) => {
+                Err(PersistError {
+                    file: self,
+                    error: e,
+                })
+            }
         }
     }
 
@@ -177,7 +182,12 @@ impl NamedTempFile {
     pub fn persist_noclobber<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
         match imp::persist(&self.inner().path, new_path.as_ref(), false) {
             Ok(_) => Ok(self.0.take().unwrap().file),
-            Err(e) => Err(PersistError { file: self, error: e }),
+            Err(e) => {
+                Err(PersistError {
+                    file: self,
+                    error: e,
+                })
+            }
         }
     }
 
@@ -261,10 +271,10 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
 /// assert_eq!(name.len(), "hogehoge.rs".len() + 5);
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct NamedTempFileOptions<'a , 'b> {
+pub struct NamedTempFileOptions<'a, 'b> {
     random_len: usize,
     prefix: &'a str,
-    suffix: &'b str
+    suffix: &'b str,
 }
 
 impl<'a, 'b> NamedTempFileOptions<'a, 'b> {
@@ -273,7 +283,7 @@ impl<'a, 'b> NamedTempFileOptions<'a, 'b> {
         NamedTempFileOptions {
             random_len: ::NUM_RAND_CHARS,
             prefix: ".tmp",
-            suffix: ""
+            suffix: "",
         }
     }
 
@@ -313,10 +323,15 @@ impl<'a, 'b> NamedTempFileOptions<'a, 'b> {
         for _ in 0..::NUM_RETRIES {
             let path = dir.as_ref().join(util::tmpname(self.prefix, self.suffix, self.random_len));
             return match imp::create_named(&path) {
-                Ok(file) => Ok(NamedTempFile(Some(NamedTempFileInner { path: path, file: file, }))),
+                Ok(file) => {
+                    Ok(NamedTempFile(Some(NamedTempFileInner {
+                        path: path,
+                        file: file,
+                    })))
+                }
                 Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
                 Err(e) => Err(e),
-            }
+            };
         }
         Err(io::Error::new(io::ErrorKind::AlreadyExists,
                            "too many temporary files exist"))

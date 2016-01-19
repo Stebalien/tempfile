@@ -11,17 +11,16 @@ use util;
 // Stolen from std.
 pub fn cstr(path: &Path) -> io::Result<CString> {
     // TODO: Use OsStr::to_cstring (convert)
-    CString::new(path.as_os_str().as_bytes()).map_err(|_|
-        io::Error::new(io::ErrorKind::InvalidInput, "path contained a null"))
+    CString::new(path.as_os_str().as_bytes())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "path contained a null"))
 }
 
 pub fn create_named(path: &Path) -> io::Result<File> {
     unsafe {
         let path = try!(cstr(path));
-        match libc::open(
-            path.as_ptr() as *const libc::c_char,
-            O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
-            0o600) {
+        match libc::open(path.as_ptr() as *const libc::c_char,
+                         O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
+                         0o600) {
             -1 => Err(io::Error::last_os_error()),
             fd => Ok(FromRawFd::from_raw_fd(fd)),
         }
@@ -33,10 +32,9 @@ pub fn create(dir: &Path) -> io::Result<File> {
     const O_TMPFILE: libc::c_int = 0o20200000;
     match unsafe {
         let path = try!(cstr(dir));
-        libc::open(
-            path.as_ptr() as *const libc::c_char,
-            O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR,
-            0o600)
+        libc::open(path.as_ptr() as *const libc::c_char,
+                   O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR,
+                   0o600)
     } {
         -1 => create_unix(dir),
         fd => Ok(unsafe { FromRawFd::from_raw_fd(fd) }),
@@ -57,10 +55,10 @@ fn create_unix(dir: &Path) -> io::Result<File> {
                 // didn't really fail...
                 let _ = fs::remove_file(tmp_path);
                 Ok(file)
-            },
+            }
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(e) => Err(e),
-        }
+        };
     }
     Err(io::Error::new(io::ErrorKind::AlreadyExists,
                        "too many temporary directories already exist"))
@@ -80,9 +78,9 @@ pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
     unsafe {
         let old_meta = try!(stat(file.as_raw_fd()));
         let new_meta = try!(stat(new_file.as_raw_fd()));
-        if old_meta.st_dev != new_meta.st_dev ||
-           old_meta.st_ino != new_meta.st_ino {
-            return Err(io::Error::new(io::ErrorKind::NotFound, "original tempfile has been replaced"));
+        if old_meta.st_dev != new_meta.st_dev || old_meta.st_ino != new_meta.st_ino {
+            return Err(io::Error::new(io::ErrorKind::NotFound,
+                                      "original tempfile has been replaced"));
         }
         Ok(new_file)
     }
@@ -95,7 +93,7 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
         if overwrite {
             if libc::rename(old_path.as_ptr() as *const libc::c_char,
                             new_path.as_ptr() as *const libc::c_char) != 0 {
-                return Err(io::Error::last_os_error())
+                return Err(io::Error::last_os_error());
             }
         } else {
             if libc::link(old_path.as_ptr() as *const libc::c_char,
