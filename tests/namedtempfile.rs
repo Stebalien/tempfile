@@ -85,11 +85,11 @@ fn test_persist_noclobber() {
 #[test]
 fn test_customnamed() {
     let tmpfile = NamedTempFileOptions::new()
-        .prefix("tmp")
-        .suffix(&".rs".to_string())
-        .rand_bytes(12)
-        .create()
-        .unwrap();
+                      .prefix("tmp")
+                      .suffix(&".rs".to_string())
+                      .rand_bytes(12)
+                      .create()
+                      .unwrap();
     let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
     assert!(name.starts_with(("tmp")));
     assert!(name.ends_with(".rs"));
