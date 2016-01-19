@@ -252,7 +252,13 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
 ///                         .rand_bytes(5)
 ///                         .create()
 ///                         .unwrap();
-/// println!("{:?}", named_temp_file);        //Something like "NamedTempFile(\"/tmp/hogehoge65R8Y.rs\")"
+/// let name = named_temp_file.path()
+///   .file_name().unwrap()
+///   .to_str().unwrap();
+///
+/// assert!(name.starts_with("hogehoge"));
+/// assert!(name.ends_with(".rs"));
+/// assert_eq!(name.len(), "hogehoge.rs".len() + 5);
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct NamedTempFileOptions<'a , 'b> {
