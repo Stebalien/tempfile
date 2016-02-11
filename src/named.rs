@@ -14,11 +14,15 @@ use super::imp;
 ///
 /// This variant is *NOT* secure/reliable in the presence of a pathological temporary file cleaner.
 ///
-/// NamedTempFiles are deleted on drop. As rust doesn't guarantee that a struct will ever be
+/// `NamedTempFiles` are deleted on drop. As rust doesn't guarantee that a struct will ever be
 /// dropped, these temporary files will not be deleted on abort, resource leak, early exit, etc.
 ///
-/// Please use TempFile unless you absolutely need a named file.
+/// Please use `TempFile` unless you absolutely need a named file.
 ///
+/// Note: To convert a `NamedTempFile` into a normal temporary file, use the
+/// provided conversion: `let my_file: File = my_temp_file.into();`. The file
+/// will be automatically deleted on close. However, if you do this, the file's
+/// path will no longer be valid.
 pub struct NamedTempFile(Option<NamedTempFileInner>);
 
 impl AsRef<File> for NamedTempFile {
@@ -211,6 +215,14 @@ impl NamedTempFile {
     /// nameable.
     pub fn reopen(&self) -> io::Result<File> {
         imp::reopen(&self, self.path())
+    }
+}
+
+impl From<NamedTempFile> for File {
+    fn from(mut f: NamedTempFile) -> File {
+        let NamedTempFileInner { path, file } = f.0.take().unwrap();
+        let _ = fs::remove_file(path);
+        file
     }
 }
 

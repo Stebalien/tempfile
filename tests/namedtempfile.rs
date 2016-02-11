@@ -109,3 +109,19 @@ fn test_reopen() {
     second.read_to_string(&mut buf).unwrap();
     assert_eq!("abcde", buf);
 }
+
+#[test]
+fn test_to_file() {
+    let mut file = NamedTempFile::new().unwrap();
+    let path = file.path().to_owned();
+    write!(file, "abcde").expect("write failed");
+
+    assert!(path.exists());
+    let mut file: File = file.into();
+    assert!(!path.exists());
+
+    file.seek(SeekFrom::Start(0)).unwrap();
+    let mut buf = String::new();
+    file.read_to_string(&mut buf).unwrap();
+    assert_eq!("abcde", buf);
+}
