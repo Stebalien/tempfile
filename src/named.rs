@@ -21,6 +21,18 @@ use super::imp;
 ///
 pub struct NamedTempFile(Option<NamedTempFileInner>);
 
+impl AsRef<File> for NamedTempFile {
+    fn as_ref(&self) -> &File {
+        self
+    }
+}
+
+impl AsMut<File> for NamedTempFile {
+    fn as_mut(&mut self) -> &mut File {
+        self
+    }
+}
+
 struct NamedTempFileInner {
     file: File,
     path: PathBuf,
