@@ -21,6 +21,10 @@
 //! `tempfile()` doesn't rely on file paths so this isn't an issue. However, `NamedTempFile` does
 //! rely on file paths.
 //!
+
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
+
 extern crate libc;
 extern crate rand;
 

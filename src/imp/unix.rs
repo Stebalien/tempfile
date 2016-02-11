@@ -1,4 +1,4 @@
-use libc::{self, c_int, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
+use libc::{self, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
 use libc::stat as stat_t;
 use std::os::unix::ffi::OsStrExt;
 use std::ffi::CString;
