@@ -1,5 +1,4 @@
-use libc::{self, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
-use libc::stat as stat_t;
+use libc::{rename, link, unlink, c_char, c_int, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
 use std::os::unix::ffi::OsStrExt;
 use std::ffi::CString;
 use std::io;
@@ -7,6 +6,20 @@ use std::os::unix::io::{RawFd, FromRawFd, AsRawFd};
 use std::fs::{self, File, OpenOptions};
 use std::path::Path;
 use util;
+
+#[cfg(target_os = "linux")]
+use libc::open64 as open;
+#[cfg(target_os = "linux")]
+use libc::fstat64 as fstat;
+#[cfg(target_os = "linux")]
+use libc::stat64 as stat_t;
+
+#[cfg(not(target_os = "linux"))]
+use libc::open as open;
+#[cfg(not(target_os = "linux"))]
+use libc::fstat as fstat;
+#[cfg(not(target_os = "linux"))]
+use libc::stat as stat_t;
 
 // Stolen from std.
 pub fn cstr(path: &Path) -> io::Result<CString> {
@@ -18,7 +31,7 @@ pub fn cstr(path: &Path) -> io::Result<CString> {
 pub fn create_named(path: &Path) -> io::Result<File> {
     unsafe {
         let path = try!(cstr(path));
-        match libc::open(path.as_ptr() as *const libc::c_char,
+        match open(path.as_ptr() as *const c_char,
                          O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
                          0o600) {
             -1 => Err(io::Error::last_os_error()),
@@ -29,10 +42,10 @@ pub fn create_named(path: &Path) -> io::Result<File> {
 
 #[cfg(target_os = "linux")]
 pub fn create(dir: &Path) -> io::Result<File> {
-    const O_TMPFILE: libc::c_int = 0o20200000;
+    const O_TMPFILE: c_int = 0o20200000;
     match unsafe {
         let path = try!(cstr(dir));
-        libc::open(path.as_ptr() as *const libc::c_char,
+        open(path.as_ptr() as *const c_char,
                    O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR,
                    0o600)
     } {
@@ -66,7 +79,7 @@ fn create_unix(dir: &Path) -> io::Result<File> {
 
 unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {
     let mut meta: stat_t = ::std::mem::zeroed();
-    if libc::fstat(fd, &mut meta as *mut stat_t) != 0 {
+    if fstat(fd, &mut meta as *mut stat_t) != 0 {
         Err(io::Error::last_os_error())
     } else {
         Ok(meta)
@@ -91,18 +104,18 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
         let old_path = try!(cstr(old_path));
         let new_path = try!(cstr(new_path));
         if overwrite {
-            if libc::rename(old_path.as_ptr() as *const libc::c_char,
-                            new_path.as_ptr() as *const libc::c_char) != 0 {
+            if rename(old_path.as_ptr() as *const c_char,
+                      new_path.as_ptr() as *const c_char) != 0 {
                 return Err(io::Error::last_os_error());
             }
         } else {
-            if libc::link(old_path.as_ptr() as *const libc::c_char,
-                          new_path.as_ptr() as *const libc::c_char) != 0 {
+            if link(old_path.as_ptr() as *const c_char,
+                    new_path.as_ptr() as *const c_char) != 0 {
                 return Err(io::Error::last_os_error());
             }
             // Ignore unlink errors. Can we do better?
             // On recent linux, we can use renameat2 to do this atomically.
-            let _ = libc::unlink(old_path.as_ptr() as *const libc::c_char);
+            let _ = unlink(old_path.as_ptr() as *const c_char);
         }
         Ok(())
     }
