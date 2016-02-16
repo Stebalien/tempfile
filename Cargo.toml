@@ -10,6 +10,8 @@ homepage = "http://stebalien.com/projects/tempfile-rs"
 keywords = ["tempfile", "tmpfile"]
 license = "MIT/Apache-2.0"
 
+build = "build.rs"
+
 [dependencies]
 libc = "0.2"
 rand = "0.3"
@@ -22,3 +24,6 @@ optional = true
 
 [features]
 default=[]
+
+[build-dependencies]
+rustc_version = "0.1.4"

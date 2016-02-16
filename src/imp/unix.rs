@@ -7,18 +7,18 @@ use std::fs::{self, File, OpenOptions};
 use std::path::Path;
 use util;
 
-#[cfg(target_os = "linux")]
+#[cfg(all(lfs_support, target_os = "linux"))]
 use libc::open64 as open;
-#[cfg(target_os = "linux")]
+#[cfg(all(lfs_support, target_os = "linux"))]
 use libc::fstat64 as fstat;
-#[cfg(target_os = "linux")]
+#[cfg(all(lfs_support, target_os = "linux"))]
 use libc::stat64 as stat_t;
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(all(lfs_support, target_os = "linux")))]
 use libc::open as open;
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(all(lfs_support, target_os = "linux")))]
 use libc::fstat as fstat;
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(all(lfs_support, target_os = "linux")))]
 use libc::stat as stat_t;
 
 // Stolen from std.
