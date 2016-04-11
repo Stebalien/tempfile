@@ -241,6 +241,12 @@ impl Read for NamedTempFile {
     }
 }
 
+impl<'a> Read for &'a NamedTempFile {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        (&***self).read(buf)
+    }
+}
+
 impl Write for NamedTempFile {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         (**self).write(buf)
@@ -251,9 +257,25 @@ impl Write for NamedTempFile {
     }
 }
 
+impl<'a> Write for &'a NamedTempFile {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        (&***self).write(buf)
+    }
+    #[inline]
+    fn flush(&mut self) -> io::Result<()> {
+        (&***self).flush()
+    }
+}
+
 impl Seek for NamedTempFile {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         (**self).seek(pos)
+    }
+}
+
+impl<'a> Seek for &'a NamedTempFile {
+    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        (&***self).seek(pos)
     }
 }
 

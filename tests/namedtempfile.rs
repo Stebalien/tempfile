@@ -125,3 +125,14 @@ fn test_to_file() {
     file.read_to_string(&mut buf).unwrap();
     assert_eq!("abcde", buf);
 }
+
+
+#[test]
+fn test_immut() {
+    let tmpfile = NamedTempFile::new().unwrap();
+    (&tmpfile).write_all(b"abcde").unwrap();
+    (&tmpfile).seek(SeekFrom::Start(0)).unwrap();
+    let mut buf = String::new();
+    (&tmpfile).read_to_string(&mut buf).unwrap();
+    assert_eq!("abcde", buf);
+}
