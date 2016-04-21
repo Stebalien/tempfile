@@ -42,5 +42,5 @@ mod imp;
 mod named;
 mod unnamed;
 
-pub use named::{NamedTempFile, NamedTempFileOptions};
+pub use named::{NamedTempFile, NamedTempFileOptions, PersistError};
 pub use unnamed::{tempfile, tempfile_in};
