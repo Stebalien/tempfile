@@ -214,7 +214,7 @@ impl NamedTempFile {
     /// returned by this function; the `File`s will remain usable. However, they may not be
     /// nameable.
     pub fn reopen(&self) -> io::Result<File> {
-        imp::reopen(&self, self.path())
+        imp::reopen(self, self.path())
     }
 }
 
