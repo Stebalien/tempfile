@@ -5,6 +5,15 @@
 //! `File` objects and `NamedTempFile`. When choosing between the variants, prefer `tempfile()`
 //! unless you either need to know the file's path or to be able to persist it.
 //!
+//! # Example
+//!
+//! ```
+//! use tempfile::tempfile;
+//! use std::fs::File;
+//!
+//! let mut file: File = tempfile().expect("failed to create temporary file");
+//! ```
+//!
 //! # Differences
 //!
 //! ## Resource Leaking
