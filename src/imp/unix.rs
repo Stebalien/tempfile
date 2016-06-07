@@ -15,9 +15,9 @@ use libc::fstat64 as fstat;
 use libc::stat64 as stat_t;
 
 #[cfg(not(all(lfs_support, target_os = "linux")))]
-use libc::open as open;
+use libc::open;
 #[cfg(not(all(lfs_support, target_os = "linux")))]
-use libc::fstat as fstat;
+use libc::fstat;
 #[cfg(not(all(lfs_support, target_os = "linux")))]
 use libc::stat as stat_t;
 
@@ -32,8 +32,8 @@ pub fn create_named(path: &Path) -> io::Result<File> {
     unsafe {
         let path = try!(cstr(path));
         match open(path.as_ptr() as *const c_char,
-                         O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
-                         0o600) {
+                   O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
+                   0o600) {
             -1 => Err(io::Error::last_os_error()),
             fd => Ok(FromRawFd::from_raw_fd(fd)),
         }
@@ -46,8 +46,8 @@ pub fn create(dir: &Path) -> io::Result<File> {
     match unsafe {
         let path = try!(cstr(dir));
         open(path.as_ptr() as *const c_char,
-                   O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR,
-                   0o600)
+             O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR,
+             0o600)
     } {
         -1 => create_unix(dir),
         fd => Ok(unsafe { FromRawFd::from_raw_fd(fd) }),
