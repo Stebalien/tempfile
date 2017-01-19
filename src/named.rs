@@ -120,18 +120,24 @@ impl NamedTempFile {
     /// delete your file.
     ///
     /// Reasons to use this method:
-    ///   1. The file has a short lifetime and your temporary file cleaner is sane (doesn't delete
-    ///      recently accessed files).
+    ///
+    ///   1. The file has a short lifetime and your temporary file cleaner is
+    ///      sane (doesn't delete recently accessed files).
+    ///
     ///   2. You trust every user on your system (i.e. you are the only user).
-    ///   3. You have disabled your system's temporary file cleaner or verified that your system
-    ///      doesn't have a temporary file cleaner.
+    ///
+    ///   3. You have disabled your system's temporary file cleaner or verified
+    ///      that your system doesn't have a temporary file cleaner.
     ///
     /// Reasons not to use this method:
+    ///
     ///   1. You'll fix it later. No you won't.
-    ///   2. You don't care about the security of the temporary file. If none of the "reasons to
-    ///      use this method" apply, referring to a temporary file by name may allow an attacker
-    ///      to create/overwrite your non-temporary files. There are exceptions but if you don't
-    ///      already know them, don't use this method.
+    ///
+    ///   2. You don't care about the security of the temporary file. If none of
+    ///      the "reasons to use this method" apply, referring to a temporary
+    ///      file by name may allow an attacker to create/overwrite your
+    ///      non-temporary files. There are exceptions but if you don't already
+    ///      know them, don't use this method.
     pub fn new() -> io::Result<NamedTempFile> {
         NamedTempFileOptions::new().create()
     }
@@ -144,9 +150,9 @@ impl NamedTempFile {
 
     /// Get the temporary file's path.
     ///
-    /// *SECURITY WARNING:* Only use this method if you're positive that a temporary file cleaner
-    /// won't have deleted your file. Otherwise, the path returned by this method may refer to an
-    /// attacker controlled file.
+    /// *SECURITY WARNING:* Only use this method if you're positive that a
+    /// temporary file cleaner won't have deleted your file. Otherwise, the path
+    /// returned by this method may refer to an attacker controlled file.
     #[inline]
     pub fn path(&self) -> &Path {
         &self.inner().path
@@ -163,14 +169,15 @@ impl NamedTempFile {
 
     /// Persist the temporary file at the target path.
     ///
-    /// If a file exists at the target path, persist will atomically replace it. If this method
-    /// fails, it will return `self` in the resulting PersistError.
+    /// If a file exists at the target path, persist will atomically replace it.
+    /// If this method fails, it will return `self` in the resulting
+    /// PersistError.
     ///
     /// Note: Temporary files cannot be persisted across filesystems.
     ///
-    /// *SECURITY WARNING:* Only use this method if you're positive that a temporary file cleaner
-    /// won't have deleted your file. Otherwise, you might end up persisting an attacker controlled
-    /// file.
+    /// *SECURITY WARNING:* Only use this method if you're positive that a
+    /// temporary file cleaner won't have deleted your file. Otherwise, you
+    /// might end up persisting an attacker controlled file.
     pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
         match imp::persist(&self.inner().path, new_path.as_ref(), true) {
             Ok(_) => Ok(self.0.take().unwrap().file),
@@ -185,16 +192,16 @@ impl NamedTempFile {
 
     /// Persist the temporary file at the target path iff no file exists there.
     ///
-    /// If a file exists at the target path, fail. If this method fails, it will return `self` in
-    /// the resulting PersistError.
+    /// If a file exists at the target path, fail. If this method fails, it will
+    /// return `self` in the resulting PersistError.
     ///
-    /// Note: Temporary files cannot be persisted across filesystems.
-    /// Also Note: This method is not atomic. It can leave the original link to the temporary file
-    /// behind.
+    /// Note: Temporary files cannot be persisted across filesystems. Also Note:
+    /// This method is not atomic. It can leave the original link to the
+    /// temporary file behind.
     ///
-    /// *SECURITY WARNING:* Only use this method if you're positive that a temporary file cleaner
-    /// won't have deleted your file. Otherwise, you might end up persisting an attacker controlled
-    /// file.
+    /// *SECURITY WARNING:* Only use this method if you're positive that a
+    /// temporary file cleaner won't have deleted your file. Otherwise, you
+    /// might end up persisting an attacker controlled file.
     pub fn persist_noclobber<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
         match imp::persist(&self.inner().path, new_path.as_ref(), false) {
             Ok(_) => Ok(self.0.take().unwrap().file),
@@ -209,10 +216,10 @@ impl NamedTempFile {
 
     /// Reopen the temporary file.
     ///
-    /// This function is useful when you need multiple independent handles to the same file.
-    /// It's perfectly fine to drop the original `NamedTempFile` while holding on to `File`s
-    /// returned by this function; the `File`s will remain usable. However, they may not be
-    /// nameable.
+    /// This function is useful when you need multiple independent handles to
+    /// the same file. It's perfectly fine to drop the original `NamedTempFile`
+    /// while holding on to `File`s returned by this function; the `File`s will
+    /// remain usable. However, they may not be nameable.
     pub fn reopen(&self) -> io::Result<File> {
         imp::reopen(self, self.path())
     }

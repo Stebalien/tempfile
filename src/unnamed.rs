@@ -9,16 +9,22 @@ use super::imp;
 ///
 /// This method is secure/reliable in the presence of a pathological temporary file cleaner.
 ///
-/// Deletion:
+/// # Deletion:
 ///
-/// Linux >= 3.11: The temporary file is never linked into the filesystem so it can't be leaked.
+/// ## Linux >= 3.11**
 ///
-/// Other *nix: The temporary file is immediately unlinked on create. The OS will delete it when
-/// the last open copy of it is closed.
+/// The temporary file is never linked into the filesystem so it can't be leaked.
 ///
-/// Windows: The temporary file is marked `DeleteOnClose` and, again, will be deleted when the last
-/// open copy of it is closed. Unlike *nix operating systems, the file is not immediately unlinked
-/// from the filesystem.
+/// ## Other *nix
+///
+/// The temporary file is immediately unlinked on create. The OS will delete it
+/// when the last open copy of it is closed.
+///
+/// ## Windows
+///
+/// The temporary file is marked `DeleteOnClose` and, again, will be deleted
+/// when the last open copy of it is closed. Unlike *nix operating systems, the
+/// file is not immediately unlinked from the filesystem.
 pub fn tempfile() -> io::Result<File> {
     tempfile_in(&env::temp_dir())
 }
