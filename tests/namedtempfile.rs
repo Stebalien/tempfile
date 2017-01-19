@@ -91,7 +91,7 @@ fn test_customnamed() {
                       .create()
                       .unwrap();
     let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
-    assert!(name.starts_with(("tmp")));
+    assert!(name.starts_with("tmp"));
     assert!(name.ends_with(".rs"));
     assert_eq!(name.len(), 18);
 }
