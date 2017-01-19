@@ -31,8 +31,10 @@
 //! rely on file paths.
 //!
 
-extern crate libc;
 extern crate rand;
+
+#[cfg(unix)]
+extern crate libc;
 
 #[cfg(windows)]
 extern crate winapi;
