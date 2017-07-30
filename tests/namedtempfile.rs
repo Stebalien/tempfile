@@ -145,8 +145,9 @@ fn deleted_noclobber() {
     let tmp = NamedTempFile::new_deleted(&temp_dir).unwrap();
 
     // Will only actually be deleted on (modern) linux:
-    #[cfg(target_os = "linux")]
-    assert_eq!(0, fs::read_dir(&temp_dir).unwrap().count());
+    #[cfg(target_os = "linux")] {
+        assert_eq!(0, fs::read_dir(&temp_dir).unwrap().count());
+    }
 
     let dest = temp_dir.path().to_path_buf().join("foo");
 
