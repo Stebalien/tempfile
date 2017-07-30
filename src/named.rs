@@ -40,6 +40,7 @@ impl AsMut<File> for NamedTempFile {
 struct NamedTempFileInner {
     file: File,
     path: PathBuf,
+    deleted: bool,
 }
 
 impl fmt::Debug for NamedTempFile {
@@ -147,6 +148,14 @@ impl NamedTempFile {
         NamedTempFileOptions::new().create_in(dir)
     }
 
+    /// Create a new temporary file in the specified directory. The temporary file
+    /// may not have a name, but can still be persisted.
+    ///
+    /// When coupled with `persist_noclobber`, this has fewer security risks, and should have better
+    /// performance, on supported platforms.
+    pub fn new_deleted<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
+        NamedTempFileOptions::new().attempt_without_name().create_in(dir)
+    }
 
     /// Get the temporary file's path.
     ///
@@ -162,9 +171,12 @@ impl NamedTempFile {
     ///
     /// Use this if you want to detect errors in deleting the file.
     pub fn close(mut self) -> io::Result<()> {
-        let NamedTempFileInner { path, file } = self.0.take().unwrap();
+        let NamedTempFileInner { path, file, deleted } = self.0.take().unwrap();
         drop(file);
-        fs::remove_file(path)
+        if !deleted {
+            try!(fs::remove_file(path));
+        }
+        Ok(())
     }
 
     /// Persist the temporary file at the target path.
@@ -179,7 +191,7 @@ impl NamedTempFile {
     /// temporary file cleaner won't have deleted your file. Otherwise, you
     /// might end up persisting an attacker controlled file.
     pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
-        match imp::persist(&self.inner().path, new_path.as_ref(), true) {
+        match imp::persist(&self.inner().path, new_path.as_ref(), true, self.inner().deleted) {
             Ok(_) => Ok(self.0.take().unwrap().file),
             Err(e) => {
                 Err(PersistError {
@@ -203,7 +215,7 @@ impl NamedTempFile {
     /// temporary file cleaner won't have deleted your file. Otherwise, you
     /// might end up persisting an attacker controlled file.
     pub fn persist_noclobber<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
-        match imp::persist(&self.inner().path, new_path.as_ref(), false) {
+        match imp::persist(&self.inner().path, new_path.as_ref(), false, self.inner().deleted) {
             Ok(_) => Ok(self.0.take().unwrap().file),
             Err(e) => {
                 Err(PersistError {
@@ -227,17 +239,22 @@ impl NamedTempFile {
 
 impl From<NamedTempFile> for File {
     fn from(mut f: NamedTempFile) -> File {
-        let NamedTempFileInner { path, file } = f.0.take().unwrap();
-        let _ = fs::remove_file(path);
+        let NamedTempFileInner { path, file, deleted } = f.0.take().unwrap();
+        if !deleted {
+            let _ = fs::remove_file(path);
+        }
         file
     }
 }
 
 impl Drop for NamedTempFile {
     fn drop(&mut self) {
-        if let Some(NamedTempFileInner { file, path }) = self.0.take() {
+        if let Some(NamedTempFileInner { file, path, deleted }) = self.0.take() {
             drop(file);
-            let _ = fs::remove_file(path);
+
+            if !deleted {
+                let _ = fs::remove_file(path);
+            }
         }
     }
 }
@@ -328,6 +345,7 @@ pub struct NamedTempFileOptions<'a, 'b> {
     random_len: usize,
     prefix: &'a str,
     suffix: &'b str,
+    without_name: bool,
 }
 
 impl<'a, 'b> NamedTempFileOptions<'a, 'b> {
@@ -337,6 +355,7 @@ impl<'a, 'b> NamedTempFileOptions<'a, 'b> {
             random_len: ::NUM_RAND_CHARS,
             prefix: ".tmp",
             suffix: "",
+            without_name: false,
         }
     }
 
@@ -366,6 +385,18 @@ impl<'a, 'b> NamedTempFileOptions<'a, 'b> {
         self
     }
 
+    /// Try and create the file without a name.
+    ///
+    /// `persist_noclobber` will always function as expected, but `path()` may
+    /// return unexpected results. This may have better security and performance
+    /// properties on some platforms (e.g. Linux > 3.16).
+    ///
+    /// Default: false
+    pub fn attempt_without_name(&mut self) -> &mut Self {
+        self.without_name = true;
+        self
+    }
+
     /// Create the named temporary file.
     pub fn create(&self) -> io::Result<NamedTempFile> {
         self.create_in(&env::temp_dir())
@@ -373,6 +404,19 @@ impl<'a, 'b> NamedTempFileOptions<'a, 'b> {
 
     /// Create the named temporary file in the specified directory.
     pub fn create_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
+
+        #[cfg(target_os = "linux")] {
+            if self.without_name {
+                if let Ok((fd, file)) = imp::create_persistable(dir.as_ref()) {
+                    return Ok(NamedTempFile(Some(NamedTempFileInner {
+                        path: format!("/proc/self/fd/{}", fd).into(),
+                        file: file,
+                        deleted: true,
+                     })));
+                }
+            }
+        }
+
         for _ in 0..::NUM_RETRIES {
             let path = dir.as_ref().join(util::tmpname(self.prefix, self.suffix, self.random_len));
             return match imp::create_named(&path) {
@@ -380,6 +424,7 @@ impl<'a, 'b> NamedTempFileOptions<'a, 'b> {
                     Ok(NamedTempFile(Some(NamedTempFileInner {
                         path: path,
                         file: file,
+                        deleted: false,
                     })))
                 }
                 Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,

@@ -1,4 +1,4 @@
-use libc::{rename, link, unlink, c_char, c_int, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
+use libc::{rename, link, linkat, unlink, c_char, c_int, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
 use std::os::unix::ffi::OsStrExt;
 use std::ffi::CString;
 use std::io;
@@ -40,9 +40,10 @@ pub fn create_named(path: &Path) -> io::Result<File> {
     }
 }
 
+const O_TMPFILE: c_int = 0o20200000;
+
 #[cfg(target_os = "linux")]
 pub fn create(dir: &Path) -> io::Result<File> {
-    const O_TMPFILE: c_int = 0o20200000;
     match unsafe {
         let path = try!(cstr(dir));
         open(path.as_ptr() as *const c_char,
@@ -51,6 +52,19 @@ pub fn create(dir: &Path) -> io::Result<File> {
     } {
         -1 => create_unix(dir),
         fd => Ok(unsafe { FromRawFd::from_raw_fd(fd) }),
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub fn create_persistable(dir: &Path) -> io::Result<(c_int, File)> {
+    match unsafe {
+        let path = try!(cstr(dir));
+        open(path.as_ptr() as *const c_char,
+             O_CLOEXEC | O_TMPFILE | O_RDWR,
+             0o600)
+    } {
+        -1 => Err(io::ErrorKind::InvalidInput.into()),
+        fd => Ok(unsafe { (fd, FromRawFd::from_raw_fd(fd)) }),
     }
 }
 
@@ -99,18 +113,38 @@ pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
     }
 }
 
-pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
+pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool, deleted: bool) -> io::Result<()> {
     unsafe {
-        let old_path = try!(cstr(old_path));
-        let new_path = try!(cstr(new_path));
+        let mut old_path = try!(cstr(old_path));
+        let new_path_str = try!(cstr(new_path));
+
+        if deleted {
+            if overwrite {
+                // we can't rename the file directly into the right place, so we have to ...
+                // create a new named temporary file, then rename that. :/
+
+                let dir = if let Some(parent) = new_path.parent() {
+                    parent
+                } else {
+                    return Err(io::Error::new(io::ErrorKind::InvalidInput, "destination file must be in a directory"))
+                };
+
+                old_path = try!(create_named_link_in(&old_path, dir));
+                // fall through, and let the existing rename code handle this
+
+            } else {
+                return link_symlink_fd_at(&old_path, &new_path_str);
+            }
+        }
+
         if overwrite {
             if rename(old_path.as_ptr() as *const c_char,
-                      new_path.as_ptr() as *const c_char) != 0 {
+                      new_path_str.as_ptr() as *const c_char) != 0 {
                 return Err(io::Error::last_os_error());
             }
         } else {
             if link(old_path.as_ptr() as *const c_char,
-                    new_path.as_ptr() as *const c_char) != 0 {
+                    new_path_str.as_ptr() as *const c_char) != 0 {
                 return Err(io::Error::last_os_error());
             }
             // Ignore unlink errors. Can we do better?
@@ -119,4 +153,42 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
         }
         Ok(())
     }
+}
+
+/// Very much like creating a named temporary file, except `link_symlink_fd_at` is already
+/// atomic/exclusive.
+unsafe fn create_named_link_in(old_path: &CString, dir: &Path) -> io::Result<CString> {
+    for _ in 0..::NUM_RETRIES {
+        let path = dir.join(util::tmpname(".persist-", ".tmp", 6));
+        let new_path = try!(cstr(&path));
+        return match link_symlink_fd_at(&old_path, &new_path) {
+            Ok(()) => Ok(new_path),
+            Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(e) => Err(e),
+        }
+    }
+    Err(io::Error::new(io::ErrorKind::AlreadyExists,
+                       "too many temporary files exist"))
+}
+
+/// Attempt to link an old symlink to a file back into the filesystem.
+unsafe fn link_symlink_fd_at(old_path: &CString, new_path: &CString) -> io::Result<()> {
+    const AT_FDCWD: c_int = -100;
+    const AT_SYMLINK_FOLLOW: c_int = 0x400;
+
+    if linkat(AT_FDCWD,
+              old_path.as_ptr() as *const c_char,
+              AT_FDCWD,
+              new_path.as_ptr() as *const c_char,
+              AT_SYMLINK_FOLLOW) != 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
+}
+
+#[cfg(never)]
+unsafe fn renameat2(old_dir_fd: c_int, old_path: *const c_char, new_dir_fd: c_int, new_path: *const c_char, flags: c_uint) -> c_long {
+    use libc::{syscall, SYS_renameat2};
+    syscall(SYS_renameat2, old_dir_fd, old_path, new_dir_fd, new_path, flags)
 }

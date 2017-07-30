@@ -1,7 +1,9 @@
+extern crate tempdir;
 extern crate tempfile;
 use tempfile::{NamedTempFile, NamedTempFileOptions};
 use std::env;
 use std::io::{Write, Read, Seek, SeekFrom};
+use std::fs;
 use std::fs::File;
 use std::path::Path;
 
@@ -135,4 +137,30 @@ fn test_immut() {
     let mut buf = String::new();
     (&tmpfile).read_to_string(&mut buf).unwrap();
     assert_eq!("abcde", buf);
+}
+
+#[test]
+fn deleted_noclobber() {
+    let temp_dir = tempdir::TempDir::new("tempfile-deleted").unwrap();
+    let tmp = NamedTempFile::new_deleted(&temp_dir).unwrap();
+
+    // Will only actually be deleted on (modern) linux:
+    #[cfg(target_os = "linux")]
+    assert_eq!(0, fs::read_dir(&temp_dir).unwrap().count());
+
+    let dest = temp_dir.path().to_path_buf().join("foo");
+
+    tmp.persist_noclobber(&dest).unwrap();
+    assert!(dest.exists());
+}
+
+#[test]
+fn deleted() {
+    let temp_dir = tempdir::TempDir::new("tempfile-deleted").unwrap();
+    let tmp = NamedTempFile::new_deleted(&temp_dir).unwrap();
+
+    let dest = temp_dir.path().join("foo");
+
+    tmp.persist(&dest).unwrap();
+    assert!(dest.exists());
 }

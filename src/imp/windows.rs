@@ -80,9 +80,13 @@ pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
     }
 }
 
-pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
+pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool, deleted: bool) -> io::Result<()> {
     // TODO: We should probably do this in one-shot using SetFileInformationByHandle but the API is
     // really painful.
+
+    if deleted {
+        return Err(io::Error::new(io::ErrorKind::Other, "can't persist deleted temp files on this platform"));
+    }
 
     unsafe {
         let old_path_w = to_utf16(old_path);
