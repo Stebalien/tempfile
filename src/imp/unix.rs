@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "redox"))]
 use libc::{rename, link, unlink, c_char, c_int, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
 use std::os::unix::ffi::OsStrExt;
 use std::ffi::CString;
@@ -8,18 +9,27 @@ use std::path::Path;
 use util;
 
 #[cfg(all(lfs_support, target_os = "linux"))]
-use libc::open64 as open;
-#[cfg(all(lfs_support, target_os = "linux"))]
-use libc::fstat64 as fstat;
-#[cfg(all(lfs_support, target_os = "linux"))]
-use libc::stat64 as stat_t;
+use libc::{open64 as open, fstat64 as fstat, stat64 as stat_t};
 
-#[cfg(not(all(lfs_support, target_os = "linux")))]
-use libc::open;
-#[cfg(not(all(lfs_support, target_os = "linux")))]
-use libc::fstat;
-#[cfg(not(all(lfs_support, target_os = "linux")))]
-use libc::stat as stat_t;
+#[cfg(not(any(all(lfs_support, target_os = "linux"), target_os = "redox")))]
+use libc::{open, fstat, stat as stat_t};
+
+#[cfg(target_os = "redox")]
+use syscall::{self, open, fstat, Stat as stat_t, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
+
+#[cfg(not(target_os = "redox"))]
+pub fn cvt_err(result: c_int) -> io::Result<c_int> {
+    if result == -1 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(result)
+    }
+}
+
+#[cfg(target_os = "redox")]
+pub fn cvt_err(result: Result<usize, syscall::Error>) -> io::Result<usize> {
+    result.map_err(|err| io::Error::from_raw_os_error(err.errno))
+}
 
 // Stolen from std.
 pub fn cstr(path: &Path) -> io::Result<CString> {
@@ -28,15 +38,23 @@ pub fn cstr(path: &Path) -> io::Result<CString> {
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "path contained a null"))
 }
 
+#[cfg(not(target_os = "redox"))]
 pub fn create_named(path: &Path) -> io::Result<File> {
     unsafe {
         let path = try!(cstr(path));
-        match open(path.as_ptr() as *const c_char,
-                   O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
-                   0o600) {
-            -1 => Err(io::Error::last_os_error()),
-            fd => Ok(FromRawFd::from_raw_fd(fd)),
-        }
+        let fd = try!(cvt_err(open(path.as_ptr() as *const c_char,
+                                   O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
+                                   0o600)));
+        Ok(FromRawFd::from_raw_fd(fd))
+    }
+}
+
+#[cfg(target_os = "redox")]
+pub fn create_named(path: &Path) -> io::Result<File> {
+    unsafe {
+        let fd = try!(cvt_err(open(path.as_os_str().as_bytes(),
+                                   O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT | 0o600)));
+        Ok(FromRawFd::from_raw_fd(fd))
     }
 }
 
@@ -79,11 +97,8 @@ fn create_unix(dir: &Path) -> io::Result<File> {
 
 unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {
     let mut meta: stat_t = ::std::mem::zeroed();
-    if fstat(fd, &mut meta as *mut stat_t) != 0 {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(meta)
-    }
+    try!(cvt_err(fstat(fd, &mut meta)));
+    Ok(meta)
 }
 
 pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
@@ -99,24 +114,30 @@ pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
     }
 }
 
+#[cfg(not(target_os = "redox"))]
 pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
     unsafe {
         let old_path = try!(cstr(old_path));
         let new_path = try!(cstr(new_path));
         if overwrite {
-            if rename(old_path.as_ptr() as *const c_char,
-                      new_path.as_ptr() as *const c_char) != 0 {
-                return Err(io::Error::last_os_error());
-            }
+            try!(cvt_err(rename(old_path.as_ptr() as *const c_char,
+                                new_path.as_ptr() as *const c_char)));
         } else {
-            if link(old_path.as_ptr() as *const c_char,
-                    new_path.as_ptr() as *const c_char) != 0 {
-                return Err(io::Error::last_os_error());
-            }
+            try!(cvt_err(link(old_path.as_ptr() as *const c_char,
+                              new_path.as_ptr() as *const c_char)));
             // Ignore unlink errors. Can we do better?
             // On recent linux, we can use renameat2 to do this atomically.
             let _ = unlink(old_path.as_ptr() as *const c_char);
         }
         Ok(())
     }
+}
+
+#[cfg(target_os = "redox")]
+pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
+    // XXX implement in better way when possible
+    if !overwrite && new_path.exists() {
+        return Err(io::Error::new(io::ErrorKind::AlreadyExists, "destination exists"));
+    }
+    fs::rename(old_path, new_path)
 }
