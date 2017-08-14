@@ -18,6 +18,7 @@ use libc::{open, fstat, stat as stat_t};
 use syscall::{self, open, fstat, Stat as stat_t, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
 
 #[cfg(not(target_os = "redox"))]
+#[inline(always)]
 pub fn cvt_err(result: c_int) -> io::Result<c_int> {
     if result == -1 {
         Err(io::Error::last_os_error())
@@ -27,6 +28,7 @@ pub fn cvt_err(result: c_int) -> io::Result<c_int> {
 }
 
 #[cfg(target_os = "redox")]
+#[inline(always)]
 pub fn cvt_err(result: Result<usize, syscall::Error>) -> io::Result<usize> {
     result.map_err(|err| io::Error::from_raw_os_error(err.errno))
 }
