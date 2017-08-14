@@ -135,9 +135,6 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
 
 #[cfg(target_os = "redox")]
 pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
-    // XXX implement in better way when possible
-    if !overwrite && new_path.exists() {
-        return Err(io::Error::new(io::ErrorKind::AlreadyExists, "destination exists"));
-    }
-    fs::rename(old_path, new_path)
+    // XXX implement when possible
+    Err(io::Error::from_raw_os_error(syscall::ENOSYS))
 }
