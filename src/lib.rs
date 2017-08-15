@@ -42,6 +42,9 @@ extern crate winapi;
 #[cfg(windows)]
 extern crate kernel32;
 
+#[cfg(target_os = "redox")]
+extern crate syscall;
+
 const NUM_RETRIES: u32 = 1 << 31;
 const NUM_RAND_CHARS: usize = 6;
 
