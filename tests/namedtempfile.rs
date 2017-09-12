@@ -1,5 +1,5 @@
 extern crate tempfile;
-use tempfile::{NamedTempFile, NamedTempFileOptions};
+use tempfile::{NamedTempFile, NamedTempFileBuilder};
 use std::env;
 use std::io::{Write, Read, Seek, SeekFrom};
 use std::fs::File;
@@ -84,7 +84,7 @@ fn test_persist_noclobber() {
 
 #[test]
 fn test_customnamed() {
-    let tmpfile = NamedTempFileOptions::new()
+    let tmpfile = NamedTempFileBuilder::new()
         .prefix("tmp")
         .suffix(&".rs".to_string())
         .rand_bytes(12)
@@ -111,13 +111,13 @@ fn test_reopen() {
 }
 
 #[test]
-fn test_to_file() {
+fn test_into_file() {
     let mut file = NamedTempFile::new().unwrap();
     let path = file.path().to_owned();
     write!(file, "abcde").expect("write failed");
 
     assert!(path.exists());
-    let mut file: File = file.into();
+    let mut file = file.into_file();
     assert!(!path.exists());
 
     file.seek(SeekFrom::Start(0)).unwrap();
