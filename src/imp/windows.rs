@@ -4,20 +4,28 @@ use std::path::Path;
 use std::io;
 use std::ptr;
 use std::fs::File;
-use winapi::{self, DWORD, HANDLE};
-use kernel32::{CreateFileW, ReOpenFile, SetFileAttributesW, MoveFileExW};
+
+use winapi::shared::minwindef::DWORD;
+use winapi::um::fileapi::{CreateFileW, SetFileAttributesW, CREATE_NEW};
+use winapi::um::handleapi::INVALID_HANDLE_VALUE;
+use winapi::um::winbase::{MOVEFILE_REPLACE_EXISTING, FILE_FLAG_DELETE_ON_CLOSE};
+use winapi::um::winbase::{ReOpenFile, MoveFileExW};
+use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY, FILE_ATTRIBUTE_HIDDEN};
+use winapi::um::winnt::{FILE_GENERIC_WRITE, FILE_GENERIC_READ, HANDLE};
+use winapi::um::winnt::{FILE_SHARE_READ, FILE_SHARE_DELETE, FILE_SHARE_WRITE};
+
 use util;
 
 #[cfg_attr(irustfmt, rustfmt_skip)]
-const ACCESS: DWORD     = winapi::FILE_GENERIC_READ
-                        | winapi::FILE_GENERIC_WRITE;
+const ACCESS: DWORD     = FILE_GENERIC_READ
+                        | FILE_GENERIC_WRITE;
 #[cfg_attr(irustfmt, rustfmt_skip)]
-const SHARE_MODE: DWORD = winapi::FILE_SHARE_DELETE
-                        | winapi::FILE_SHARE_READ
-                        | winapi::FILE_SHARE_WRITE;
+const SHARE_MODE: DWORD = FILE_SHARE_DELETE
+                        | FILE_SHARE_READ
+                        | FILE_SHARE_WRITE;
 #[cfg_attr(irustfmt, rustfmt_skip)]
-const FLAGS: DWORD      = winapi::FILE_ATTRIBUTE_HIDDEN
-                        | winapi::FILE_ATTRIBUTE_TEMPORARY;
+const FLAGS: DWORD      = FILE_ATTRIBUTE_HIDDEN
+                        | FILE_ATTRIBUTE_TEMPORARY;
 
 
 fn to_utf16(s: &Path) -> Vec<u16> {
@@ -41,7 +49,7 @@ fn win_create(path: &Path,
                     flags,
                     ptr::null_mut())
     };
-    if handle == winapi::INVALID_HANDLE_VALUE {
+    if handle == INVALID_HANDLE_VALUE {
         Err(io::Error::last_os_error())
     } else {
         Ok(unsafe { File::from_raw_handle(handle as RawHandle) })
@@ -49,7 +57,7 @@ fn win_create(path: &Path,
 }
 
 pub fn create_named(path: &Path) -> io::Result<File> {
-    win_create(path, ACCESS, SHARE_MODE, winapi::CREATE_NEW, FLAGS)
+    win_create(path, ACCESS, SHARE_MODE, CREATE_NEW, FLAGS)
 }
 
 pub fn create(dir: &Path) -> io::Result<File> {
@@ -57,8 +65,8 @@ pub fn create(dir: &Path) -> io::Result<File> {
         return match win_create(&dir.join(&util::tmpname(".tmp", "", ::NUM_RAND_CHARS)),
                                 ACCESS,
                                 0, // Exclusive
-                                winapi::CREATE_NEW,
-                                FLAGS | winapi::FILE_FLAG_DELETE_ON_CLOSE) {
+                                CREATE_NEW,
+                                FLAGS | FILE_FLAG_DELETE_ON_CLOSE) {
             Ok(f) => Ok(f),
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(e) => Err(e),
@@ -72,7 +80,7 @@ pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
     let handle = file.as_raw_handle();
     unsafe {
         let handle = ReOpenFile(handle as HANDLE, ACCESS, SHARE_MODE, 0);
-        if handle == winapi::INVALID_HANDLE_VALUE {
+        if handle == INVALID_HANDLE_VALUE {
             Err(io::Error::last_os_error())
         } else {
             Ok(FromRawHandle::from_raw_handle(handle as RawHandle))
@@ -90,14 +98,14 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
 
         // Don't succeed if this fails. We don't want to claim to have successfully persisted a file
         // still marked as temporary because this file won't have the same consistency guarantees.
-        if SetFileAttributesW(old_path_w.as_ptr(), winapi::FILE_ATTRIBUTE_NORMAL) == 0 {
+        if SetFileAttributesW(old_path_w.as_ptr(), FILE_ATTRIBUTE_NORMAL) == 0 {
             return Err(io::Error::last_os_error());
         }
 
         let mut flags = 0;
 
         if overwrite {
-            flags |= winapi::MOVEFILE_REPLACE_EXISTING;
+            flags |= MOVEFILE_REPLACE_EXISTING;
         }
 
         if MoveFileExW(old_path_w.as_ptr(), new_path_w.as_ptr(), flags) == 0 {

@@ -17,8 +17,7 @@ rand = "0.3"
 libc = "0.2"
 
 [target.'cfg(windows)'.dependencies]
-winapi = "0.2"
-kernel32-sys = "0.2"
+winapi = { version = "0.3", features = ["fileapi", "winbase", "handleapi"] }
 
 [target.'cfg(target_os = "redox")'.dependencies]
 redox_syscall = "0.1"
