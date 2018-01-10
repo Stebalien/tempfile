@@ -76,7 +76,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
                        "too many temporary directories already exist"))
 }
 
-pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
+pub fn reopen(file: &File, _path: &Path) -> io::Result<File> {
     let handle = file.as_raw_handle();
     unsafe {
         let handle = ReOpenFile(handle as HANDLE, ACCESS, SHARE_MODE, 0);
