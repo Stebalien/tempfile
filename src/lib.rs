@@ -15,8 +15,8 @@
 //! ## Resource Leaking
 //!
 //! `tempfile` will (almost) never fail to cleanup temporary resources but `TempDir` and `NamedTempFile` will if
-//! their destructor doesn't run. This is because `tempfile` relies on the OS to cleanup the
-//! underlying file so the file while `TempDir` and `NamedTempFile` rely on their destructor to do so.
+//! their destructors don't run. This is because `tempfile` relies on the OS to cleanup the
+//! underlying file so the file while `TempDir` and `NamedTempFile` rely on their destructors to do so.
 //!
 //! ## Security
 //!
@@ -90,7 +90,7 @@
 
 #![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
        html_favicon_url = "https://www.rust-lang.org/favicon.ico",
-       html_root_url = "https://docs.rs/tempdir/0.3.5")]
+       html_root_url = "https://docs.rs/tempfile/2.1.6")]
 #![cfg_attr(test, deny(warnings))]
 
 extern crate remove_dir_all;
@@ -108,8 +108,316 @@ extern crate syscall;
 const NUM_RETRIES: u32 = 1 << 31;
 const NUM_RAND_CHARS: usize = 6;
 
+use std::{io, env};
+use std::path::Path;
+
 mod dir;
 mod file;
+mod util;
 
-pub use file::{tempfile, tempfile_in, NamedTempFile, NamedTempFileBuilder, PersistError};
-pub use dir::{tempdir, TempDir};
+pub use file::{tempfile, tempfile_in, NamedTempFile, PersistError};
+pub use dir::TempDir;
+
+/// Create a new temporary file or directory with custom parameters.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Builder<'a, 'b> {
+    random_len: usize,
+    prefix: &'a str,
+    suffix: &'b str,
+}
+
+impl<'a, 'b> Builder<'a, 'b> {
+    /// Create a new `Builder`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate tempfile;
+    /// # use std::io;
+    /// # use std::ffi::OsStr;
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// use tempfile::Builder;
+    ///
+    /// let named_temp_file = Builder::new()
+    ///     .prefix("my-temporary-note")
+    ///     .suffix(".txt")
+    ///     .rand_bytes(5)
+    ///     .create()?;
+    ///
+    /// let name = named_temp_file
+    ///     .path()
+    ///     .file_name().and_then(OsStr::to_str);
+    ///
+    /// if let Some(name) = name {
+    ///     assert!(name.starts_with("my-temporary-note"));
+    ///     assert!(name.ends_with(".txt"));
+    ///     assert_eq!(name.len(), "my-temporary-note.txt".len() + 5);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn new() -> Self {
+        Builder {
+            random_len: ::NUM_RAND_CHARS,
+            prefix: ".tmp",
+            suffix: "",
+        }
+    }
+
+    /// Set a custom filename prefix.
+    ///
+    /// Path separators are legal but not advisable.
+    /// Default: `.tmp`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate tempfile;
+    /// # use std::io;
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// # use tempfile::Builder;
+    /// let named_temp_file = Builder::new()
+    ///     .prefix("my-temporary-note")
+    ///     .create()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn prefix(&mut self, prefix: &'a str) -> &mut Self {
+        self.prefix = prefix;
+        self
+    }
+
+    /// Set a custom filename suffix.
+    ///
+    /// Path separators are legal but not advisable.
+    /// Default: empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate tempfile;
+    /// # use std::io;
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// # use tempfile::Builder;
+    /// let named_temp_file = Builder::new()
+    ///     .suffix(".txt")
+    ///     .create()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn suffix(&mut self, suffix: &'b str) -> &mut Self {
+        self.suffix = suffix;
+        self
+    }
+
+    /// Set the number of random bytes.
+    ///
+    /// Default: `6`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate tempfile;
+    /// # use std::io;
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// # use tempfile::Builder;
+    /// let named_temp_file = Builder::new()
+    ///     .rand_bytes(5)
+    ///     .create()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn rand_bytes(&mut self, rand: usize) -> &mut Self {
+        self.random_len = rand;
+        self
+    }
+
+    /// Create the named temporary file.
+    ///
+    /// # Security
+    ///
+    /// See: [`NamedTempFile::new`]
+    /// 
+    /// # Resource leaking
+    /// 
+    /// See: [`NamedTempFile::new`]
+    ///
+    /// # Errors
+    ///
+    /// If the file cannot be created, `Err` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate tempfile;
+    /// # use std::io;
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// # use tempfile::Builder;
+    /// let named_temp_file = Builder::new()
+    ///     .create()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`NamedTempFile::new`]: struct.NamedTempFile.html#method.new
+    pub fn named_tempfile(&self) -> io::Result<NamedTempFile> {
+        self.named_tempfile_in(&env::temp_dir())
+    }
+
+    /// Create the named temporary file in the specified directory.
+    ///
+    /// # Security
+    ///
+    /// See: [`NamedTempFile::new`]
+    /// 
+    /// # Resource leaking
+    /// 
+    /// See: [`NamedTempFile::new`]
+    /// 
+    /// # Errors
+    ///
+    /// If the file cannot be created, `Err` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate tempfile;
+    /// # use std::io;
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// # use tempfile::Builder;
+    /// let named_temp_file = Builder::new()
+    ///     .create_in("./")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`NamedTempFile::new`]: struct.NamedTempFile.html#method.new
+    pub fn named_tempfile_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
+        for _ in 0..::NUM_RETRIES {
+            let path = dir.as_ref().join(util::tmpname(self.prefix, self.suffix, self.random_len));
+
+            return match file::create_named(path) {
+                Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+                file => file
+            };
+        }
+
+        Err(io::Error::new(io::ErrorKind::AlreadyExists,
+                           "too many temporary files exist"))
+
+    }
+
+    /// Attempts to make a temporary directory inside of `env::temp_dir()` whose
+    /// name will have the prefix, `prefix`. The directory and
+    /// everything inside it will be automatically deleted once the
+    /// returned `TempDir` is destroyed.
+    ///
+    /// # Errors
+    ///
+    /// If the directory can not be created, `Err` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use std::io::Write;
+    /// use tempfile::Builder;
+    ///
+    /// # use std::io;
+    /// # fn run() -> Result<(), io::Error> {
+    /// // Create a directory inside of `std::env::temp_dir()`, named with
+    /// // the prefix, "example".
+    /// let tmp_dir = Builder::new().prefix("example").tempdir()?;
+    /// 
+    /// let file_path = tmp_dir.path().join("my-temporary-note.txt");
+    /// let mut tmp_file = File::create(file_path)?;
+    /// writeln!(tmp_file, "Brian was here. Briefly.")?;
+    ///
+    /// // `tmp_dir` goes out of scope, the directory as well as
+    /// // `tmp_file` will be deleted here.
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn tempdir(&self) -> io::Result<TempDir> {
+        self.tempdir_in(&env::temp_dir())
+    }
+
+    /// Attempts to make a temporary directory inside of `dir`.
+    /// The directory and everything inside it will be automatically 
+    /// deleted once the returned `TempDir` is destroyed.
+    ///
+    /// # Errors
+    ///
+    /// If the directory can not be created, `Err` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::{self, File};
+    /// use std::io::Write;
+    /// use tempfile::Builder;
+    ///
+    /// # use std::io;
+    /// # fn run() -> Result<(), io::Error> {
+    /// // Create a directory inside of the current directory, named with
+    /// // the prefix, "example".
+    /// let tmp_dir = Builder::new().prefix("example").tempdir_in(".")?;
+    /// 
+    /// let file_path = tmp_dir.path().join("my-temporary-note.txt");
+    /// let mut tmp_file = File::create(file_path)?;
+    /// writeln!(tmp_file, "Brian was here. Briefly.")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn tempdir_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<TempDir> {
+        let storage;
+        let mut dir = dir.as_ref();
+        if !dir.is_absolute() {
+            let cur_dir = env::current_dir()?;
+            storage = cur_dir.join(dir);
+            dir = &storage;
+        }
+
+        for _ in 0..::NUM_RETRIES {
+            let path = dir.join(util::tmpname(self.prefix, self.suffix, self.random_len));
+
+            return match dir::create(path) {
+                Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+                dir => dir
+            };
+        }
+
+        Err(io::Error::new(io::ErrorKind::AlreadyExists,
+                           "too many temporary directories exist"))
+    }
+}

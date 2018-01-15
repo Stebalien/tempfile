@@ -14,7 +14,7 @@ use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY, FILE_AT
 use winapi::um::winnt::{FILE_GENERIC_WRITE, FILE_GENERIC_READ, HANDLE};
 use winapi::um::winnt::{FILE_SHARE_READ, FILE_SHARE_DELETE, FILE_SHARE_WRITE};
 
-use file::util;
+use util;
 
 #[cfg_attr(irustfmt, rustfmt_skip)]
 const ACCESS: DWORD     = FILE_GENERIC_READ

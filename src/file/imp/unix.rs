@@ -6,7 +6,7 @@ use std::io;
 use std::os::unix::io::{RawFd, FromRawFd, AsRawFd};
 use std::fs::{self, File, OpenOptions};
 use std::path::Path;
-use file::util;
+use util;
 
 #[cfg(all(lfs_support, target_os = "linux"))]
 use libc::{open64 as open, fstat64 as fstat, stat64 as stat_t};
