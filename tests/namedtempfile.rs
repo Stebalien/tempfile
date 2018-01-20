@@ -1,5 +1,5 @@
 extern crate tempfile;
-use tempfile::{NamedTempFile, NamedTempFileBuilder};
+use tempfile::{NamedTempFile, Builder};
 use std::env;
 use std::io::{Write, Read, Seek, SeekFrom};
 use std::fs::File;
@@ -84,11 +84,11 @@ fn test_persist_noclobber() {
 
 #[test]
 fn test_customnamed() {
-    let tmpfile = NamedTempFileBuilder::new()
+    let tmpfile = Builder::new()
         .prefix("tmp")
         .suffix(&".rs".to_string())
         .rand_bytes(12)
-        .create()
+        .named_tempfile()
         .unwrap();
     let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
     assert!(name.starts_with("tmp"));
