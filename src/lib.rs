@@ -1,8 +1,5 @@
 //! Temporary files and directories.
 //!
-//! - Use the [`tempfile`] function for temporary files
-//! - Use the [`tempdir`][fn.tempdir] function for temporary directories.
-//!
 //! # Design
 //!
 //! This crate provides several approaches to creating temporary files and directories.
@@ -53,7 +50,7 @@
 //!
 //! ```
 //! # extern crate tempfile;
-//! use tempfile::tempdir;
+//! use tempfile::TempDir;
 //! use std::fs::File;
 //! use std::io::{self, Write};
 //!
@@ -65,7 +62,7 @@
 //! # fn run() -> Result<(), io::Error> {
 //! // Create a directory inside of `std::env::temp_dir()`, named with
 //! // the prefix "example".
-//! let dir = tempdir("example")?;
+//! let dir = TempDir::new()?;
 //!
 //! let file_path = dir.path().join("my-temporary-note.txt");
 //! let mut file = File::create(file_path)?;
@@ -82,7 +79,6 @@
 //! # }
 //! ```
 //!
-//! [fn.tempdir]: fn.tempdir.html
 //! [`tempfile`]: fn.tempfile.html
 //! [struct.TempDir]: struct.TempDir.html
 //! [`NamedTempFile`]: struct.NamedTempFile.html
@@ -131,6 +127,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// # Examples
     ///
+    /// Create a named temporary file and write some data into it:
+    /// 
     /// ```
     /// # extern crate tempfile;
     /// # use std::io;
@@ -143,13 +141,13 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # fn run() -> Result<(), io::Error> {
     /// use tempfile::Builder;
     ///
-    /// let named_temp_file = Builder::new()
+    /// let named_tempfile = Builder::new()
     ///     .prefix("my-temporary-note")
     ///     .suffix(".txt")
     ///     .rand_bytes(5)
-    ///     .create()?;
+    ///     .named_tempfile()?;
     ///
-    /// let name = named_temp_file
+    /// let name = named_tempfile
     ///     .path()
     ///     .file_name().and_then(OsStr::to_str);
     ///
@@ -158,6 +156,41 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     assert!(name.ends_with(".txt"));
     ///     assert_eq!(name.len(), "my-temporary-note.txt".len() + 5);
     /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// 
+    /// Create a temporary directory and add a file to it:
+    /// 
+    /// ```
+    /// # extern crate tempfile;
+    /// # use std::io::{self, Write};
+    /// # use std::fs::File;
+    /// # use std::ffi::OsStr;
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// use tempfile::Builder;
+    ///
+    /// let dir = Builder::new()
+    ///     .prefix("my-temporary-dir")
+    ///     .rand_bytes(5)
+    ///     .tempdir()?;
+    ///
+    /// let file_path = dir.path().join("my-temporary-note.txt");
+    /// let mut file = File::create(file_path)?;
+    /// writeln!(file, "Brian was here. Briefly.")?;
+    ///
+    /// // By closing the `TempDir` explicitly, we can check that it has
+    /// // been deleted successfully. If we don't close it explicitly,
+    /// // the directory will still be deleted when `dir` goes out
+    /// // of scope, but we won't know whether deleting the directory
+    /// // succeeded.
+    /// drop(file);
+    /// dir.close()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -186,9 +219,9 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// # fn run() -> Result<(), io::Error> {
     /// # use tempfile::Builder;
-    /// let named_temp_file = Builder::new()
+    /// let named_tempfile = Builder::new()
     ///     .prefix("my-temporary-note")
-    ///     .create()?;
+    ///     .named_tempfile()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -214,9 +247,9 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// # fn run() -> Result<(), io::Error> {
     /// # use tempfile::Builder;
-    /// let named_temp_file = Builder::new()
+    /// let named_tempfile = Builder::new()
     ///     .suffix(".txt")
-    ///     .create()?;
+    ///     .named_tempfile()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -241,9 +274,9 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// # fn run() -> Result<(), io::Error> {
     /// # use tempfile::Builder;
-    /// let named_temp_file = Builder::new()
+    /// let named_tempfile = Builder::new()
     ///     .rand_bytes(5)
-    ///     .create()?;
+    ///     .named_tempfile()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -278,8 +311,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// # fn run() -> Result<(), io::Error> {
     /// # use tempfile::Builder;
-    /// let named_temp_file = Builder::new()
-    ///     .create()?;
+    /// let named_tempfile = Builder::new().named_tempfile()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -315,8 +347,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// # fn run() -> Result<(), io::Error> {
     /// # use tempfile::Builder;
-    /// let named_temp_file = Builder::new()
-    ///     .create_in("./")?;
+    /// let named_tempfile = Builder::new().named_tempfile_in("./")?;
     /// # Ok(())
     /// # }
     /// ```
@@ -342,6 +373,10 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// everything inside it will be automatically deleted once the
     /// returned `TempDir` is destroyed.
     ///
+    /// # Resource leaking
+    /// 
+    /// See: [`TempDir`]
+    /// 
     /// # Errors
     ///
     /// If the directory can not be created, `Err` is returned.
@@ -355,19 +390,12 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// # use std::io;
     /// # fn run() -> Result<(), io::Error> {
-    /// // Create a directory inside of `std::env::temp_dir()`, named with
-    /// // the prefix, "example".
-    /// let tmp_dir = Builder::new().prefix("example").tempdir()?;
-    /// 
-    /// let file_path = tmp_dir.path().join("my-temporary-note.txt");
-    /// let mut tmp_file = File::create(file_path)?;
-    /// writeln!(tmp_file, "Brian was here. Briefly.")?;
-    ///
-    /// // `tmp_dir` goes out of scope, the directory as well as
-    /// // `tmp_file` will be deleted here.
+    /// let tmp_dir = Builder::new().tempdir()?;
     /// # Ok(())
     /// # }
     /// ```
+    /// 
+    /// [`TempDir`]: struct.TempDir.html
     pub fn tempdir(&self) -> io::Result<TempDir> {
         self.tempdir_in(&env::temp_dir())
     }
@@ -375,6 +403,10 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// Attempts to make a temporary directory inside of `dir`.
     /// The directory and everything inside it will be automatically 
     /// deleted once the returned `TempDir` is destroyed.
+    /// 
+    /// # Resource leaking
+    /// 
+    /// See: [`TempDir`]
     ///
     /// # Errors
     ///
@@ -389,16 +421,12 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// # use std::io;
     /// # fn run() -> Result<(), io::Error> {
-    /// // Create a directory inside of the current directory, named with
-    /// // the prefix, "example".
-    /// let tmp_dir = Builder::new().prefix("example").tempdir_in(".")?;
-    /// 
-    /// let file_path = tmp_dir.path().join("my-temporary-note.txt");
-    /// let mut tmp_file = File::create(file_path)?;
-    /// writeln!(tmp_file, "Brian was here. Briefly.")?;
+    /// let tmp_dir = Builder::new().tempdir_in("./")?;
     /// # Ok(())
     /// # }
     /// ```
+    /// 
+    /// [`TempDir`]: struct.TempDir.html
     pub fn tempdir_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<TempDir> {
         let storage;
         let mut dir = dir.as_ref();

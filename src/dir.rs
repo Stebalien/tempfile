@@ -25,7 +25,7 @@ use ::Builder;
 /// The default constructor, [`TempDir::new`], creates directories in
 /// the location returned by [`std::env::temp_dir()`], but `TempDir`
 /// can be configured to manage a temporary directory in any location
-/// by constructing with [`TempDir::new_in`].
+/// by constructing with a [`Builder`].
 ///
 /// After creating a `TempDir`, work with the file system by doing
 /// standard [`std::fs`] file system operations on its [`Path`],
@@ -48,13 +48,46 @@ use ::Builder;
 /// run, such as via [`std::process::exit`], by segfaulting, or by
 /// receiving a signal like `SIGINT`, then the temporary directory
 /// will not be deleted.
+/// 
+// # Examples
+///
+/// Create a temporary directory with a generated name:
+/// 
+/// ```
+/// use std::fs::File;
+/// use std::io::Write;
+/// use tempfile::TempDir;
+///
+/// # use std::io;
+/// # fn run() -> Result<(), io::Error> {
+/// // Create a directory inside of `std::env::temp_dir()
+/// let tmp_dir = TempDir::new()?;
+/// # Ok(())
+/// # }
+/// ```
+/// 
+/// Create a temporary directory with a prefix in its name:
+/// 
+/// ```
+/// use std::fs::File;
+/// use std::io::Write;
+/// use tempfile::Builder;
+///
+/// # use std::io;
+/// # fn run() -> Result<(), io::Error> {
+/// // Create a directory inside of `std::env::temp_dir(),
+/// // whose name will begin with 'example'.
+/// let tmp_dir = Builder::new().prefix("example").tempdir()?;
+/// # Ok(())
+/// # }
+/// ```
 ///
 /// [`File`]: http://doc.rust-lang.org/std/fs/struct.File.html
 /// [`Path`]: http://doc.rust-lang.org/std/path/struct.Path.html
 /// [`ReadDir`]: http://doc.rust-lang.org/std/fs/struct.ReadDir.html
+/// [`Builder`]: struct.Builder.html
 /// [`TempDir::close`]: struct.TempDir.html#method.close
 /// [`TempDir::new`]: struct.TempDir.html#method.new
-/// [`TempDir::new_in`]: struct.TempDir.html#method.new_in
 /// [`TempDir::path`]: struct.TempDir.html#method.path
 /// [`TempDir`]: struct.TempDir.html
 /// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
@@ -65,10 +98,9 @@ pub struct TempDir {
 }
 
 impl TempDir {
-    /// Attempts to make a temporary directory inside of `env::temp_dir()` whose
-    /// name will have the prefix, `prefix`. The directory and
-    /// everything inside it will be automatically deleted once the
-    /// returned `TempDir` is destroyed.
+    /// Attempts to make a temporary directory inside of `env::temp_dir()`.
+    /// The directory and everything inside it will be automatically deleted 
+    /// once the returned `TempDir` is destroyed.
     ///
     /// # Errors
     ///
@@ -83,9 +115,9 @@ impl TempDir {
     ///
     /// # use std::io;
     /// # fn run() -> Result<(), io::Error> {
-    /// // Create a directory inside of `std::env::temp_dir()`, named with
-    /// // the prefix, "example".
-    /// let tmp_dir = TempDir::new("example")?;
+    /// // Create a directory inside of `std::env::temp_dir()
+    /// let tmp_dir = TempDir::new()?;
+    /// 
     /// let file_path = tmp_dir.path().join("my-temporary-note.txt");
     /// let mut tmp_file = File::create(file_path)?;
     /// writeln!(tmp_file, "Brian was here. Briefly.")?;
@@ -113,7 +145,7 @@ impl TempDir {
     /// let tmp_path;
     ///
     /// {
-    ///    let tmp_dir = TempDir::new("example")?;
+    ///    let tmp_dir = TempDir::new()?;
     ///    tmp_path = tmp_dir.path().to_owned();
     ///
     ///    // Check that the temp directory actually exists.
@@ -145,7 +177,7 @@ impl TempDir {
     ///
     /// # use std::io;
     /// # fn run() -> Result<(), io::Error> {
-    /// let tmp_dir = TempDir::new("example")?;
+    /// let tmp_dir = TempDir::new()?;
     ///
     /// // Convert `tmp_dir` into a `Path`, destroying the `TempDir`
     /// // without deleting the directory.
@@ -186,7 +218,7 @@ impl TempDir {
     /// # fn run() -> Result<(), io::Error> {
     /// // Create a directory inside of `std::env::temp_dir()`, named with
     /// // the prefix, "example".
-    /// let tmp_dir = TempDir::new("example")?;
+    /// let tmp_dir = TempDir::new()?;
     /// let file_path = tmp_dir.path().join("my-temporary-note.txt");
     /// let mut tmp_file = File::create(file_path)?;
     /// writeln!(tmp_file, "Brian was here. Briefly.")?;
