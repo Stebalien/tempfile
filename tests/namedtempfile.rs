@@ -88,7 +88,7 @@ fn test_customnamed() {
         .prefix("tmp")
         .suffix(&".rs".to_string())
         .rand_bytes(12)
-        .named_tempfile()
+        .tempfile()
         .unwrap();
     let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
     assert!(name.starts_with("tmp"));

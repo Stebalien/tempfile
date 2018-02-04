@@ -12,7 +12,7 @@ mod imp;
 
 /// Create a new temporary file.
 ///
-/// The file will be created in the location returned by [`std::env::temp_dir()`]
+/// The file will be created in the location returned by [`std::env::temp_dir()`].
 ///
 /// # Security
 ///
@@ -97,10 +97,10 @@ pub fn tempfile_in<P: AsRef<Path>>(dir: P) -> io::Result<File> {
 
 /// A named temporary file.
 ///
-/// The default constructor, [`NamedTempFile::new`], creates files in
+/// The default constructor, [`NamedTempFile::new()`], creates files in
 /// the location returned by [`std::env::temp_dir()`], but `NamedTempFile`
 /// can be configured to manage a temporary file in any location
-/// by constructing with [`NamedTempFile::new_in`].
+/// by constructing with [`NamedTempFile::new_in()`].
 ///
 /// # Security
 ///
@@ -109,17 +109,17 @@ pub fn tempfile_in<P: AsRef<Path>>(dir: P) -> io::Result<File> {
 /// # Resource Leaking
 ///
 /// If the program exits before the `NamedTempFile` destructor is
-/// run, such as via [`std::process::exit`], by segfaulting, or by
+/// run, such as via [`std::process::exit()`], by segfaulting, or by
 /// receiving a signal like `SIGINT`, then the temporary file
 /// will not be deleted.
 ///
-/// Use the [`tempfile`] function unless you absolutely need a named file.
+/// Use the [`tempfile()`] function unless you absolutely need a named file.
 ///
-/// [`tempfile`]: fn.tempfile.html
-/// [`NamedTempFile::new`]: #method.new
-/// [`NamedTempFile::new_in`]: #method.new_in
+/// [`tempfile()`]: fn.tempfile.html
+/// [`NamedTempFile::new()`]: #method.new
+/// [`NamedTempFile::new_in()`]: #method.new_in
 /// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
-/// [`std::process::exit`]: http://doc.rust-lang.org/std/process/fn.exit.html
+/// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
 pub struct NamedTempFile(Option<NamedTempFileInner>);
 
 struct NamedTempFileInner {
@@ -196,7 +196,7 @@ impl NamedTempFile {
 
     /// Create a new named temporary file.
     ///
-    /// See [`NamedTempFileBuilder`] for more configuration.
+    /// See [`Builder`] for more configuration.
     ///
     /// # Security
     ///
@@ -251,9 +251,9 @@ impl NamedTempFile {
     /// # }
     /// ```
     ///
-    /// [`NamedTempFileBuilder`]: struct.NamedTempFileBuilder.html
+    /// [`Builder`]: struct.Builder.html
     pub fn new() -> io::Result<NamedTempFile> {
-        Builder::new().named_tempfile()
+        Builder::new().tempfile()
     }
 
     /// Get the temporary file's path.

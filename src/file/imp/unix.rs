@@ -4,7 +4,7 @@ use std::os::unix::ffi::OsStrExt;
 use std::ffi::CString;
 use std::io;
 use std::os::unix::io::{RawFd, FromRawFd, AsRawFd};
-use std::fs::{self, File, OpenOptions};
+use std::fs::{File, OpenOptions};
 use std::path::Path;
 use util;
 
@@ -52,7 +52,7 @@ pub fn create_named(path: &Path) -> io::Result<File> {
 }
 
 #[cfg(target_os = "redox")]
-pub fn create_named(path: &Path) -> io::Result<File> {
+pub fn create_named(path: PathBuf) -> io::Result<File> {
     unsafe {
         let fd = try!(cvt_err(open(path.as_os_str().as_bytes(),
                                    O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT | 0o600)));
@@ -80,21 +80,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
 }
 
 fn create_unix(dir: &Path) -> io::Result<File> {
-    for _ in 0..::NUM_RETRIES {
-        let tmp_path = dir.join(util::tmpname(".tmp", "", ::NUM_RAND_CHARS));
-        return match create_named(&tmp_path) {
-            Ok(file) => {
-                // I should probably tell the user this failed but the temporary file creation
-                // didn't really fail...
-                let _ = fs::remove_file(tmp_path);
-                Ok(file)
-            }
-            Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
-            Err(e) => Err(e),
-        };
-    }
-    Err(io::Error::new(io::ErrorKind::AlreadyExists,
-                       "too many temporary directories already exist"))
+    util::create_helper(dir, ".tmp", "", ::NUM_RAND_CHARS, |path| create_named(&path))
 }
 
 unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {

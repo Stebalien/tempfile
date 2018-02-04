@@ -14,6 +14,106 @@ use remove_dir_all::remove_dir_all;
 
 use ::Builder;
 
+/// Create a new temporary directory.
+///
+/// The `tempdir` function creates a directory in the file system
+/// and returns a [`TempDir`].
+/// The directory will be automatically deleted when the `TempDir`s
+/// desctructor is run.
+///
+/// # Resource Leaking
+///
+/// See [the resource leaking][resource-leaking] docs on `TempDir`.
+///
+/// # Errors
+///
+/// If the directory can not be created, `Err` is returned.
+///
+/// # Examples
+///
+/// ```
+/// # extern crate tempfile;
+/// use tempfile::tempdir;
+/// use std::fs::File;
+/// use std::io::{self, Write};
+///
+/// # fn main() {
+/// #     if let Err(_) = run() {
+/// #         ::std::process::exit(1);
+/// #     }
+/// # }
+/// # fn run() -> Result<(), io::Error> {
+/// // Create a directory inside of `std::env::temp_dir()`
+/// let dir = tempdir()?;
+///
+/// let file_path = dir.path().join("my-temporary-note.txt");
+/// let mut file = File::create(file_path)?;
+/// writeln!(file, "Brian was here. Briefly.")?;
+///
+/// // `tmp_dir` goes out of scope, the directory as well as
+/// // `tmp_file` will be deleted here.
+/// drop(file);
+/// dir.close()?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`TempDir`]: struct.TempDir.html
+/// [resource-leaking]: struct.TempDir.html#resource-leaking
+pub fn tempdir() -> io::Result<TempDir> {
+    TempDir::new()
+}
+
+/// Create a new temporary directory.
+///
+/// The `tempdir` function creates a directory in the file system
+/// and returns a [`TempDir`].
+/// The directory will be automatically deleted when the `TempDir`s
+/// desctructor is run.
+///
+/// # Resource Leaking
+///
+/// See [the resource leaking][resource-leaking] docs on `TempDir`.
+///
+/// # Errors
+///
+/// If the directory can not be created, `Err` is returned.
+///
+/// # Examples
+///
+/// ```
+/// # extern crate tempfile;
+/// use tempfile::tempdir;
+/// use std::fs::File;
+/// use std::io::{self, Write};
+///
+/// # fn main() {
+/// #     if let Err(_) = run() {
+/// #         ::std::process::exit(1);
+/// #     }
+/// # }
+/// # fn run() -> Result<(), io::Error> {
+/// // Create a directory inside of `std::env::temp_dir()`,
+/// let dir = tempdir()?;
+///
+/// let file_path = dir.path().join("my-temporary-note.txt");
+/// let mut file = File::create(file_path)?;
+/// writeln!(file, "Brian was here. Briefly.")?;
+///
+/// // `tmp_dir` goes out of scope, the directory as well as
+/// // `tmp_file` will be deleted here.
+/// drop(file);
+/// dir.close()?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`TempDir`]: struct.TempDir.html
+/// [resource-leaking]: struct.TempDir.html#resource-leaking
+pub fn tempdir_in<P: AsRef<Path>>(dir: P) -> io::Result<TempDir> {
+    TempDir::new_in(dir)
+}
+
 /// A directory in the filesystem that is automatically deleted when
 /// it goes out of scope.
 ///
@@ -22,14 +122,14 @@ use ::Builder;
 /// `TempDir` creates a new directory with a randomly generated name,
 /// and with a prefix of your choosing.
 ///
-/// The default constructor, [`TempDir::new`], creates directories in
+/// The default constructor, [`TempDir::new()`], creates directories in
 /// the location returned by [`std::env::temp_dir()`], but `TempDir`
 /// can be configured to manage a temporary directory in any location
 /// by constructing with a [`Builder`].
 ///
 /// After creating a `TempDir`, work with the file system by doing
 /// standard [`std::fs`] file system operations on its [`Path`],
-/// which can be retrieved with [`TempDir::path`]. Once the `TempDir`
+/// which can be retrieved with [`TempDir::path()`]. Once the `TempDir`
 /// value is dropped, the directory at the path will be deleted, along
 /// with any files and directories it contains. It is your responsibility
 /// to ensure that no further file system operations are attempted
@@ -42,14 +142,14 @@ use ::Builder;
 /// handles (like [`File`] and [`ReadDir`]) to files inside the
 /// directory are dropped before the `TempDir` goes out of scope. The
 /// `TempDir` destructor will silently ignore any errors in deleting
-/// the directory; to instead handle errors call [`TempDir::close`].
+/// the directory; to instead handle errors call [`TempDir::close()`].
 ///
 /// Note that if the program exits before the `TempDir` destructor is
-/// run, such as via [`std::process::exit`], by segfaulting, or by
+/// run, such as via [`std::process::exit()`], by segfaulting, or by
 /// receiving a signal like `SIGINT`, then the temporary directory
 /// will not be deleted.
 /// 
-// # Examples
+/// # Examples
 ///
 /// Create a temporary directory with a generated name:
 /// 
@@ -60,7 +160,7 @@ use ::Builder;
 ///
 /// # use std::io;
 /// # fn run() -> Result<(), io::Error> {
-/// // Create a directory inside of `std::env::temp_dir()
+/// // Create a directory inside of `std::env::temp_dir()`
 /// let tmp_dir = TempDir::new()?;
 /// # Ok(())
 /// # }
@@ -75,7 +175,7 @@ use ::Builder;
 ///
 /// # use std::io;
 /// # fn run() -> Result<(), io::Error> {
-/// // Create a directory inside of `std::env::temp_dir(),
+/// // Create a directory inside of `std::env::temp_dir()`,
 /// // whose name will begin with 'example'.
 /// let tmp_dir = Builder::new().prefix("example").tempdir()?;
 /// # Ok(())
@@ -86,19 +186,22 @@ use ::Builder;
 /// [`Path`]: http://doc.rust-lang.org/std/path/struct.Path.html
 /// [`ReadDir`]: http://doc.rust-lang.org/std/fs/struct.ReadDir.html
 /// [`Builder`]: struct.Builder.html
-/// [`TempDir::close`]: struct.TempDir.html#method.close
-/// [`TempDir::new`]: struct.TempDir.html#method.new
-/// [`TempDir::path`]: struct.TempDir.html#method.path
+/// [`TempDir::close()`]: struct.TempDir.html#method.close
+/// [`TempDir::new()`]: struct.TempDir.html#method.new
+/// [`TempDir::path()`]: struct.TempDir.html#method.path
 /// [`TempDir`]: struct.TempDir.html
 /// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 /// [`std::fs`]: http://doc.rust-lang.org/std/fs/index.html
-/// [`std::process::exit`]: http://doc.rust-lang.org/std/process/fn.exit.html
+/// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
 pub struct TempDir {
     path: Option<PathBuf>,
 }
 
 impl TempDir {
     /// Attempts to make a temporary directory inside of `env::temp_dir()`.
+    /// 
+    /// See [`Builder`] for more configuration.
+    /// 
     /// The directory and everything inside it will be automatically deleted 
     /// once the returned `TempDir` is destroyed.
     ///
@@ -115,7 +218,7 @@ impl TempDir {
     ///
     /// # use std::io;
     /// # fn run() -> Result<(), io::Error> {
-    /// // Create a directory inside of `std::env::temp_dir()
+    /// // Create a directory inside of `std::env::temp_dir()`
     /// let tmp_dir = TempDir::new()?;
     /// 
     /// let file_path = tmp_dir.path().join("my-temporary-note.txt");
@@ -127,8 +230,40 @@ impl TempDir {
     /// # Ok(())
     /// # }
     /// ```
+    /// 
+    /// [`Builder`]: struct.Builder.html
     pub fn new() -> io::Result<TempDir> {
         Builder::new().tempdir()
+    }
+
+    /// Attempts to make a temporary directory inside of `tmpdir`
+    /// whose name will have the prefix `prefix`. The directory and
+    /// everything inside it will be automatically deleted once the
+    /// returned `TempDir` is destroyed.
+    ///
+    /// # Errors
+    ///
+    /// If the directory can not be created, `Err` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::{self, File};
+    /// use std::io::Write;
+    /// use tempfile::TempDir;
+    ///
+    /// # use std::io;
+    /// # fn run() -> Result<(), io::Error> {
+    /// // Create a directory inside of the current directory
+    /// let tmp_dir = TempDir::new_in(".")?;
+    /// let file_path = tmp_dir.path().join("my-temporary-note.txt");
+    /// let mut tmp_file = File::create(file_path)?;
+    /// writeln!(tmp_file, "Brian was here. Briefly.")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<TempDir> {
+        Builder::new().tempdir_in(dir)
     }
 
     /// Accesses the [`Path`] to the temporary directory.

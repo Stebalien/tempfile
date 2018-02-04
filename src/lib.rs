@@ -1,10 +1,13 @@
 //! Temporary files and directories.
 //!
+//! - Use the [`tempfile()`] function for temporary files
+//! - Use the [`tempdir()`] function for temporary directories.
+//! 
 //! # Design
 //!
 //! This crate provides several approaches to creating temporary files and directories.
-//! [`tempfile`] relies on the OS to remove the temporary file once the last handle is closed.
-//! [`TempDir`][struct.TempDir] and [`NamedTempFile`] both rely on Rust destructors for cleanup.
+//! [`tempfile()`] relies on the OS to remove the temporary file once the last handle is closed.
+//! [`TempDir`] and [`NamedTempFile`] both rely on Rust destructors for cleanup.
 //!
 //! When choosing between the temporary file variants, prefer `tempfile`
 //! unless you either need to know the file's path or to be able to persist it.
@@ -50,7 +53,7 @@
 //!
 //! ```
 //! # extern crate tempfile;
-//! use tempfile::TempDir;
+//! use tempfile::tempdir;
 //! use std::fs::File;
 //! use std::io::{self, Write};
 //!
@@ -60,9 +63,8 @@
 //! #     }
 //! # }
 //! # fn run() -> Result<(), io::Error> {
-//! // Create a directory inside of `std::env::temp_dir()`, named with
-//! // the prefix "example".
-//! let dir = TempDir::new()?;
+//! // Create a directory inside of `std::env::temp_dir()`.
+//! let dir = tempdir()?;
 //!
 //! let file_path = dir.path().join("my-temporary-note.txt");
 //! let mut file = File::create(file_path)?;
@@ -79,14 +81,15 @@
 //! # }
 //! ```
 //!
-//! [`tempfile`]: fn.tempfile.html
-//! [struct.TempDir]: struct.TempDir.html
+//! [`tempfile()`]: fn.tempfile.html
+//! [`tempdir()`]: fn.tempdir.html
+//! [`TempDir`]: struct.TempDir.html
 //! [`NamedTempFile`]: struct.NamedTempFile.html
 //! [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 
 #![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
        html_favicon_url = "https://www.rust-lang.org/favicon.ico",
-       html_root_url = "https://docs.rs/tempfile/2.1.6")]
+       html_root_url = "https://docs.rs/tempfile/2.2.0")]
 #![cfg_attr(test, deny(warnings))]
 
 extern crate remove_dir_all;
@@ -112,7 +115,7 @@ mod file;
 mod util;
 
 pub use file::{tempfile, tempfile_in, NamedTempFile, PersistError};
-pub use dir::TempDir;
+pub use dir::{tempdir, tempdir_in, TempDir};
 
 /// Create a new temporary file or directory with custom parameters.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -145,7 +148,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     .prefix("my-temporary-note")
     ///     .suffix(".txt")
     ///     .rand_bytes(5)
-    ///     .named_tempfile()?;
+    ///     .tempfile()?;
     ///
     /// let name = named_tempfile
     ///     .path()
@@ -221,7 +224,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # use tempfile::Builder;
     /// let named_tempfile = Builder::new()
     ///     .prefix("my-temporary-note")
-    ///     .named_tempfile()?;
+    ///     .tempfile()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -249,7 +252,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # use tempfile::Builder;
     /// let named_tempfile = Builder::new()
     ///     .suffix(".txt")
-    ///     .named_tempfile()?;
+    ///     .tempfile()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -276,7 +279,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # use tempfile::Builder;
     /// let named_tempfile = Builder::new()
     ///     .rand_bytes(5)
-    ///     .named_tempfile()?;
+    ///     .tempfile()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -289,11 +292,11 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// # Security
     ///
-    /// See: [`NamedTempFile::new`]
+    /// See [the security][security] docs on `NamedTempFile`.
     /// 
     /// # Resource leaking
     /// 
-    /// See: [`NamedTempFile::new`]
+    /// See [the resource leaking][resource-leaking] docs on `NamedTempFile`.
     ///
     /// # Errors
     ///
@@ -311,25 +314,26 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// # fn run() -> Result<(), io::Error> {
     /// # use tempfile::Builder;
-    /// let named_tempfile = Builder::new().named_tempfile()?;
+    /// let tempfile = Builder::new().tempfile()?;
     /// # Ok(())
     /// # }
     /// ```
     ///
-    /// [`NamedTempFile::new`]: struct.NamedTempFile.html#method.new
-    pub fn named_tempfile(&self) -> io::Result<NamedTempFile> {
-        self.named_tempfile_in(&env::temp_dir())
+    /// [security]: struct.NamedTempFile.html#security
+    /// [resource-leaking]: struct.NamedTempFile.html#resource-leaking
+    pub fn tempfile(&self) -> io::Result<NamedTempFile> {
+        self.tempfile_in(&env::temp_dir())
     }
 
     /// Create the named temporary file in the specified directory.
     ///
     /// # Security
     ///
-    /// See: [`NamedTempFile::new`]
+    /// See [the security][security] docs on `NamedTempFile`.
     /// 
     /// # Resource leaking
     /// 
-    /// See: [`NamedTempFile::new`]
+    /// See [the resource leaking][resource-leaking] docs on `NamedTempFile`.
     /// 
     /// # Errors
     ///
@@ -347,24 +351,15 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// # fn run() -> Result<(), io::Error> {
     /// # use tempfile::Builder;
-    /// let named_tempfile = Builder::new().named_tempfile_in("./")?;
+    /// let tempfile = Builder::new().tempfile_in("./")?;
     /// # Ok(())
     /// # }
     /// ```
     ///
-    /// [`NamedTempFile::new`]: struct.NamedTempFile.html#method.new
-    pub fn named_tempfile_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
-        for _ in 0..::NUM_RETRIES {
-            let path = dir.as_ref().join(util::tmpname(self.prefix, self.suffix, self.random_len));
-
-            return match file::create_named(path) {
-                Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
-                file => file
-            };
-        }
-
-        Err(io::Error::new(io::ErrorKind::AlreadyExists,
-                           "too many temporary files exist"))
+    /// [security]: struct.NamedTempFile.html#security
+    /// [resource-leaking]: struct.NamedTempFile.html#resource-leaking
+    pub fn tempfile_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
+        util::create_helper(dir.as_ref(), self.prefix, self.suffix, self.random_len, file::create_named)
 
     }
 
@@ -375,7 +370,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// # Resource leaking
     /// 
-    /// See: [`TempDir`]
+    /// See [the resource leaking][resource-leaking] docs on `TempDir`.
     /// 
     /// # Errors
     ///
@@ -395,7 +390,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// ```
     /// 
-    /// [`TempDir`]: struct.TempDir.html
+    /// [resource-leaking]: struct.TempDir.html#resource-leaking
     pub fn tempdir(&self) -> io::Result<TempDir> {
         self.tempdir_in(&env::temp_dir())
     }
@@ -406,7 +401,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// 
     /// # Resource leaking
     /// 
-    /// See: [`TempDir`]
+    /// See [the resource leaking][resource-leaking] docs on `TempDir`.
     ///
     /// # Errors
     ///
@@ -426,7 +421,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// ```
     /// 
-    /// [`TempDir`]: struct.TempDir.html
+    /// [resource-leaking]: struct.TempDir.html#resource-leaking
     pub fn tempdir_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<TempDir> {
         let storage;
         let mut dir = dir.as_ref();
@@ -436,16 +431,6 @@ impl<'a, 'b> Builder<'a, 'b> {
             dir = &storage;
         }
 
-        for _ in 0..::NUM_RETRIES {
-            let path = dir.join(util::tmpname(self.prefix, self.suffix, self.random_len));
-
-            return match dir::create(path) {
-                Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
-                dir => dir
-            };
-        }
-
-        Err(io::Error::new(io::ErrorKind::AlreadyExists,
-                           "too many temporary directories exist"))
+        util::create_helper(dir, self.prefix, self.suffix, self.random_len, dir::create)
     }
 }

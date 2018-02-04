@@ -61,19 +61,14 @@ pub fn create_named(path: &Path) -> io::Result<File> {
 }
 
 pub fn create(dir: &Path) -> io::Result<File> {
-    for _ in 0..::NUM_RETRIES {
-        return match win_create(&dir.join(&util::tmpname(".tmp", "", ::NUM_RAND_CHARS)),
-                                ACCESS,
-                                0, // Exclusive
-                                CREATE_NEW,
-                                FLAGS | FILE_FLAG_DELETE_ON_CLOSE) {
-            Ok(f) => Ok(f),
-            Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
-            Err(e) => Err(e),
-        };
-    }
-    Err(io::Error::new(io::ErrorKind::AlreadyExists,
-                       "too many temporary directories already exist"))
+    util::create_helper(dir, ".tmp", "", ::NUM_RAND_CHARS, |path| {
+        win_create(
+            &path,
+            ACCESS,
+            0, // Exclusive
+            CREATE_NEW,
+            FLAGS | FILE_FLAG_DELETE_ON_CLOSE)
+    })
 }
 
 pub fn reopen(file: &File, _path: &Path) -> io::Result<File> {
