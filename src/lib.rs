@@ -114,7 +114,7 @@ mod dir;
 mod file;
 mod util;
 
-pub use file::{tempfile, tempfile_in, NamedTempFile, PersistError};
+pub use file::{tempfile, tempfile_in, TempPath, NamedTempFile, PersistError};
 pub use dir::{tempdir, tempdir_in, TempDir};
 
 /// Create a new temporary file or directory with custom parameters.
