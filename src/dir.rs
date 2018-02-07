@@ -148,11 +148,11 @@ pub fn tempdir_in<P: AsRef<Path>>(dir: P) -> io::Result<TempDir> {
 /// run, such as via [`std::process::exit()`], by segfaulting, or by
 /// receiving a signal like `SIGINT`, then the temporary directory
 /// will not be deleted.
-/// 
+///
 /// # Examples
 ///
 /// Create a temporary directory with a generated name:
-/// 
+///
 /// ```
 /// use std::fs::File;
 /// use std::io::Write;
@@ -165,9 +165,9 @@ pub fn tempdir_in<P: AsRef<Path>>(dir: P) -> io::Result<TempDir> {
 /// # Ok(())
 /// # }
 /// ```
-/// 
+///
 /// Create a temporary directory with a prefix in its name:
-/// 
+///
 /// ```
 /// use std::fs::File;
 /// use std::io::Write;
@@ -199,10 +199,10 @@ pub struct TempDir {
 
 impl TempDir {
     /// Attempts to make a temporary directory inside of `env::temp_dir()`.
-    /// 
+    ///
     /// See [`Builder`] for more configuration.
-    /// 
-    /// The directory and everything inside it will be automatically deleted 
+    ///
+    /// The directory and everything inside it will be automatically deleted
     /// once the returned `TempDir` is destroyed.
     ///
     /// # Errors
@@ -220,7 +220,7 @@ impl TempDir {
     /// # fn run() -> Result<(), io::Error> {
     /// // Create a directory inside of `std::env::temp_dir()`
     /// let tmp_dir = TempDir::new()?;
-    /// 
+    ///
     /// let file_path = tmp_dir.path().join("my-temporary-note.txt");
     /// let mut tmp_file = File::create(file_path)?;
     /// writeln!(tmp_file, "Brian was here. Briefly.")?;
@@ -230,7 +230,7 @@ impl TempDir {
     /// # Ok(())
     /// # }
     /// ```
-    /// 
+    ///
     /// [`Builder`]: struct.Builder.html
     pub fn new() -> io::Result<TempDir> {
         Builder::new().tempdir()
@@ -298,11 +298,13 @@ impl TempDir {
         self.path.as_ref().unwrap()
     }
 
-    /// Unwraps the [`Path`] contained in the `TempDir` and
-    /// returns it. This destroys the `TempDir` without deleting the
-    /// directory represented by the returned `Path`.
+    /// Persist the temporary directory to disk, returning the [`PathBuf`] where it is located.
     ///
-    /// [`Path`]: http://doc.rust-lang.org/std/path/struct.Path.html
+    /// This consumes the [`TempDir`] without deleting directory on the filesystem, meaning that
+    /// the directory will no longer be automatically deleted.
+    ///
+    /// [`TempDir`]: struct.TempDir.html
+    /// [`PathBuf`]: http://doc.rust-lang.org/std/path/struct.PathBuf.html
     ///
     /// # Examples
     ///
@@ -314,8 +316,8 @@ impl TempDir {
     /// # fn run() -> Result<(), io::Error> {
     /// let tmp_dir = TempDir::new()?;
     ///
-    /// // Convert `tmp_dir` into a `Path`, destroying the `TempDir`
-    /// // without deleting the directory.
+    /// // Persist the temporary directory to disk,
+    /// // getting the path where it is.
     /// let tmp_path = tmp_dir.into_path();
     ///
     /// // Delete the temporary directory ourselves.
