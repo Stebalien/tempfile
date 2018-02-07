@@ -1,8 +1,10 @@
 [package]
 name = "tempfile"
 version = "2.2.0"
-authors = ["Steven Allen <steven@stebalien.com>"]
-description = "Securely create temporary files."
+authors = ["Steven Allen <steven@stebalien.com>", "The Rust Project Developers"]
+description = """
+A library for managing temporary files and directories.
+"""
 
 documentation = "https://stebalien.github.io/tempfile/tempfile/"
 repository = "https://github.com/Stebalien/tempfile"
@@ -12,6 +14,7 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 rand = "0.4"
+remove_dir_all = "0.3"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
