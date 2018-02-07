@@ -136,3 +136,71 @@ fn test_immut() {
     (&tmpfile).read_to_string(&mut buf).unwrap();
     assert_eq!("abcde", buf);
 }
+
+#[test]
+fn test_temppath() {
+    let mut tmpfile = NamedTempFile::new().unwrap();
+    write!(tmpfile, "abcde").unwrap();
+
+    let path = tmpfile.into_temp_path();
+    assert!(path.is_file());
+}
+
+#[test]
+fn test_temppath_persist() {
+    let mut tmpfile = NamedTempFile::new().unwrap();
+    write!(tmpfile, "abcde").unwrap();
+
+    let tmppath = tmpfile.into_temp_path();
+
+    let old_path = tmppath.to_path_buf();
+    let persist_path = env::temp_dir().join("persisted_temppath_file");
+
+    {
+        assert!(exists(&old_path));
+        tmppath.persist(&persist_path).unwrap();
+        assert!(!exists(&old_path));
+    }
+
+    {
+        // Try opening it at the new path.
+        let mut f = File::open(&persist_path).unwrap();
+        f.seek(SeekFrom::Start(0)).unwrap();
+        let mut buf = String::new();
+        f.read_to_string(&mut buf).unwrap();
+        assert_eq!("abcde", buf);
+    }
+
+    std::fs::remove_file(&persist_path).unwrap();
+}
+
+#[test]
+fn test_temppath_persist_noclobber() {
+    let mut tmpfile = NamedTempFile::new().unwrap();
+    write!(tmpfile, "abcde").unwrap();
+
+    let mut tmppath = tmpfile.into_temp_path();
+
+    let old_path = tmppath.to_path_buf();
+    let persist_target = NamedTempFile::new().unwrap();
+    let persist_path = persist_target.path().to_path_buf();
+
+    assert!(exists(&old_path));
+
+    {
+        tmppath = tmppath.persist_noclobber(&persist_path).unwrap_err().into();
+        assert!(exists(&old_path));
+        std::fs::remove_file(&persist_path).unwrap();
+        drop(persist_target);
+    }
+
+    tmppath.persist_noclobber(&persist_path).unwrap();
+
+    // Try opening it at the new path.
+    let mut f = File::open(&persist_path).unwrap();
+    f.seek(SeekFrom::Start(0)).unwrap();
+    let mut buf = String::new();
+    f.read_to_string(&mut buf).unwrap();
+    assert_eq!("abcde", buf);
+    std::fs::remove_file(&persist_path).unwrap();
+}

@@ -1,9 +1,12 @@
 use std::io::{self, Read, Write, Seek, SeekFrom};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
+use std::ops::Deref;
+use std::ffi::OsStr;
 use std::error;
 use std::fmt;
 use std::env;
+use std::mem;
 use std;
 
 use ::Builder;
@@ -95,6 +98,252 @@ pub fn tempfile_in<P: AsRef<Path>>(dir: P) -> io::Result<File> {
     imp::create(dir.as_ref())
 }
 
+/// Error returned when persisting a temporary file path fails.
+#[derive(Debug)]
+pub struct PathPersistError {
+    /// The underlying IO error.
+    pub error: io::Error,
+    /// The temporary file path that couldn't be persisted.
+    pub path: TempPath,
+}
+
+impl From<PathPersistError> for io::Error {
+    #[inline]
+    fn from(error: PathPersistError) -> io::Error {
+        error.error
+    }
+}
+
+impl From<PathPersistError> for TempPath {
+    #[inline]
+    fn from(error: PathPersistError) -> TempPath {
+        error.path
+    }
+}
+
+impl fmt::Display for PathPersistError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "failed to persist temporary file path: {}", self.error)
+    }
+}
+
+impl error::Error for PathPersistError {
+    fn description(&self) -> &str {
+        "failed to persist temporary file path"
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        Some(&self.error)
+    }
+}
+
+/// A path to a named temporary file without an open file handle.
+///
+/// This is useful when the temporary file needs to be used by a child process,
+/// for example.
+///
+/// When dropped, the temporary file is deleted.
+pub struct TempPath {
+    path: PathBuf,
+}
+
+impl TempPath {
+    /// Close and remove the temporary file.
+    ///
+    /// Use this if you want to detect errors in deleting the file.
+    ///
+    /// # Errors
+    ///
+    /// If the file cannot be deleted, `Err` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # extern crate tempfile;
+    /// # use std::io;
+    /// use tempfile::NamedTempFile;
+    ///
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// let file = NamedTempFile::new()?;
+    ///
+    /// // Close the file, but keep the path to it around.
+    /// let path = file.into_temp_path();
+    ///
+    /// // By closing the `TempPath` explicitly, we can check that it has
+    /// // been deleted successfully. If we don't close it explicitly, the
+    /// // file will still be deleted when `file` goes out of scope, but we
+    /// // won't know whether deleting the file succeeded.
+    /// path.close()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn close(mut self) -> io::Result<()> {
+        let result = fs::remove_file(&self.path);
+        mem::replace(&mut self.path, PathBuf::new());
+        mem::forget(self);
+        result
+    }
+
+    /// Persist the temporary file at the target path.
+    ///
+    /// If a file exists at the target path, persist will atomically replace it.
+    /// If this method fails, it will return `self` in the resulting
+    /// [`PathPersistError`].
+    ///
+    /// Note: Temporary files cannot be persisted across filesystems.
+    ///
+    /// # Security
+    ///
+    /// Only use this method if you're positive that a temporary file cleaner
+    /// won't have deleted your file. Otherwise, you might end up persisting an
+    /// attacker controlled file.
+    ///
+    /// # Errors
+    ///
+    /// If the file cannot be moved to the new location, `Err` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::io::{self, Write};
+    /// # extern crate tempfile;
+    /// use tempfile::NamedTempFile;
+    ///
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// let mut file = NamedTempFile::new()?;
+    /// writeln!(file, "Brian was here. Briefly.")?;
+    ///
+    /// let path = file.into_temp_path();
+    /// path.persist("./saved_file.txt")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`PathPersistError`]: struct.PathPersistError.html
+    pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<(), PathPersistError> {
+        match imp::persist(&self.path, new_path.as_ref(), true) {
+            Ok(_) => {
+                // Don't drop `self`. We don't want to try deleting the old
+                // temporary file path. (It'll fail, but the failure is never
+                // seen.)
+                mem::replace(&mut self.path, PathBuf::new());
+                mem::forget(self);
+                Ok(())
+            }
+            Err(e) => {
+                Err(PathPersistError {
+                    error: e,
+                    path: self,
+                })
+            }
+        }
+    }
+
+    /// Persist the temporary file at the target path iff no file exists there.
+    ///
+    /// If a file exists at the target path, fail. If this method fails, it will
+    /// return `self` in the resulting [`PathPersistError`].
+    ///
+    /// Note: Temporary files cannot be persisted across filesystems. Also Note:
+    /// This method is not atomic. It can leave the original link to the
+    /// temporary file behind.
+    ///
+    /// # Security
+    ///
+    /// Only use this method if you're positive that a temporary file cleaner
+    /// won't have deleted your file. Otherwise, you might end up persisting an
+    /// attacker controlled file.
+    ///
+    /// # Errors
+    ///
+    /// If the file cannot be moved to the new location or a file already exists
+    /// there, `Err` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::io::{self, Write};
+    /// # extern crate tempfile;
+    /// use tempfile::NamedTempFile;
+    ///
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// let mut file = NamedTempFile::new()?;
+    /// writeln!(file, "Brian was here. Briefly.")?;
+    ///
+    /// let path = file.into_temp_path();
+    /// path.persist_noclobber("./saved_file.txt")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`PathPersistError`]: struct.PathPersistError.html
+    pub fn persist_noclobber<P: AsRef<Path>>(mut self, new_path: P) -> Result<(), PathPersistError> {
+        match imp::persist(&self.path, new_path.as_ref(), false) {
+            Ok(_) => {
+                // Don't drop `self`. We don't want to try deleting the old
+                // temporary file path. (It'll fail, but the failure is never
+                // seen.)
+                mem::replace(&mut self.path, PathBuf::new());
+                mem::forget(self);
+                Ok(())
+            }
+            Err(e) => {
+                Err(PathPersistError {
+                    error: e,
+                    path: self,
+                })
+            }
+        }
+    }
+}
+
+impl fmt::Debug for TempPath {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.path.fmt(f)
+    }
+}
+
+impl Drop for TempPath {
+    fn drop(&mut self) {
+        let _ = fs::remove_file(&self.path);
+    }
+}
+
+impl Deref for TempPath {
+    type Target = Path;
+
+    fn deref(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl AsRef<Path> for TempPath {
+    fn as_ref(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl AsRef<OsStr> for TempPath {
+    fn as_ref(&self) -> &OsStr {
+        self.path.as_os_str()
+    }
+}
+
 /// A named temporary file.
 ///
 /// The default constructor, [`NamedTempFile::new()`], creates files in
@@ -120,16 +369,14 @@ pub fn tempfile_in<P: AsRef<Path>>(dir: P) -> io::Result<File> {
 /// [`NamedTempFile::new_in()`]: #method.new_in
 /// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 /// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
-pub struct NamedTempFile(Option<NamedTempFileInner>);
-
-struct NamedTempFileInner {
+pub struct NamedTempFile {
+    path: TempPath,
     file: File,
-    path: PathBuf,
 }
 
 impl fmt::Debug for NamedTempFile {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "NamedTempFile({:?})", self.inner().path)
+        write!(f, "NamedTempFile({:?})", self.path)
     }
 }
 
@@ -179,21 +426,6 @@ impl error::Error for PersistError {
 }
 
 impl NamedTempFile {
-    #[inline]
-    fn inner(&self) -> &NamedTempFileInner {
-        self.0.as_ref().unwrap()
-    }
-
-    #[inline]
-    fn inner_mut(&mut self) -> &mut NamedTempFileInner {
-        self.0.as_mut().unwrap()
-    }
-
-    #[inline]
-    fn take_inner(&mut self) -> NamedTempFileInner {
-        self.0.take().unwrap()
-    }
-
     /// Create a new named temporary file.
     ///
     /// See [`Builder`] for more configuration.
@@ -285,7 +517,7 @@ impl NamedTempFile {
     /// ```
     #[inline]
     pub fn path(&self) -> &Path {
-        &self.inner().path
+        &self.path
     }
 
     /// Close and remove the temporary file.
@@ -320,10 +552,9 @@ impl NamedTempFile {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn close(mut self) -> io::Result<()> {
-        let NamedTempFileInner { path, file } = self.take_inner();
-        drop(file);
-        fs::remove_file(path)
+    pub fn close(self) -> io::Result<()> {
+        let NamedTempFile { path, file: _ } = self;
+        path.close()
     }
 
     /// Persist the temporary file at the target path.
@@ -366,13 +597,18 @@ impl NamedTempFile {
     /// ```
     ///
     /// [`PersistError`]: struct.PersistError.html
-    pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
-        match imp::persist(&self.inner().path, new_path.as_ref(), true) {
-            Ok(_) => Ok(self.take_inner().file),
-            Err(e) => {
+    pub fn persist<P: AsRef<Path>>(self, new_path: P) -> Result<File, PersistError> {
+        let NamedTempFile { path, file } = self;
+        match path.persist(new_path) {
+            Ok(_) => Ok(file),
+            Err(err) => {
+                let PathPersistError { error, path } = err;
                 Err(PersistError {
-                    file: self,
-                    error: e,
+                    file: NamedTempFile {
+                        path: path,
+                        file: file,
+                    },
+                    error: error,
                 })
             }
         }
@@ -418,13 +654,18 @@ impl NamedTempFile {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn persist_noclobber<P: AsRef<Path>>(mut self, new_path: P) -> Result<File, PersistError> {
-        match imp::persist(&self.inner().path, new_path.as_ref(), false) {
-            Ok(_) => Ok(self.take_inner().file),
-            Err(e) => {
+    pub fn persist_noclobber<P: AsRef<Path>>(self, new_path: P) -> Result<File, PersistError> {
+        let NamedTempFile { path, file } = self;
+        match path.persist_noclobber(new_path) {
+            Ok(_) => Ok(file),
+            Err(err) => {
+                let PathPersistError { error, path } = err;
                 Err(PersistError {
-                    file: self,
-                    error: e,
+                    file: NamedTempFile {
+                        path: path,
+                        file: file,
+                    },
+                    error: error,
                 })
             }
         }
@@ -466,30 +707,27 @@ impl NamedTempFile {
 
     /// Get a reference to the underlying file.
     pub fn as_file(&self) -> &File {
-        &self.inner().file
+        &self.file
     }
 
     /// Get a mutable reference to the underlying file.
     pub fn as_file_mut(&mut self) -> &mut File {
-        &mut self.inner_mut().file
+        &mut self.file
     }
 
     /// Convert the temporary file into a `std::fs::File`.
-    /// 
+    ///
     /// The inner file will be deleted.
-    pub fn into_file(mut self) -> File {
-        let NamedTempFileInner { path, file } = self.take_inner();
-        let _ = fs::remove_file(path);
-        file
+    pub fn into_file(self) -> File {
+        self.file
     }
-}
 
-impl Drop for NamedTempFile {
-    fn drop(&mut self) {
-        if let Some(NamedTempFileInner { file, path }) = self.0.take() {
-            drop(file);
-            let _ = fs::remove_file(path);
-        }
+    /// Closes the file, leaving only the temporary file path.
+    ///
+    /// This is useful when another process must be able to open the temporary
+    /// file.
+    pub fn into_temp_path(self) -> TempPath {
+        self.path
     }
 }
 
@@ -555,9 +793,9 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
 
 // pub(crate)
 pub fn create_named(path: PathBuf) -> io::Result<NamedTempFile> {
-    imp::create_named(&path).map(|file| 
-        NamedTempFile(Some(NamedTempFileInner {
-            path: path,
+    imp::create_named(&path).map(|file|
+        NamedTempFile {
+            path: TempPath { path: path },
             file: file,
-        })))
+        })
 }
