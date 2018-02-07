@@ -1,15 +1,32 @@
 tempfile
 ========
 
-Minimum Rust Version: 1.15.0
+[![Crate](https://img.shields.io/crates/v/tempfile.svg)](https://crates.io/crates/tempfile)
+[![Build Status](https://travis-ci.org/Stebalien/tempfile.svg?branch=master)](https://travis-ci.org/Stebalien/tempfile)
+[![Build status](https://ci.appveyor.com/api/projects/status/5q00b8rvvg46i5tf/branch/master?svg=true)](https://ci.appveyor.com/project/Stebalien/tempfile/branch/master)
 
-Linux/MacOS: [![Build Status](https://travis-ci.org/Stebalien/tempfile.svg?branch=master)](https://travis-ci.org/Stebalien/tempfile)
-Windows: [![Build status](https://ci.appveyor.com/api/projects/status/5q00b8rvvg46i5tf/branch/master?svg=true)](https://ci.appveyor.com/project/Stebalien/tempfile/branch/master)
-
-A secure cross-platform temporary file library for rust. In addition to creating
+A secure, cross-platform, temporary file library for Rust. In addition to creating
 temporary files, this library also allows users to securely open multiple
 independent references to the same temporary file (useful for consumer/producer
 patterns and surprisingly difficult to implement securely).
+
+[Documentation](https://docs.rs/tempfile/)
+
+Usage
+-----
+
+Minimum required Rust version: 1.15.0
+
+Add this to your `Cargo.toml`:
+```toml
+[dependencies]
+tempfile = "2"
+```
+
+...and this to your crate root:
+```rust
+extern crate tempfile;
+```
 
 Example
 -------
@@ -33,8 +50,3 @@ fn main() {
     assert_eq!("Hello World!", buf);
 }
 ```
-
-Documentation
--------------
-
-https://stebalien.github.com/tempfile/tempfile/
