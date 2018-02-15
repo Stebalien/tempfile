@@ -14,7 +14,7 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 rand = "0.4"
-remove_dir_all = "0.3"
+remove_dir_all = "0.5"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
