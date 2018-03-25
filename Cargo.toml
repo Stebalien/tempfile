@@ -1,12 +1,17 @@
 [package]
 name = "tempfile"
-version = "2.2.0"
-authors = ["Steven Allen <steven@stebalien.com>", "The Rust Project Developers"]
+version = "3.0.0"
+authors = [
+  "Steven Allen <steven@stebalien.com>",
+  "The Rust Project Developers",
+  "Ashley Mannix <ashleymannix@live.com.au>",
+  "Jason White <jasonaw0@gmail.com>",
+]
 description = """
 A library for managing temporary files and directories.
 """
 
-documentation = "https://stebalien.github.io/tempfile/tempfile/"
+documentation = "https://docs.rs/tempfile"
 repository = "https://github.com/Stebalien/tempfile"
 homepage = "http://stebalien.com/projects/tempfile-rs"
 keywords = ["tempfile", "tmpfile", "filesystem"]
