@@ -20,7 +20,7 @@ Minimum required Rust version: 1.15.0
 Add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-tempfile = "2"
+tempfile = "3"
 ```
 
 ...and this to your crate root:
