@@ -65,7 +65,7 @@ pub fn create_named(path: PathBuf) -> io::Result<File> {
 
 #[cfg(target_os = "linux")]
 pub fn create(dir: &Path) -> io::Result<File> {
-    const O_TMPFILE: c_int = 0o20200000;
+    use libc::O_TMPFILE;
     match unsafe {
         let path = cstr(dir)?;
         open(
