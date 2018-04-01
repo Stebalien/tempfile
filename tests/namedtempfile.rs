@@ -1,14 +1,13 @@
 extern crate tempfile;
-use tempfile::{NamedTempFile, Builder};
 use std::env;
-use std::io::{Write, Read, Seek, SeekFrom};
 use std::fs::File;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
+use tempfile::{Builder, NamedTempFile};
 
 fn exists<P: AsRef<Path>>(path: P) -> bool {
     std::fs::metadata(path.as_ref()).is_ok()
 }
-
 
 #[test]
 fn test_basic() {
@@ -96,7 +95,6 @@ fn test_customnamed() {
     assert_eq!(name.len(), 18);
 }
 
-
 #[test]
 fn test_reopen() {
     let source = NamedTempFile::new().unwrap();
@@ -125,7 +123,6 @@ fn test_into_file() {
     file.read_to_string(&mut buf).unwrap();
     assert_eq!("abcde", buf);
 }
-
 
 #[test]
 fn test_immut() {

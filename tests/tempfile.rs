@@ -1,5 +1,5 @@
 extern crate tempfile;
-use std::io::{Write, Read, Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom, Write};
 
 #[test]
 fn test_basic() {

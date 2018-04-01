@@ -19,7 +19,12 @@ use std::thread;
 use tempfile::{Builder, TempDir};
 
 macro_rules! t {
-    ($e:expr) => (match $e { Ok(n) => n, Err(e) => panic!("error: {}", e) })
+    ($e:expr) => {
+        match $e {
+            Ok(n) => n,
+            Err(e) => panic!("error: {}", e),
+        }
+    };
 }
 
 trait PathExt {
@@ -28,7 +33,9 @@ trait PathExt {
 }
 
 impl PathExt for Path {
-    fn exists(&self) -> bool { fs::metadata(self).is_ok() }
+    fn exists(&self) -> bool {
+        fs::metadata(self).is_ok()
+    }
     fn is_dir(&self) -> bool {
         fs::metadata(self).map(|m| m.is_dir()).unwrap_or(false)
     }
@@ -60,7 +67,7 @@ fn test_customnamed() {
 
 fn test_rm_tempdir() {
     let (tx, rx) = channel();
-    let f = move|| -> () {
+    let f = move || -> () {
         let tmp = t!(TempDir::new());
         tx.send(tmp.path().to_path_buf()).unwrap();
         panic!("panic to unwind past `tmp`");
@@ -71,7 +78,7 @@ fn test_rm_tempdir() {
 
     let tmp = t!(TempDir::new());
     let path = tmp.path().to_path_buf();
-    let f = move|| -> () {
+    let f = move || -> () {
         let _tmp = tmp;
         panic!("panic to unwind past `tmp`");
     };
@@ -80,9 +87,7 @@ fn test_rm_tempdir() {
 
     let path;
     {
-        let f = move || {
-            t!(TempDir::new())
-        };
+        let f = move || t!(TempDir::new());
 
         let tmp = thread::spawn(f).join().unwrap();
         path = tmp.path().to_path_buf();
@@ -102,7 +107,7 @@ fn test_rm_tempdir() {
 
 fn test_rm_tempdir_close() {
     let (tx, rx) = channel();
-    let f = move|| -> () {
+    let f = move || -> () {
         let tmp = t!(TempDir::new());
         tx.send(tmp.path().to_path_buf()).unwrap();
         t!(tmp.close());
@@ -114,7 +119,7 @@ fn test_rm_tempdir_close() {
 
     let tmp = t!(TempDir::new());
     let path = tmp.path().to_path_buf();
-    let f = move|| -> () {
+    let f = move || -> () {
         let tmp = tmp;
         t!(tmp.close());
         panic!("panic when unwinding past `tmp`");
@@ -124,9 +129,7 @@ fn test_rm_tempdir_close() {
 
     let path;
     {
-        let f = move || {
-            t!(TempDir::new())
-        };
+        let f = move || t!(TempDir::new());
 
         let tmp = thread::spawn(f).join().unwrap();
         path = tmp.path().to_path_buf();
@@ -150,8 +153,12 @@ fn test_rm_tempdir_close() {
 fn recursive_mkdir_rel() {
     let path = Path::new("frob");
     let cwd = env::current_dir().unwrap();
-    println!("recursive_mkdir_rel: Making: {} in cwd {} [{}]", path.display(),
-           cwd.display(), path.exists());
+    println!(
+        "recursive_mkdir_rel: Making: {} in cwd {} [{}]",
+        path.display(),
+        cwd.display(),
+        path.exists()
+    );
     t!(fs::create_dir(&path));
     assert!(path.is_dir());
     t!(fs::create_dir_all(&path));
@@ -168,14 +175,21 @@ fn recursive_mkdir_dot() {
 fn recursive_mkdir_rel_2() {
     let path = Path::new("./frob/baz");
     let cwd = env::current_dir().unwrap();
-    println!("recursive_mkdir_rel_2: Making: {} in cwd {} [{}]", path.display(),
-             cwd.display(), path.exists());
+    println!(
+        "recursive_mkdir_rel_2: Making: {} in cwd {} [{}]",
+        path.display(),
+        cwd.display(),
+        path.exists()
+    );
     t!(fs::create_dir_all(&path));
     assert!(path.is_dir());
     assert!(path.parent().unwrap().is_dir());
     let path2 = Path::new("quux/blat");
-    println!("recursive_mkdir_rel_2: Making: {} in cwd {}", path2.display(),
-             cwd.display());
+    println!(
+        "recursive_mkdir_rel_2: Making: {} in cwd {}",
+        path2.display(),
+        cwd.display()
+    );
     t!(fs::create_dir("quux"));
     t!(fs::create_dir_all(&path2));
     assert!(path2.is_dir());
@@ -200,7 +214,7 @@ pub fn test_remove_dir_all_ok() {
 }
 
 pub fn dont_double_panic() {
-    let r: Result<(), _> = thread::spawn(move|| {
+    let r: Result<(), _> = thread::spawn(move || {
         let tmpdir = TempDir::new().unwrap();
         // Remove the temporary directory so that TempDir sees
         // an error on drop
@@ -212,7 +226,10 @@ pub fn dont_double_panic() {
     assert!(r.is_err());
 }
 
-fn in_tmpdir<F>(f: F) where F: FnOnce() {
+fn in_tmpdir<F>(f: F)
+where
+    F: FnOnce(),
+{
     let tmpdir = t!(TempDir::new());
     assert!(env::set_current_dir(tmpdir.path()).is_ok());
 

@@ -8,11 +8,11 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{io, fmt, fs};
-use std::path::{self, PathBuf, Path};
 use remove_dir_all::remove_dir_all;
+use std::path::{self, Path, PathBuf};
+use std::{fmt, fs, io};
 
-use ::Builder;
+use Builder;
 
 /// Create a new temporary directory.
 ///
@@ -398,7 +398,7 @@ impl Drop for TempDir {
     fn drop(&mut self) {
         // Path is `None` if `close()` or `into_path()` has been called.
         if let Some(ref p) = self.path {
-            let _ =  remove_dir_all(p);
+            let _ = remove_dir_all(p);
         }
     }
 }

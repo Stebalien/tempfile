@@ -22,7 +22,7 @@ rand = "0.4"
 remove_dir_all = "0.5"
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2"
+libc = "0.2.27"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["fileapi", "winbase", "handleapi"] }
