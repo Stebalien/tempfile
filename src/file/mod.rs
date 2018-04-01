@@ -552,7 +552,7 @@ impl NamedTempFile {
     /// # }
     /// ```
     pub fn close(self) -> io::Result<()> {
-        let NamedTempFile { path, file: _ } = self;
+        let NamedTempFile { path, .. } = self;
         path.close()
     }
 
@@ -603,11 +603,8 @@ impl NamedTempFile {
             Err(err) => {
                 let PathPersistError { error, path } = err;
                 Err(PersistError {
-                    file: NamedTempFile {
-                        path: path,
-                        file: file,
-                    },
-                    error: error,
+                    file: NamedTempFile { path, file },
+                    error,
                 })
             }
         }
@@ -660,11 +657,8 @@ impl NamedTempFile {
             Err(err) => {
                 let PathPersistError { error, path } = err;
                 Err(PersistError {
-                    file: NamedTempFile {
-                        path: path,
-                        file: file,
-                    },
-                    error: error,
+                    file: NamedTempFile { path, file },
+                    error,
                 })
             }
         }
@@ -793,7 +787,7 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
 // pub(crate)
 pub fn create_named(path: PathBuf) -> io::Result<NamedTempFile> {
     imp::create_named(&path).map(|file| NamedTempFile {
-        path: TempPath { path: path },
-        file: file,
+        path: TempPath { path },
+        file,
     })
 }

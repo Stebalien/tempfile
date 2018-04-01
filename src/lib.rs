@@ -125,6 +125,16 @@ pub struct Builder<'a, 'b> {
     suffix: &'b str,
 }
 
+impl<'a, 'b> Default for Builder<'a, 'b> {
+    fn default() -> Self {
+        Builder {
+            random_len: ::NUM_RAND_CHARS,
+            prefix: ".tmp",
+            suffix: "",
+        }
+    }
+}
+
 impl<'a, 'b> Builder<'a, 'b> {
     /// Create a new `Builder`.
     ///
@@ -198,11 +208,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// ```
     pub fn new() -> Self {
-        Builder {
-            random_len: ::NUM_RAND_CHARS,
-            prefix: ".tmp",
-            suffix: "",
-        }
+        Self::default()
     }
 
     /// Set a custom filename prefix.

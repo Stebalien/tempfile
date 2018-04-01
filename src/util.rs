@@ -17,9 +17,9 @@ fn tmpname(prefix: &str, suffix: &str, rand_len: usize) -> OsString {
         rand::thread_rng().fill_bytes(bytes);
         for byte in bytes.iter_mut() {
             *byte = match *byte % 62 {
-                v @ 0...9 => (v + b'0' as u8),
-                v @ 10...35 => (v - 10 + b'a' as u8),
-                v @ 36...61 => (v - 36 + b'A' as u8),
+                v @ 0...9 => (v + b'0'),
+                v @ 10...35 => (v - 10 + b'a'),
+                v @ 36...61 => (v - 36 + b'A'),
                 _ => unreachable!(),
             }
         }
