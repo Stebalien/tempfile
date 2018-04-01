@@ -1,15 +1,15 @@
-use std::io::{self, Read, Write, Seek, SeekFrom};
-use std::fs::{self, File};
-use std::path::{Path, PathBuf};
-use std::ops::Deref;
-use std::ffi::OsStr;
-use std::error;
-use std::fmt;
-use std::env;
-use std::mem;
 use std;
+use std::env;
+use std::error;
+use std::ffi::OsStr;
+use std::fmt;
+use std::fs::{self, File};
+use std::io::{self, Read, Seek, SeekFrom, Write};
+use std::mem;
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
 
-use ::Builder;
+use Builder;
 
 mod imp;
 
@@ -240,12 +240,10 @@ impl TempPath {
                 mem::forget(self);
                 Ok(())
             }
-            Err(e) => {
-                Err(PathPersistError {
-                    error: e,
-                    path: self,
-                })
-            }
+            Err(e) => Err(PathPersistError {
+                error: e,
+                path: self,
+            }),
         }
     }
 
@@ -292,7 +290,10 @@ impl TempPath {
     /// ```
     ///
     /// [`PathPersistError`]: struct.PathPersistError.html
-    pub fn persist_noclobber<P: AsRef<Path>>(mut self, new_path: P) -> Result<(), PathPersistError> {
+    pub fn persist_noclobber<P: AsRef<Path>>(
+        mut self,
+        new_path: P,
+    ) -> Result<(), PathPersistError> {
         match imp::persist(&self.path, new_path.as_ref(), false) {
             Ok(_) => {
                 // Don't drop `self`. We don't want to try deleting the old
@@ -302,12 +303,10 @@ impl TempPath {
                 mem::forget(self);
                 Ok(())
             }
-            Err(e) => {
-                Err(PathPersistError {
-                    error: e,
-                    path: self,
-                })
-            }
+            Err(e) => Err(PathPersistError {
+                error: e,
+                path: self,
+            }),
         }
     }
 }
@@ -793,9 +792,8 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
 
 // pub(crate)
 pub fn create_named(path: PathBuf) -> io::Result<NamedTempFile> {
-    imp::create_named(&path).map(|file|
-        NamedTempFile {
-            path: TempPath { path: path },
-            file: file,
-        })
+    imp::create_named(&path).map(|file| NamedTempFile {
+        path: TempPath { path: path },
+        file: file,
+    })
 }

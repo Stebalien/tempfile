@@ -2,7 +2,7 @@
 //!
 //! - Use the [`tempfile()`] function for temporary files
 //! - Use the [`tempdir()`] function for temporary directories.
-//! 
+//!
 //! # Design
 //!
 //! This crate provides several approaches to creating temporary files and directories.
@@ -92,8 +92,8 @@
        html_root_url = "https://docs.rs/tempfile/2.2.0")]
 #![cfg_attr(test, deny(warnings))]
 
-extern crate remove_dir_all;
 extern crate rand;
+extern crate remove_dir_all;
 
 #[cfg(unix)]
 extern crate libc;
@@ -107,15 +107,15 @@ extern crate syscall;
 const NUM_RETRIES: u32 = 1 << 31;
 const NUM_RAND_CHARS: usize = 6;
 
-use std::{io, env};
 use std::path::Path;
+use std::{env, io};
 
 mod dir;
 mod file;
 mod util;
 
-pub use file::{tempfile, tempfile_in, TempPath, NamedTempFile, PersistError};
 pub use dir::{tempdir, tempdir_in, TempDir};
+pub use file::{tempfile, tempfile_in, NamedTempFile, PersistError, TempPath};
 
 /// Create a new temporary file or directory with custom parameters.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -131,7 +131,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// Create a named temporary file and write some data into it:
-    /// 
+    ///
     /// ```
     /// # extern crate tempfile;
     /// # use std::io;
@@ -162,9 +162,9 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Ok(())
     /// # }
     /// ```
-    /// 
+    ///
     /// Create a temporary directory and add a file to it:
-    /// 
+    ///
     /// ```
     /// # extern crate tempfile;
     /// # use std::io::{self, Write};
@@ -293,9 +293,9 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Security
     ///
     /// See [the security][security] docs on `NamedTempFile`.
-    /// 
+    ///
     /// # Resource leaking
-    /// 
+    ///
     /// See [the resource leaking][resource-leaking] docs on `NamedTempFile`.
     ///
     /// # Errors
@@ -330,11 +330,11 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Security
     ///
     /// See [the security][security] docs on `NamedTempFile`.
-    /// 
+    ///
     /// # Resource leaking
-    /// 
+    ///
     /// See [the resource leaking][resource-leaking] docs on `NamedTempFile`.
-    /// 
+    ///
     /// # Errors
     ///
     /// If the file cannot be created, `Err` is returned.
@@ -359,8 +359,13 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// [security]: struct.NamedTempFile.html#security
     /// [resource-leaking]: struct.NamedTempFile.html#resource-leaking
     pub fn tempfile_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
-        util::create_helper(dir.as_ref(), self.prefix, self.suffix, self.random_len, file::create_named)
-
+        util::create_helper(
+            dir.as_ref(),
+            self.prefix,
+            self.suffix,
+            self.random_len,
+            file::create_named,
+        )
     }
 
     /// Attempts to make a temporary directory inside of `env::temp_dir()` whose
@@ -369,9 +374,9 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// returned `TempDir` is destroyed.
     ///
     /// # Resource leaking
-    /// 
+    ///
     /// See [the resource leaking][resource-leaking] docs on `TempDir`.
-    /// 
+    ///
     /// # Errors
     ///
     /// If the directory can not be created, `Err` is returned.
@@ -389,18 +394,18 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Ok(())
     /// # }
     /// ```
-    /// 
+    ///
     /// [resource-leaking]: struct.TempDir.html#resource-leaking
     pub fn tempdir(&self) -> io::Result<TempDir> {
         self.tempdir_in(&env::temp_dir())
     }
 
     /// Attempts to make a temporary directory inside of `dir`.
-    /// The directory and everything inside it will be automatically 
+    /// The directory and everything inside it will be automatically
     /// deleted once the returned `TempDir` is destroyed.
-    /// 
+    ///
     /// # Resource leaking
-    /// 
+    ///
     /// See [the resource leaking][resource-leaking] docs on `TempDir`.
     ///
     /// # Errors
@@ -420,7 +425,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Ok(())
     /// # }
     /// ```
-    /// 
+    ///
     /// [resource-leaking]: struct.TempDir.html#resource-leaking
     pub fn tempdir_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<TempDir> {
         let storage;

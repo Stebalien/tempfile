@@ -1,18 +1,18 @@
-use std::os::windows::ffi::OsStrExt;
-use std::os::windows::io::{FromRawHandle, AsRawHandle, RawHandle};
-use std::path::Path;
-use std::io;
-use std::ptr;
 use std::fs::File;
+use std::io;
+use std::os::windows::ffi::OsStrExt;
+use std::os::windows::io::{AsRawHandle, FromRawHandle, RawHandle};
+use std::path::Path;
+use std::ptr;
 
 use winapi::shared::minwindef::DWORD;
 use winapi::um::fileapi::{CreateFileW, SetFileAttributesW, CREATE_NEW};
 use winapi::um::handleapi::INVALID_HANDLE_VALUE;
-use winapi::um::winbase::{MOVEFILE_REPLACE_EXISTING, FILE_FLAG_DELETE_ON_CLOSE};
-use winapi::um::winbase::{ReOpenFile, MoveFileExW};
-use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY, FILE_ATTRIBUTE_HIDDEN};
-use winapi::um::winnt::{FILE_GENERIC_WRITE, FILE_GENERIC_READ, HANDLE};
-use winapi::um::winnt::{FILE_SHARE_READ, FILE_SHARE_DELETE, FILE_SHARE_WRITE};
+use winapi::um::winbase::{FILE_FLAG_DELETE_ON_CLOSE, MOVEFILE_REPLACE_EXISTING};
+use winapi::um::winbase::{MoveFileExW, ReOpenFile};
+use winapi::um::winnt::{FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY};
+use winapi::um::winnt::{FILE_GENERIC_READ, FILE_GENERIC_WRITE, HANDLE};
+use winapi::um::winnt::{FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE};
 
 use util;
 
@@ -27,27 +27,31 @@ const SHARE_MODE: DWORD = FILE_SHARE_DELETE
 const FLAGS: DWORD      = FILE_ATTRIBUTE_HIDDEN
                         | FILE_ATTRIBUTE_TEMPORARY;
 
-
 fn to_utf16(s: &Path) -> Vec<u16> {
-    s.as_os_str().encode_wide().chain(Some(0).into_iter()).collect()
+    s.as_os_str()
+        .encode_wide()
+        .chain(Some(0).into_iter())
+        .collect()
 }
 
-fn win_create(path: &Path,
-              access: DWORD,
-              share_mode: DWORD,
-              disp: DWORD,
-              flags: DWORD)
-              -> io::Result<File> {
-
+fn win_create(
+    path: &Path,
+    access: DWORD,
+    share_mode: DWORD,
+    disp: DWORD,
+    flags: DWORD,
+) -> io::Result<File> {
     let path = to_utf16(path);
     let handle = unsafe {
-        CreateFileW(path.as_ptr(),
-                    access,
-                    share_mode,
-                    0 as *mut _,
-                    disp,
-                    flags,
-                    ptr::null_mut())
+        CreateFileW(
+            path.as_ptr(),
+            access,
+            share_mode,
+            0 as *mut _,
+            disp,
+            flags,
+            ptr::null_mut(),
+        )
     };
     if handle == INVALID_HANDLE_VALUE {
         Err(io::Error::last_os_error())
@@ -67,7 +71,8 @@ pub fn create(dir: &Path) -> io::Result<File> {
             ACCESS,
             0, // Exclusive
             CREATE_NEW,
-            FLAGS | FILE_FLAG_DELETE_ON_CLOSE)
+            FLAGS | FILE_FLAG_DELETE_ON_CLOSE,
+        )
     })
 }
 

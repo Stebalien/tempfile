@@ -1,21 +1,21 @@
 #[cfg(not(target_os = "redox"))]
-use libc::{rename, link, unlink, c_char, c_int, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
-use std::os::unix::ffi::OsStrExt;
+use libc::{c_char, c_int, link, rename, unlink, O_CLOEXEC, O_CREAT, O_EXCL, O_RDWR};
 use std::ffi::CString;
-use std::io;
-use std::os::unix::io::{RawFd, FromRawFd, AsRawFd};
 use std::fs::{File, OpenOptions};
+use std::io;
+use std::os::unix::ffi::OsStrExt;
+use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
 use std::path::Path;
 use util;
 
 #[cfg(all(lfs_support, target_os = "linux"))]
-use libc::{open64 as open, fstat64 as fstat, stat64 as stat_t};
+use libc::{fstat64 as fstat, open64 as open, stat64 as stat_t};
 
 #[cfg(not(any(all(lfs_support, target_os = "linux"), target_os = "redox")))]
-use libc::{open, fstat, stat as stat_t};
+use libc::{fstat, open, stat as stat_t};
 
 #[cfg(target_os = "redox")]
-use syscall::{self, open, fstat, Stat as stat_t, O_EXCL, O_RDWR, O_CREAT, O_CLOEXEC};
+use syscall::{self, fstat, open, Stat as stat_t, O_CLOEXEC, O_CREAT, O_EXCL, O_RDWR};
 
 #[cfg(not(target_os = "redox"))]
 #[inline(always)]
@@ -44,9 +44,11 @@ pub fn cstr(path: &Path) -> io::Result<CString> {
 pub fn create_named(path: &Path) -> io::Result<File> {
     unsafe {
         let path = cstr(path)?;
-        let fd = cvt_err(open(path.as_ptr() as *const c_char,
-                              O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
-                              0o600))?;
+        let fd = cvt_err(open(
+            path.as_ptr() as *const c_char,
+            O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
+            0o600,
+        ))?;
         Ok(FromRawFd::from_raw_fd(fd))
     }
 }
@@ -54,8 +56,10 @@ pub fn create_named(path: &Path) -> io::Result<File> {
 #[cfg(target_os = "redox")]
 pub fn create_named(path: PathBuf) -> io::Result<File> {
     unsafe {
-        let fd = cvt_err(open(path.as_os_str().as_bytes(),
-                                   O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT | 0o600))?;
+        let fd = cvt_err(open(
+            path.as_os_str().as_bytes(),
+            O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT | 0o600,
+        ))?;
         Ok(FromRawFd::from_raw_fd(fd))
     }
 }
@@ -65,9 +69,11 @@ pub fn create(dir: &Path) -> io::Result<File> {
     const O_TMPFILE: c_int = 0o20200000;
     match unsafe {
         let path = cstr(dir)?;
-        open(path.as_ptr() as *const c_char,
-             O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR,
-             0o600)
+        open(
+            path.as_ptr() as *const c_char,
+            O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR,
+            0o600,
+        )
     } {
         -1 => create_unix(dir),
         fd => Ok(unsafe { FromRawFd::from_raw_fd(fd) }),
@@ -80,7 +86,9 @@ pub fn create(dir: &Path) -> io::Result<File> {
 }
 
 fn create_unix(dir: &Path) -> io::Result<File> {
-    util::create_helper(dir, ".tmp", "", ::NUM_RAND_CHARS, |path| create_named(&path))
+    util::create_helper(dir, ".tmp", "", ::NUM_RAND_CHARS, |path| {
+        create_named(&path)
+    })
 }
 
 unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {
@@ -95,8 +103,10 @@ pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
         let old_meta = stat(file.as_raw_fd())?;
         let new_meta = stat(new_file.as_raw_fd())?;
         if old_meta.st_dev != new_meta.st_dev || old_meta.st_ino != new_meta.st_ino {
-            return Err(io::Error::new(io::ErrorKind::NotFound,
-                                      "original tempfile has been replaced"));
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "original tempfile has been replaced",
+            ));
         }
         Ok(new_file)
     }
@@ -108,11 +118,15 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
         let old_path = cstr(old_path)?;
         let new_path = cstr(new_path)?;
         if overwrite {
-            cvt_err(rename(old_path.as_ptr() as *const c_char,
-                           new_path.as_ptr() as *const c_char))?;
+            cvt_err(rename(
+                old_path.as_ptr() as *const c_char,
+                new_path.as_ptr() as *const c_char,
+            ))?;
         } else {
-            cvt_err(link(old_path.as_ptr() as *const c_char,
-                         new_path.as_ptr() as *const c_char))?;
+            cvt_err(link(
+                old_path.as_ptr() as *const c_char,
+                new_path.as_ptr() as *const c_char,
+            ))?;
             // Ignore unlink errors. Can we do better?
             // On recent linux, we can use renameat2 to do this atomically.
             let _ = unlink(old_path.as_ptr() as *const c_char);
