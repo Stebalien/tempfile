@@ -43,10 +43,10 @@ pub fn cstr(path: &Path) -> io::Result<CString> {
 #[cfg(not(target_os = "redox"))]
 pub fn create_named(path: &Path) -> io::Result<File> {
     unsafe {
-        let path = try!(cstr(path));
-        let fd = try!(cvt_err(open(path.as_ptr() as *const c_char,
-                                   O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
-                                   0o600)));
+        let path = cstr(path)?;
+        let fd = cvt_err(open(path.as_ptr() as *const c_char,
+                              O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
+                              0o600))?;
         Ok(FromRawFd::from_raw_fd(fd))
     }
 }
@@ -54,8 +54,8 @@ pub fn create_named(path: &Path) -> io::Result<File> {
 #[cfg(target_os = "redox")]
 pub fn create_named(path: PathBuf) -> io::Result<File> {
     unsafe {
-        let fd = try!(cvt_err(open(path.as_os_str().as_bytes(),
-                                   O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT | 0o600)));
+        let fd = cvt_err(open(path.as_os_str().as_bytes(),
+                                   O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT | 0o600))?;
         Ok(FromRawFd::from_raw_fd(fd))
     }
 }
@@ -64,7 +64,7 @@ pub fn create_named(path: PathBuf) -> io::Result<File> {
 pub fn create(dir: &Path) -> io::Result<File> {
     const O_TMPFILE: c_int = 0o20200000;
     match unsafe {
-        let path = try!(cstr(dir));
+        let path = cstr(dir)?;
         open(path.as_ptr() as *const c_char,
              O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR,
              0o600)
@@ -85,15 +85,15 @@ fn create_unix(dir: &Path) -> io::Result<File> {
 
 unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {
     let mut meta: stat_t = ::std::mem::zeroed();
-    try!(cvt_err(fstat(fd, &mut meta)));
+    cvt_err(fstat(fd, &mut meta))?;
     Ok(meta)
 }
 
 pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
-    let new_file = try!(OpenOptions::new().read(true).write(true).open(path));
+    let new_file = OpenOptions::new().read(true).write(true).open(path)?;
     unsafe {
-        let old_meta = try!(stat(file.as_raw_fd()));
-        let new_meta = try!(stat(new_file.as_raw_fd()));
+        let old_meta = stat(file.as_raw_fd())?;
+        let new_meta = stat(new_file.as_raw_fd())?;
         if old_meta.st_dev != new_meta.st_dev || old_meta.st_ino != new_meta.st_ino {
             return Err(io::Error::new(io::ErrorKind::NotFound,
                                       "original tempfile has been replaced"));
@@ -105,14 +105,14 @@ pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
 #[cfg(not(target_os = "redox"))]
 pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
     unsafe {
-        let old_path = try!(cstr(old_path));
-        let new_path = try!(cstr(new_path));
+        let old_path = cstr(old_path)?;
+        let new_path = cstr(new_path)?;
         if overwrite {
-            try!(cvt_err(rename(old_path.as_ptr() as *const c_char,
-                                new_path.as_ptr() as *const c_char)));
+            cvt_err(rename(old_path.as_ptr() as *const c_char,
+                           new_path.as_ptr() as *const c_char))?;
         } else {
-            try!(cvt_err(link(old_path.as_ptr() as *const c_char,
-                              new_path.as_ptr() as *const c_char)));
+            cvt_err(link(old_path.as_ptr() as *const c_char,
+                         new_path.as_ptr() as *const c_char))?;
             // Ignore unlink errors. Can we do better?
             // On recent linux, we can use renameat2 to do this atomically.
             let _ = unlink(old_path.as_ptr() as *const c_char);
