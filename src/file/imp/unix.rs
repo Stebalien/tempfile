@@ -35,7 +35,6 @@ pub fn cvt_err(result: Result<usize, syscall::Error>) -> io::Result<usize> {
 
 // Stolen from std.
 pub fn cstr(path: &Path) -> io::Result<CString> {
-    // TODO: Use OsStr::to_cstring (convert)
     CString::new(path.as_os_str().as_bytes())
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "path contained a null"))
 }
