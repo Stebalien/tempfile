@@ -487,6 +487,15 @@ impl NamedTempFile {
         Builder::new().tempfile()
     }
 
+    /// Create a new named temporary file in the specified directory.
+    ///
+    /// See [`NamedTempFile::new()`] for details.
+    ///
+    /// [`NamedTempFile::new()`]: #method.new_in
+    pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
+        Builder::new().tempfile_in(dir)
+    }
+
     /// Get the temporary file's path.
     ///
     /// # Security
