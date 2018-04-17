@@ -1,3 +1,8 @@
+3.0.1
+=====
+
+* Restore NamedTempFile::new_in
+
 3.0.0
 =====
 
