@@ -120,6 +120,7 @@ pub use file::{tempfile, tempfile_in, NamedTempFile, PersistError, TempPath};
 /// Create a new temporary file or directory with custom parameters.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Builder<'a, 'b> {
+    world_accessible: bool,
     random_len: usize,
     prefix: &'a str,
     suffix: &'b str,
@@ -128,6 +129,7 @@ pub struct Builder<'a, 'b> {
 impl<'a, 'b> Default for Builder<'a, 'b> {
     fn default() -> Self {
         Builder {
+            world_accessible: false,
             random_len: ::NUM_RAND_CHARS,
             prefix: ".tmp",
             suffix: "",
@@ -294,6 +296,34 @@ impl<'a, 'b> Builder<'a, 'b> {
         self
     }
 
+    /// Set whether anyone should be able to read and write to the temporary
+    /// file.
+    ///
+    /// Default: `false`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate tempfile;
+    /// # use std::io;
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// # use tempfile::Builder;
+    /// let named_tempfile = Builder::new()
+    ///     .world_accessible(true)
+    ///     .tempfile()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn world_accessible(&mut self, world_accessible: bool) -> &mut Self {
+        self.world_accessible = world_accessible;
+        self
+    }
+
     /// Create the named temporary file.
     ///
     /// # Security
@@ -367,6 +397,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     pub fn tempfile_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
         util::create_helper(
             dir.as_ref(),
+            self.world_accessible,
             self.prefix,
             self.suffix,
             self.random_len,
@@ -442,6 +473,13 @@ impl<'a, 'b> Builder<'a, 'b> {
             dir = &storage;
         }
 
-        util::create_helper(dir, self.prefix, self.suffix, self.random_len, dir::create)
+        util::create_helper(
+            dir,
+            self.world_accessible,
+            self.prefix,
+            self.suffix,
+            self.random_len,
+            dir::create,
+        )
     }
 }

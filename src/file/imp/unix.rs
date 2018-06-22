@@ -40,31 +40,31 @@ pub fn cstr(path: &Path) -> io::Result<CString> {
 }
 
 #[cfg(not(target_os = "redox"))]
-pub fn create_named(path: &Path) -> io::Result<File> {
+pub fn create_named(world_accessible: bool, path: &Path) -> io::Result<File> {
     unsafe {
         let path = cstr(path)?;
         let fd = cvt_err(open(
             path.as_ptr() as *const c_char,
             O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
-            0o600,
+            if world_accessible { 0o666 } else { 0o600 },
         ))?;
         Ok(FromRawFd::from_raw_fd(fd))
     }
 }
 
 #[cfg(target_os = "redox")]
-pub fn create_named(path: PathBuf) -> io::Result<File> {
+pub fn create_named(world_accessible: bool, path: PathBuf) -> io::Result<File> {
     unsafe {
         let fd = cvt_err(open(
             path.as_os_str().as_bytes(),
-            O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT | 0o600,
+            O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT | if world_accessible { 0o666 } else { 0o600 },
         ))?;
         Ok(FromRawFd::from_raw_fd(fd))
     }
 }
 
 fn create_unlinked(path: &Path) -> io::Result<File> {
-    let f = create_named(path)?;
+    let f = create_named(false, path)?;
     // don't care whether the path has already been unlinked,
     // but perhaps there are some IO error conditions we should send up?
     let _ = fs::remove_file(path);
@@ -93,7 +93,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
 }
 
 fn create_unix(dir: &Path) -> io::Result<File> {
-    util::create_helper(dir, ".tmp", "", ::NUM_RAND_CHARS, |path| {
+    util::create_helper(dir, false, ".tmp", "", ::NUM_RAND_CHARS, |world_accessible, path| {
         create_unlinked(&path)
     })
 }

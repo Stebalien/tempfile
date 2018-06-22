@@ -29,17 +29,18 @@ fn tmpname(prefix: &str, suffix: &str, rand_len: usize) -> OsString {
 
 pub fn create_helper<F, R>(
     base: &Path,
+    world_accessible: bool,
     prefix: &str,
     suffix: &str,
     random_len: usize,
     f: F,
 ) -> io::Result<R>
 where
-    F: Fn(PathBuf) -> io::Result<R>,
+    F: Fn(bool, PathBuf) -> io::Result<R>,
 {
     for _ in 0..::NUM_RETRIES {
         let path = base.join(tmpname(prefix, suffix, random_len));
-        return match f(path) {
+        return match f(world_accessible, path) {
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
             res => res,
         };

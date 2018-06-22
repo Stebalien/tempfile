@@ -60,12 +60,12 @@ fn win_create(
     }
 }
 
-pub fn create_named(path: &Path) -> io::Result<File> {
+pub fn create_named(world_accessible: bool, path: &Path) -> io::Result<File> {
     win_create(path, ACCESS, SHARE_MODE, CREATE_NEW, FLAGS)
 }
 
 pub fn create(dir: &Path) -> io::Result<File> {
-    util::create_helper(dir, ".tmp", "", ::NUM_RAND_CHARS, |path| {
+    util::create_helper(dir, false, ".tmp", "", ::NUM_RAND_CHARS, |_, path| {
         win_create(
             &path,
             ACCESS,

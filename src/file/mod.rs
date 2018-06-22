@@ -794,8 +794,8 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
 }
 
 // pub(crate)
-pub fn create_named(path: PathBuf) -> io::Result<NamedTempFile> {
-    imp::create_named(&path).map(|file| NamedTempFile {
+pub fn create_named(world_accessible: bool, path: PathBuf) -> io::Result<NamedTempFile> {
+    imp::create_named(world_accessible, &path).map(|file| NamedTempFile {
         path: TempPath { path },
         file,
     })
