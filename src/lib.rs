@@ -14,9 +14,9 @@
 //!
 //! ## Resource Leaking
 //!
-//! `tempfile` will (almost) never fail to cleanup temporary resources but `TempDir` and `NamedTempFile` will if
+//! `tempfile` will (almost) never fail to cleanup temporary resources, but `TempDir` and `NamedTempFile` will if
 //! their destructors don't run. This is because `tempfile` relies on the OS to cleanup the
-//! underlying file so the file while `TempDir` and `NamedTempFile` rely on their destructors to do so.
+//! underlying file, while `TempDir` and `NamedTempFile` rely on their destructors to do so.
 //!
 //! ## Security
 //!
