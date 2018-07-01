@@ -106,17 +106,15 @@ unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {
 
 pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
     let new_file = OpenOptions::new().read(true).write(true).open(path)?;
-    unsafe {
-        let old_meta = stat(file.as_raw_fd())?;
-        let new_meta = stat(new_file.as_raw_fd())?;
-        if old_meta.st_dev != new_meta.st_dev || old_meta.st_ino != new_meta.st_ino {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "original tempfile has been replaced",
-            ));
-        }
-        Ok(new_file)
+    let old_meta = unsafe { stat(file.as_raw_fd())? };
+    let new_meta = unsafe { stat(new_file.as_raw_fd())? };
+    if old_meta.st_dev != new_meta.st_dev || old_meta.st_ino != new_meta.st_ino {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            "original tempfile has been replaced",
+        ));
     }
+    Ok(new_file)
 }
 
 #[cfg(not(target_os = "redox"))]
