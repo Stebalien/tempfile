@@ -4,7 +4,7 @@ use std::ffi::CString;
 use std::fs::{self, File, OpenOptions};
 use std::io;
 use std::os::unix::ffi::OsStrExt;
-use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
+use std::os::unix::io::FromRawFd;
 use std::path::Path;
 use util;
 
@@ -12,7 +12,7 @@ use util;
 use libc::{fstat64 as fstat, open64 as open, stat64 as stat_t};
 
 #[cfg(not(any(all(lfs_support, target_os = "linux"), target_os = "redox")))]
-use libc::{fstat, open, stat as stat_t};
+use libc::open;
 
 #[cfg(target_os = "redox")]
 use syscall::{self, fstat, open, Stat as stat_t, O_CLOEXEC, O_CREAT, O_EXCL, O_RDWR};
@@ -98,17 +98,31 @@ fn create_unix(dir: &Path) -> io::Result<File> {
     })
 }
 
+#[cfg(not(unix))]
 unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {
     let mut meta: stat_t = ::std::mem::zeroed();
     cvt_err(fstat(fd, &mut meta))?;
     Ok(meta)
 }
 
+#[cfg(not(unix))]
+fn same_dev_ino(fa: &File, fb: &File) -> io::Result<bool> {
+    let meta_a = unsafe { stat(fa.as_raw_fd())? };
+    let meta_b = unsafe { stat(fb.as_raw_fd())? };
+    Ok(meta_a.st_dev == meta_b.st_dev && meta_a.st_ino == meta_b.st_ino)
+}
+
+#[cfg(unix)]
+fn same_dev_ino(fa: &File, fb: &File) -> io::Result<bool> {
+    use std::os::unix::fs::MetadataExt;
+    let meta_a = fa.metadata()?;
+    let meta_b = fb.metadata()?;
+    Ok(meta_a.dev() == meta_b.dev() && meta_a.ino() == meta_b.ino())
+}
+
 pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
     let new_file = OpenOptions::new().read(true).write(true).open(path)?;
-    let old_meta = unsafe { stat(file.as_raw_fd())? };
-    let new_meta = unsafe { stat(new_file.as_raw_fd())? };
-    if old_meta.st_dev != new_meta.st_dev || old_meta.st_ino != new_meta.st_ino {
+    if !same_dev_ino(&file, &new_file)? {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
             "original tempfile has been replaced",
