@@ -41,8 +41,8 @@ pub fn cstr(path: &Path) -> io::Result<CString> {
 
 #[cfg(not(target_os = "redox"))]
 pub fn create_named(path: &Path) -> io::Result<File> {
+    let path = cstr(path)?;
     unsafe {
-        let path = cstr(path)?;
         let fd = cvt_err(open(
             path.as_ptr() as *const c_char,
             O_CLOEXEC | O_EXCL | O_RDWR | O_CREAT,
@@ -74,8 +74,8 @@ fn create_unlinked(path: &Path) -> io::Result<File> {
 #[cfg(target_os = "linux")]
 pub fn create(dir: &Path) -> io::Result<File> {
     use libc::O_TMPFILE;
+    let path = cstr(dir)?;
     match unsafe {
-        let path = cstr(dir)?;
         open(
             path.as_ptr() as *const c_char,
             O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR,
@@ -121,9 +121,9 @@ pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
 
 #[cfg(not(target_os = "redox"))]
 pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
+    let old_path = cstr(old_path)?;
+    let new_path = cstr(new_path)?;
     unsafe {
-        let old_path = cstr(old_path)?;
-        let new_path = cstr(new_path)?;
         if overwrite {
             cvt_err(rename(
                 old_path.as_ptr() as *const c_char,
