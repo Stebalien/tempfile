@@ -98,21 +98,21 @@ fn create_unix(dir: &Path) -> io::Result<File> {
     })
 }
 
-#[cfg(not(unix))]
+#[cfg(target_os = "redox")]
 unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {
     let mut meta: stat_t = ::std::mem::zeroed();
     cvt_err(fstat(fd, &mut meta))?;
     Ok(meta)
 }
 
-#[cfg(not(unix))]
+#[cfg(target_os = "redox")]
 fn same_dev_ino(fa: &File, fb: &File) -> io::Result<bool> {
     let meta_a = unsafe { stat(fa.as_raw_fd())? };
     let meta_b = unsafe { stat(fb.as_raw_fd())? };
     Ok(meta_a.st_dev == meta_b.st_dev && meta_a.st_ino == meta_b.st_ino)
 }
 
-#[cfg(unix)]
+#[cfg(not(target_os = "redox"))]
 fn same_dev_ino(fa: &File, fb: &File) -> io::Result<bool> {
     use std::os::unix::fs::MetadataExt;
     let meta_a = fa.metadata()?;
