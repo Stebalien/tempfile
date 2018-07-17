@@ -1,6 +1,6 @@
 [package]
 name = "tempfile"
-version = "3.0.2"
+version = "3.0.3"
 authors = [
   "Steven Allen <steven@stebalien.com>",
   "The Rust Project Developers",
