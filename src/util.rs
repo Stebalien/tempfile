@@ -1,5 +1,5 @@
 use rand;
-use rand::Rng;
+use rand::RngCore;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::{io, iter};
