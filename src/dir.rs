@@ -401,6 +401,6 @@ impl Drop for TempDir {
 }
 
 // pub(crate)
-pub fn create(world_accessible: bool, path: PathBuf) -> io::Result<TempDir> {
+pub fn create(_world_accessible: bool, path: PathBuf) -> io::Result<TempDir> {
     fs::create_dir(&path).map(|_| TempDir { path: Some(path) })
 }

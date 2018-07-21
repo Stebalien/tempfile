@@ -93,7 +93,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
 }
 
 fn create_unix(dir: &Path) -> io::Result<File> {
-    util::create_helper(dir, false, ".tmp", "", ::NUM_RAND_CHARS, |world_accessible, path| {
+    util::create_helper(dir, false, ".tmp", "", ::NUM_RAND_CHARS, |_world_accessible, path| {
         create_unlinked(&path)
     })
 }

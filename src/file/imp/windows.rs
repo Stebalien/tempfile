@@ -60,7 +60,7 @@ fn win_create(
     }
 }
 
-pub fn create_named(world_accessible: bool, path: &Path) -> io::Result<File> {
+pub fn create_named(_world_accessible: bool, path: &Path) -> io::Result<File> {
     win_create(path, ACCESS, SHARE_MODE, CREATE_NEW, FLAGS)
 }
 
