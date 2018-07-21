@@ -301,6 +301,17 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// Default: `false`.
     ///
+    /// # Security
+    ///
+    /// Setting this to `true` leads to a file that can be read by other users.
+    /// This means that you shouldn't put any user-sensitive data into the
+    /// temporary file.
+    ///
+    /// # Platform-specific behavior
+    ///
+    /// Setting this to `true` currently only changes something on Unix, where
+    /// the new file is created with `0o666` instead of `0o600` permissions.
+    ///
     /// # Examples
     ///
     /// ```
