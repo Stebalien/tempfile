@@ -96,6 +96,33 @@ fn test_customnamed() {
 }
 
 #[test]
+fn test_world_accessible() {
+    #[cfg(unix)]
+    fn assert_filemode(file: &File, world_accessible: bool) {
+        use std::os::unix::fs::PermissionsExt;
+
+        const MASK: u32 = 0o644;
+        let value = if world_accessible { 0o644 } else { 0o600 };
+        let mode = file.metadata().unwrap().permissions().mode();
+        assert!(mode & MASK == value,
+            "mode & MASK != value: 0o{:o} & 0o{:o} != 0o{:o}",
+            mode, MASK, value);
+    }
+    #[cfg(not(unix))]
+    fn assert_filemode(file: &File, world_accessible: bool) {
+        let _ = (file, world_accessible);
+    }
+    for &world_accessible in &[None, Some(false), Some(true)] {
+        let mut builder = Builder::new();
+        if let Some(wa) = world_accessible {
+            builder.world_accessible(wa);
+        }
+        let tempfile = builder.tempfile().unwrap();
+        assert_filemode(tempfile.as_file(), world_accessible.unwrap_or(false));
+    }
+}
+
+#[test]
 fn test_reopen() {
     let source = NamedTempFile::new().unwrap();
     let mut first = source.reopen().unwrap();
