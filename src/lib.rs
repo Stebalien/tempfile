@@ -92,6 +92,8 @@
        html_root_url = "https://docs.rs/tempfile/2.2.0")]
 #![cfg_attr(test, deny(warnings))]
 
+#[macro_use]
+extern crate cfg_if;
 extern crate rand;
 extern crate remove_dir_all;
 
