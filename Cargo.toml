@@ -20,6 +20,7 @@ license = "MIT/Apache-2.0"
 [dependencies]
 rand = "0.5"
 remove_dir_all = "0.5"
+cfg-if = "0.1"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.27"
