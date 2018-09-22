@@ -24,8 +24,7 @@ const SHARE_MODE: DWORD = FILE_SHARE_DELETE
                         | FILE_SHARE_READ
                         | FILE_SHARE_WRITE;
 #[cfg_attr(irustfmt, rustfmt_skip)]
-const FLAGS: DWORD      = FILE_ATTRIBUTE_HIDDEN
-                        | FILE_ATTRIBUTE_TEMPORARY;
+const FLAGS: DWORD      = FILE_ATTRIBUTE_TEMPORARY;
 
 fn to_utf16(s: &Path) -> Vec<u16> {
     s.as_os_str()
@@ -60,18 +59,28 @@ fn win_create(
     }
 }
 
-pub fn create_named(path: &Path) -> io::Result<File> {
-    win_create(path, ACCESS, SHARE_MODE, CREATE_NEW, FLAGS)
+pub fn create_named(path: &Path, hidden: bool) -> io::Result<File> {
+    let mut flags = FLAGS;
+    if hidden {
+        flags |= FILE_ATTRIBUTE_HIDDEN;
+    }
+
+    win_create(path, ACCESS, SHARE_MODE, CREATE_NEW, flags)
 }
 
-pub fn create(dir: &Path) -> io::Result<File> {
-    util::create_helper(dir, ".tmp", "", ::NUM_RAND_CHARS, |path| {
+pub fn create(dir: &Path, hidden: bool) -> io::Result<File> {
+    util::create_helper(dir, ".tmp", "", ::NUM_RAND_CHARS, hidden, |path, hidden| {
+        let mut flags = FLAGS | FILE_FLAG_DELETE_ON_CLOSE;
+        if hidden {
+            flags |= FILE_ATTRIBUTE_HIDDEN;
+        }
+
         win_create(
             &path,
             ACCESS,
             0, // Exclusive
             CREATE_NEW,
-            FLAGS | FILE_FLAG_DELETE_ON_CLOSE,
+            flags,
         )
     })
 }

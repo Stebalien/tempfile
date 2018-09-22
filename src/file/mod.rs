@@ -95,7 +95,7 @@ pub fn tempfile() -> io::Result<File> {
 ///
 /// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 pub fn tempfile_in<P: AsRef<Path>>(dir: P) -> io::Result<File> {
-    imp::create(dir.as_ref())
+    imp::create(dir.as_ref(), true)
 }
 
 /// Error returned when persisting a temporary file path fails.
@@ -794,8 +794,8 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
 }
 
 // pub(crate)
-pub fn create_named(path: PathBuf) -> io::Result<NamedTempFile> {
-    imp::create_named(&path).map(|file| NamedTempFile {
+pub fn create_named(path: PathBuf, hidden: bool) -> io::Result<NamedTempFile> {
+    imp::create_named(&path, hidden).map(|file| NamedTempFile {
         path: TempPath { path },
         file,
     })

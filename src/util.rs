@@ -32,14 +32,15 @@ pub fn create_helper<F, R>(
     prefix: &str,
     suffix: &str,
     random_len: usize,
+    hidden: bool,
     f: F,
 ) -> io::Result<R>
 where
-    F: Fn(PathBuf) -> io::Result<R>,
+    F: Fn(PathBuf, bool) -> io::Result<R>,
 {
     for _ in 0..::NUM_RETRIES {
         let path = base.join(tmpname(prefix, suffix, random_len));
-        return match f(path) {
+        return match f(path, hidden) {
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
             res => res,
         };

@@ -125,6 +125,7 @@ pub struct Builder<'a, 'b> {
     random_len: usize,
     prefix: &'a str,
     suffix: &'b str,
+    hidden: bool,
 }
 
 impl<'a, 'b> Default for Builder<'a, 'b> {
@@ -133,6 +134,7 @@ impl<'a, 'b> Default for Builder<'a, 'b> {
             random_len: ::NUM_RAND_CHARS,
             prefix: ".tmp",
             suffix: "",
+            hidden: true
         }
     }
 }
@@ -269,6 +271,33 @@ impl<'a, 'b> Builder<'a, 'b> {
         self
     }
 
+    /// Set whether the file has hidden attribute (Windows only).
+    ///
+    /// Default: true.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate tempfile;
+    /// # use std::io;
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// # use tempfile::Builder;
+    /// let named_tempfile = Builder::new()
+    ///     .suffix(".txt")
+    ///     .tempfile()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn hidden(&mut self, hidden: bool) -> &mut Self {
+        self.hidden = hidden;
+        self
+    }
+
     /// Set the number of random bytes.
     ///
     /// Default: `6`.
@@ -372,6 +401,7 @@ impl<'a, 'b> Builder<'a, 'b> {
             self.prefix,
             self.suffix,
             self.random_len,
+            self.hidden,
             file::create_named,
         )
     }
@@ -444,6 +474,8 @@ impl<'a, 'b> Builder<'a, 'b> {
             dir = &storage;
         }
 
-        util::create_helper(dir, self.prefix, self.suffix, self.random_len, dir::create)
+        util::create_helper(dir, self.prefix, self.suffix, self.random_len, self.hidden, |path, _hidden| {
+            dir::create(path)
+        })
     }
 }
