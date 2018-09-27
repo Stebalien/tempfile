@@ -48,7 +48,7 @@ pub struct SpooledTempFile {
 /// // `max_size` (15), so it will be written to a temporary file on disk,
 /// // and the in-memory buffer will be dropped
 /// writeln!(file, "marvin gardens")?;
-/// assert(file.rolled_over());
+/// assert!(file.rolled_over());
 ///
 /// # Ok(())
 /// # }
