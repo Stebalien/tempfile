@@ -1,6 +1,13 @@
 use std::fs::File;
 use std::io::{self, Read, Write, Seek, SeekFrom, Cursor};
 use file::tempfile;
+use std::mem::drop;
+
+#[derive(Debug)]
+enum SpooledInner {
+    InMemory(Cursor<Vec<u8>>),
+    OnDisk(File),
+}
 
 /// An object that behaves like a regular temporary file, but keeps data in
 /// memory until it reaches a configured size, at which point the data is
@@ -9,8 +16,7 @@ use file::tempfile;
 #[derive(Debug)]
 pub struct SpooledTempFile {
     max_size: usize,
-    cursor: Option<Cursor<Vec<u8>>>,
-    file: Option<File>,
+    inner: SpooledInner,
 }
 
 /// Create a new spooled temporary file.
@@ -42,44 +48,72 @@ pub struct SpooledTempFile {
 /// let mut file = spooled_tempfile(15);
 ///
 /// writeln!(file, "short line")?;
-/// assert!(!file.rolled_over());
+/// assert!(!file.is_rolled());
 ///
 /// // as a result of this write call, the size of the data will exceed
 /// // `max_size` (15), so it will be written to a temporary file on disk,
 /// // and the in-memory buffer will be dropped
 /// writeln!(file, "marvin gardens")?;
-/// assert!(file.rolled_over());
+/// assert!(file.is_rolled());
 ///
 /// # Ok(())
 /// # }
 /// ```
+#[inline]
 pub fn spooled_tempfile(max_size: usize) -> SpooledTempFile {
-    SpooledTempFile {
-        max_size: max_size,
-        cursor: Some(Cursor::new(Vec::new())),
-        file: None,
-    }
+    SpooledTempFile::new(max_size)
 }
 
 impl SpooledTempFile {
+    pub fn new(max_size: usize) -> SpooledTempFile {
+        SpooledTempFile {
+            max_size: max_size,
+            inner: SpooledInner::InMemory(Cursor::new(Vec::new())),
+        }
+    }
+
     /// Returns true if the file has been rolled over to disk.
-    pub fn rolled_over(&self) -> bool {
-        if let Some(ref _file) = self.file {
-            true
-        } else {
-            false
+    pub fn is_rolled(&self) -> bool {
+        match self.inner {
+            SpooledInner::InMemory(_) => false,
+            SpooledInner::OnDisk(_) => true,
+        }
+    }
+
+    /// Rolls over to a file on disk, regardless of current size. Does nothing
+    /// if already rolled over.
+    pub fn roll(&mut self) -> io::Result<()> {
+        if !self.is_rolled() {
+            let mut file = tempfile()?;
+            if let SpooledInner::InMemory(ref mut cursor) = self.inner {
+                file.write(cursor.get_ref())?;
+                file.seek(SeekFrom::Start(cursor.position()))?;
+                drop(cursor);
+            }
+            self.inner = SpooledInner::OnDisk(file);
+        }
+        Ok(())
+    }
+
+    pub fn set_len(&mut self, size: u64) -> Result<(), io::Error> {
+        if size as usize > self.max_size {
+            self.roll()?; // does nothing if already rolled over
+        }
+        match self.inner {
+            SpooledInner::InMemory(ref mut cursor) => {
+                cursor.get_mut().resize(size as usize, 0);
+                Ok(())
+            },
+            SpooledInner::OnDisk(ref mut file) => file.set_len(size),
         }
     }
 }
 
 impl Read for SpooledTempFile {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        if let Some(ref mut cursor) = self.cursor {
-            cursor.read(buf)
-        } else if let Some(ref mut file) = self.file {
-            file.read(buf)
-        } else {
-            panic!(); // bug
+        match self.inner {
+            SpooledInner::InMemory(ref mut cursor) => cursor.read(buf),
+            SpooledInner::OnDisk(ref mut file) => file.read(buf),
         }
     }
 }
@@ -88,49 +122,34 @@ impl Write for SpooledTempFile {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         // roll over to file if necessary
         let mut rolling = false;
-        if let Some(ref mut cursor) = self.cursor {
+        if let SpooledInner::InMemory(ref mut cursor) = self.inner {
             rolling = cursor.position() as usize + buf.len() > self.max_size;
-            if rolling {
-                let mut file = tempfile()?;
-                file.write(cursor.get_ref())?;
-                file.seek(SeekFrom::Start(cursor.position()))?;
-                self.file = Some(file);
-            }
         }
         if rolling {
-            self.cursor.take();
+            self.roll()?;
         }
 
         // write the bytes
-        if let Some(ref mut cursor) = self.cursor {
-            cursor.write(buf)
-        } else if let Some(ref mut file) = self.file {
-            file.write(buf)
-        } else {
-            panic!(); // bug
+        match self.inner {
+            SpooledInner::InMemory(ref mut cursor) => cursor.write(buf),
+            SpooledInner::OnDisk(ref mut file) => file.write(buf),
         }
     }
 
     #[inline]
     fn flush(&mut self) -> io::Result<()> {
-        if let Some(ref mut cursor) = self.cursor {
-            cursor.flush()
-        } else if let Some(ref mut file) = self.file {
-            file.flush()
-        } else {
-            panic!(); // bug
+        match self.inner {
+            SpooledInner::InMemory(ref mut cursor) => cursor.flush(),
+            SpooledInner::OnDisk(ref mut file) => file.flush(),
         }
     }
 }
 
 impl Seek for SpooledTempFile {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
-        if let Some(ref mut cursor) = self.cursor {
-            cursor.seek(pos)
-        } else if let Some(ref mut file) = self.file {
-            file.seek(pos)
-        } else {
-            panic!(); // bug
+        match self.inner {
+            SpooledInner::InMemory(ref mut cursor) => cursor.seek(pos),
+            SpooledInner::OnDisk(ref mut file) => file.seek(pos),
         }
     }
 }
