@@ -115,9 +115,11 @@ use std::{env, io};
 mod dir;
 mod file;
 mod util;
+mod spooled;
 
 pub use dir::{tempdir, tempdir_in, TempDir};
 pub use file::{tempfile, tempfile_in, NamedTempFile, PersistError, TempPath};
+pub use spooled::{spooled_tempfile, SpooledTempFile};
 
 /// Create a new temporary file or directory with custom parameters.
 #[derive(Debug, Clone, Eq, PartialEq)]
