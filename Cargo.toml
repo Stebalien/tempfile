@@ -16,6 +16,7 @@ repository = "https://github.com/Stebalien/tempfile"
 homepage = "http://stebalien.com/projects/tempfile-rs"
 keywords = ["tempfile", "tmpfile", "filesystem"]
 license = "MIT/Apache-2.0"
+exclude = ["/.travis.yml", "/appveyor.yml"]
 
 [dependencies]
 rand = "0.5"
