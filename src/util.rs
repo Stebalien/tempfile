@@ -4,7 +4,7 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::{io, iter};
 
-use error::IoErrorExt;
+use error::IoResultExt;
 
 fn tmpname(prefix: &str, suffix: &str, rand_len: usize) -> OsString {
     let mut buf = String::with_capacity(prefix.len() + suffix.len() + rand_len);
@@ -51,6 +51,6 @@ where
 
     Err(io::Error::new(
         io::ErrorKind::AlreadyExists, 
-        "too many temporary files exist")
-        .with_path(base))
+        "too many temporary files exist"))
+        .with_err_path(|| base)
 }

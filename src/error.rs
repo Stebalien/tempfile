@@ -23,18 +23,24 @@ impl error::Error for PathError {
     }
 }
 
-pub(crate) trait IoErrorExt {
-    fn with_path<P>(self, path: P) -> Self where P: Into<PathBuf>;
+pub(crate) trait IoResultExt<T> {
+    fn with_err_path<F, P>(self, path: F) -> Self
+    where
+        F: FnOnce() -> P,
+        P: Into<PathBuf>;
 }
 
-impl IoErrorExt for io::Error {
-    fn with_path<P>(self, path: P) -> Self
+impl<T> IoResultExt<T> for Result<T, io::Error> {
+    fn with_err_path<F, P>(self, path: F) -> Self
     where
+        F: FnOnce() -> P,
         P: Into<PathBuf>,
     {
-        io::Error::new(self.kind(), PathError {
-            path: path.into(),
-            err: self,
+        self.map_err(|e| {
+            io::Error::new(e.kind(), PathError {
+                path: path().into(),
+                err: e,
+            })
         })
     }
 }

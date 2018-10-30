@@ -9,7 +9,7 @@ use std::mem;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
-use error::IoErrorExt;
+use error::IoResultExt;
 use Builder;
 
 mod imp;
@@ -184,7 +184,7 @@ impl TempPath {
     /// # }
     /// ```
     pub fn close(mut self) -> io::Result<()> {
-        let result = fs::remove_file(&self.path).map_err(|e| e.with_path(&self.path));
+        let result = fs::remove_file(&self.path).with_err_path(|| &self.path);
         mem::replace(&mut self.path, PathBuf::new());
         mem::forget(self);
         result
@@ -705,7 +705,7 @@ impl NamedTempFile {
     /// # }
     /// ```
     pub fn reopen(&self) -> io::Result<File> {
-        imp::reopen(self.as_file(), NamedTempFile::path(self)).map_err(|e| e.with_path(NamedTempFile::path(self)))
+        imp::reopen(self.as_file(), NamedTempFile::path(self)).with_err_path(|| NamedTempFile::path(self))
     }
 
     /// Get a reference to the underlying file.
@@ -736,45 +736,45 @@ impl NamedTempFile {
 
 impl Read for NamedTempFile {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.as_file_mut().read(buf).map_err(|e| e.with_path(self.path()))
+        self.as_file_mut().read(buf).with_err_path(|| self.path())
     }
 }
 
 impl<'a> Read for &'a NamedTempFile {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.as_file().read(buf).map_err(|e| e.with_path(self.path()))
+        self.as_file().read(buf).with_err_path(|| self.path())
     }
 }
 
 impl Write for NamedTempFile {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.as_file_mut().write(buf).map_err(|e| e.with_path(self.path()))
+        self.as_file_mut().write(buf).with_err_path(|| self.path())
     }
     #[inline]
     fn flush(&mut self) -> io::Result<()> {
-        self.as_file_mut().flush().map_err(|e| e.with_path(self.path()))
+        self.as_file_mut().flush().with_err_path(|| self.path())
     }
 }
 
 impl<'a> Write for &'a NamedTempFile {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.as_file().write(buf).map_err(|e| e.with_path(self.path()))
+        self.as_file().write(buf).with_err_path(|| self.path())
     }
     #[inline]
     fn flush(&mut self) -> io::Result<()> {
-        self.as_file().flush().map_err(|e| e.with_path(self.path()))
+        self.as_file().flush().with_err_path(|| self.path())
     }
 }
 
 impl Seek for NamedTempFile {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
-        self.as_file_mut().seek(pos).map_err(|e| e.with_path(self.path()))
+        self.as_file_mut().seek(pos).with_err_path(|| self.path())
     }
 }
 
 impl<'a> Seek for &'a NamedTempFile {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
-        self.as_file().seek(pos).map_err(|e| e.with_path(self.path()))
+        self.as_file().seek(pos).with_err_path(|| self.path())
     }
 }
 
@@ -796,7 +796,7 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
 
 pub(crate) fn create_named(path: PathBuf) -> io::Result<NamedTempFile> {
     imp::create_named(&path)
-        .map_err(|e| e.with_path(path.clone()))
+        .with_err_path(|| path.clone())
         .map(|file| NamedTempFile {
             path: TempPath { path },
             file,

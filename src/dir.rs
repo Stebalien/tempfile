@@ -12,7 +12,7 @@ use remove_dir_all::remove_dir_all;
 use std::path::{self, Path, PathBuf};
 use std::{fmt, fs, io};
 
-use error::IoErrorExt;
+use error::IoResultExt;
 use Builder;
 
 /// Create a new temporary directory.
@@ -369,7 +369,7 @@ impl TempDir {
     /// # }
     /// ```
     pub fn close(mut self) -> io::Result<()> {
-        let result = remove_dir_all(self.path()).map_err(|e| e.with_path(self.path()));
+        let result = remove_dir_all(self.path()).with_err_path(|| self.path());
 
         // Prevent the Drop impl from removing the dir a second time.
         self.path = None;
@@ -403,6 +403,6 @@ impl Drop for TempDir {
 
 pub(crate) fn create(path: PathBuf) -> io::Result<TempDir> {
     fs::create_dir(&path)
-        .map_err(|e| e.with_path(path.clone()))
+        .with_err_path(|| &path)
         .map(|_| TempDir { path: Some(path) })
 }
