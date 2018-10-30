@@ -112,6 +112,7 @@ const NUM_RAND_CHARS: usize = 6;
 use std::path::Path;
 use std::{env, io};
 
+mod error;
 mod dir;
 mod file;
 mod util;
