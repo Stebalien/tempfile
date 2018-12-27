@@ -201,3 +201,9 @@ fn test_temppath_persist_noclobber() {
     assert_eq!("abcde", buf);
     std::fs::remove_file(&persist_path).unwrap();
 }
+
+#[test]
+fn test_write_after_close() {
+    let path = NamedTempFile::new().unwrap().into_temp_path();
+    File::create(path).unwrap().write_all(b"test").unwrap();
+}
