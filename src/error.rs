@@ -17,7 +17,8 @@ impl error::Error for PathError {
     fn description(&self) -> &str {
         self.err.description()
     }
-    
+
+    #[allow(deprecated)]
     fn cause(&self) -> Option<&error::Error> {
         self.err.cause()
     }
