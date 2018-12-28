@@ -10,7 +10,7 @@ use winapi::um::fileapi::{CreateFileW, SetFileAttributesW, CREATE_NEW};
 use winapi::um::handleapi::INVALID_HANDLE_VALUE;
 use winapi::um::winbase::{FILE_FLAG_DELETE_ON_CLOSE, MOVEFILE_REPLACE_EXISTING};
 use winapi::um::winbase::{MoveFileExW, ReOpenFile};
-use winapi::um::winnt::{FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY};
+use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY};
 use winapi::um::winnt::{FILE_GENERIC_READ, FILE_GENERIC_WRITE, HANDLE};
 use winapi::um::winnt::{FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE};
 
@@ -24,8 +24,7 @@ const SHARE_MODE: DWORD = FILE_SHARE_DELETE
                         | FILE_SHARE_READ
                         | FILE_SHARE_WRITE;
 #[cfg_attr(irustfmt, rustfmt_skip)]
-const FLAGS: DWORD      = FILE_ATTRIBUTE_HIDDEN
-                        | FILE_ATTRIBUTE_TEMPORARY;
+const FLAGS: DWORD      = FILE_ATTRIBUTE_TEMPORARY;
 
 fn to_utf16(s: &Path) -> Vec<u16> {
     s.as_os_str()
