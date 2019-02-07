@@ -237,7 +237,7 @@ impl TempDir {
     }
 
     /// Attempts to make a temporary directory inside of `dir`.
-    /// The directory and everything inside it will be automatically 
+    /// The directory and everything inside it will be automatically
     /// deleted once the returned `TempDir` is destroyed.
     ///
     /// # Errors

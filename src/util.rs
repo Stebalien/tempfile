@@ -50,7 +50,8 @@ where
     }
 
     Err(io::Error::new(
-        io::ErrorKind::AlreadyExists, 
-        "too many temporary files exist"))
-        .with_err_path(|| base)
+        io::ErrorKind::AlreadyExists,
+        "too many temporary files exist",
+    ))
+    .with_err_path(|| base)
 }

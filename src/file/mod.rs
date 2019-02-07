@@ -705,7 +705,8 @@ impl NamedTempFile {
     /// # }
     /// ```
     pub fn reopen(&self) -> io::Result<File> {
-        imp::reopen(self.as_file(), NamedTempFile::path(self)).with_err_path(|| NamedTempFile::path(self))
+        imp::reopen(self.as_file(), NamedTempFile::path(self))
+            .with_err_path(|| NamedTempFile::path(self))
     }
 
     /// Get a reference to the underlying file.

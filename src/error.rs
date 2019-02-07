@@ -1,5 +1,5 @@
-use std::{error, io, fmt};
 use std::path::PathBuf;
+use std::{error, fmt, io};
 
 #[derive(Debug)]
 struct PathError {
@@ -38,10 +38,13 @@ impl<T> IoResultExt<T> for Result<T, io::Error> {
         P: Into<PathBuf>,
     {
         self.map_err(|e| {
-            io::Error::new(e.kind(), PathError {
-                path: path().into(),
-                err: e,
-            })
+            io::Error::new(
+                e.kind(),
+                PathError {
+                    path: path().into(),
+                    err: e,
+                },
+            )
         })
     }
 }

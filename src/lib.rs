@@ -87,9 +87,11 @@
 //! [`NamedTempFile`]: struct.NamedTempFile.html
 //! [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 
-#![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
-       html_favicon_url = "https://www.rust-lang.org/favicon.ico",
-       html_root_url = "https://docs.rs/tempfile/2.2.0")]
+#![doc(
+    html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
+    html_favicon_url = "https://www.rust-lang.org/favicon.ico",
+    html_root_url = "https://docs.rs/tempfile/2.2.0"
+)]
 #![cfg_attr(test, deny(warnings))]
 
 #[macro_use]
@@ -112,11 +114,11 @@ const NUM_RAND_CHARS: usize = 6;
 use std::path::Path;
 use std::{env, io};
 
-mod error;
 mod dir;
+mod error;
 mod file;
-mod util;
 mod spooled;
+mod util;
 
 pub use dir::{tempdir, tempdir_in, TempDir};
 pub use file::{tempfile, tempfile_in, NamedTempFile, PersistError, TempPath};
