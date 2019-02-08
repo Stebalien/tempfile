@@ -222,7 +222,8 @@ pub fn dont_double_panic() {
         // Panic. If TempDir panics *again* due to the rmdir
         // error then the process will abort.
         panic!();
-    }).join();
+    })
+    .join();
     assert!(r.is_err());
 }
 

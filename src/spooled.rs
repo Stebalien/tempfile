@@ -1,6 +1,6 @@
-use std::fs::File;
-use std::io::{self, Read, Write, Seek, SeekFrom, Cursor};
 use file::tempfile;
+use std::fs::File;
+use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
 use std::mem::drop;
 
 #[derive(Debug)]
@@ -103,7 +103,7 @@ impl SpooledTempFile {
             SpooledInner::InMemory(ref mut cursor) => {
                 cursor.get_mut().resize(size as usize, 0);
                 Ok(())
-            },
+            }
             SpooledInner::OnDisk(ref mut file) => file.set_len(size),
         }
     }
