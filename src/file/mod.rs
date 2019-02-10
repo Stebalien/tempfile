@@ -795,7 +795,12 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
     }
 }
 
-pub(crate) fn create_named(path: PathBuf) -> io::Result<NamedTempFile> {
+pub(crate) fn create_named(mut path: PathBuf) -> io::Result<NamedTempFile> {
+    // Make the path absolute. Otherwise, changing directories could cause us to
+    // delete the wrong file.
+    if !path.is_absolute() {
+        path = env::current_dir()?.join(path)
+    }
     imp::create_named(&path)
         .with_err_path(|| path.clone())
         .map(|file| NamedTempFile {
