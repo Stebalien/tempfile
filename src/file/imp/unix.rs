@@ -1,6 +1,6 @@
 #[cfg(not(target_os = "redox"))]
 use libc::{c_char, c_int, link, rename, unlink, O_CLOEXEC, O_CREAT, O_EXCL, O_RDWR};
-use std::ffi::CString;
+use std::ffi::{CString, OsStr};
 use std::fs::{self, File, OpenOptions};
 use std::io;
 use std::os::unix::ffi::OsStrExt;
@@ -93,9 +93,13 @@ pub fn create(dir: &Path) -> io::Result<File> {
 }
 
 fn create_unix(dir: &Path) -> io::Result<File> {
-    util::create_helper(dir, ".tmp", "", ::NUM_RAND_CHARS, |path| {
-        create_unlinked(&path)
-    })
+    util::create_helper(
+        dir,
+        OsStr::new(".tmp"),
+        OsStr::new(""),
+        ::NUM_RAND_CHARS,
+        |path| create_unlinked(&path),
+    )
 }
 
 unsafe fn stat(fd: RawFd) -> io::Result<stat_t> {

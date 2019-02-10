@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io;
 use std::os::windows::ffi::OsStrExt;
@@ -8,8 +9,8 @@ use std::ptr;
 use winapi::shared::minwindef::DWORD;
 use winapi::um::fileapi::{CreateFileW, SetFileAttributesW, CREATE_NEW};
 use winapi::um::handleapi::INVALID_HANDLE_VALUE;
-use winapi::um::winbase::{FILE_FLAG_DELETE_ON_CLOSE, MOVEFILE_REPLACE_EXISTING};
 use winapi::um::winbase::{MoveFileExW, ReOpenFile};
+use winapi::um::winbase::{FILE_FLAG_DELETE_ON_CLOSE, MOVEFILE_REPLACE_EXISTING};
 use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY};
 use winapi::um::winnt::{FILE_GENERIC_READ, FILE_GENERIC_WRITE, HANDLE};
 use winapi::um::winnt::{FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE};
@@ -64,15 +65,21 @@ pub fn create_named(path: &Path) -> io::Result<File> {
 }
 
 pub fn create(dir: &Path) -> io::Result<File> {
-    util::create_helper(dir, ".tmp", "", ::NUM_RAND_CHARS, |path| {
-        win_create(
-            &path,
-            ACCESS,
-            0, // Exclusive
-            CREATE_NEW,
-            FLAGS | FILE_FLAG_DELETE_ON_CLOSE,
-        )
-    })
+    util::create_helper(
+        dir,
+        OsStr::new(".tmp"),
+        OsStr::new(""),
+        ::NUM_RAND_CHARS,
+        |path| {
+            win_create(
+                &path,
+                ACCESS,
+                0, // Exclusive
+                CREATE_NEW,
+                FLAGS | FILE_FLAG_DELETE_ON_CLOSE,
+            )
+        },
+    )
 }
 
 pub fn reopen(file: &File, _path: &Path) -> io::Result<File> {
