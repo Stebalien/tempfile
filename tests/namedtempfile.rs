@@ -207,3 +207,13 @@ fn test_write_after_close() {
     let path = NamedTempFile::new().unwrap().into_temp_path();
     File::create(path).unwrap().write_all(b"test").unwrap();
 }
+
+#[test]
+fn test_change_dir() {
+    env::set_current_dir(env::temp_dir()).unwrap();
+    let tmpfile = NamedTempFile::new_in(".").unwrap();
+    let path = env::current_dir().unwrap().join(tmpfile.path());
+    env::set_current_dir("/").unwrap();
+    drop(tmpfile);
+    assert!(!exists(path))
+}

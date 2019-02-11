@@ -1,5 +1,6 @@
 #[cfg(not(target_os = "redox"))]
 use libc::{c_char, c_int, link, rename, unlink, O_CLOEXEC, O_CREAT, O_EXCL, O_RDWR};
+use std::env;
 use std::ffi::{CString, OsStr};
 use std::fs::{self, File, OpenOptions};
 use std::io;
@@ -64,6 +65,15 @@ pub fn create_named(path: &Path) -> io::Result<File> {
 }
 
 fn create_unlinked(path: &Path) -> io::Result<File> {
+    let tmp;
+    // shadow this to decrease the lifetime. It can't live longer than `tmp`.
+    let mut path = path;
+    if !path.is_absolute() {
+        let cur_dir = env::current_dir()?;
+        tmp = cur_dir.join(path);
+        path = &tmp;
+    }
+
     let f = create_named(path)?;
     // don't care whether the path has already been unlinked,
     // but perhaps there are some IO error conditions we should send up?
