@@ -1,5 +1,3 @@
-#[cfg(not(target_os = "redox"))]
-use libc::{c_char, c_int, link, rename, unlink, O_CLOEXEC, O_CREAT, O_EXCL, O_RDWR};
 use std::env;
 use std::ffi::{CString, OsStr};
 use std::fs::{self, File, OpenOptions};
@@ -9,14 +7,17 @@ use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
 use std::path::Path;
 use util;
 
-#[cfg(all(lfs_support, target_os = "linux"))]
+#[cfg(target_os = "linux")]
 use libc::{fstat64 as fstat, open64 as open, stat64 as stat_t};
-
-#[cfg(not(any(all(lfs_support, target_os = "linux"), target_os = "redox")))]
-use libc::{fstat, open, stat as stat_t};
 
 #[cfg(target_os = "redox")]
 use syscall::{self, fstat, open, Stat as stat_t, O_CLOEXEC, O_CREAT, O_EXCL, O_RDWR};
+
+#[cfg(not(target_os = "redox"))]
+use libc::{c_char, c_int, link, rename, unlink, O_CLOEXEC, O_CREAT, O_EXCL, O_RDWR};
+
+#[cfg(not(any(target_os = "linux", target_os = "redox")))]
+use libc::{fstat, open, stat as stat_t};
 
 #[cfg(not(target_os = "redox"))]
 #[inline(always)]
