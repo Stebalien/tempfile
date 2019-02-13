@@ -60,19 +60,19 @@ fn create_unlinked(path: &Path) -> io::Result<File> {
 
 #[cfg(target_os = "linux")]
 pub fn create(dir: &Path) -> io::Result<File> {
-    use libc::{open64, O_CLOEXEC, O_EXCL, O_RDWR, O_TMPFILE};
-    use std::os::unix::io::FromRawFd;
-    match unsafe {
-        let path = cstr(dir)?;
-        open64(
-            path.as_ptr() as *const c_char,
-            O_CLOEXEC | O_EXCL | O_TMPFILE | O_RDWR,
-            0o600,
-        )
-    } {
-        -1 => create_unix(dir),
-        fd => Ok(unsafe { FromRawFd::from_raw_fd(fd) }),
-    }
+    use libc::{EISDIR, ENOENT, EOPNOTSUPP, O_EXCL, O_TMPFILE};
+    OpenOptions::new()
+        .read(true)
+        .write(true)
+        .custom_flags(O_TMPFILE | O_EXCL) // do not mix with `create_new(true)`
+        .open(dir)
+        .or_else(|e| {
+            match e.raw_os_error() {
+                // These are the three "not supported" error codes for O_TMPFILE.
+                Some(EOPNOTSUPP) | Some(EISDIR) | Some(ENOENT) => create_unix(dir),
+                _ => Err(e),
+            }
+        })
 }
 
 #[cfg(not(target_os = "linux"))]
