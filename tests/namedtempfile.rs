@@ -217,3 +217,24 @@ fn test_change_dir() {
     drop(tmpfile);
     assert!(!exists(path))
 }
+
+#[test]
+fn test_into_parts() {
+    let mut file = NamedTempFile::new().unwrap();
+    write!(file, "abcd").expect("write failed");
+
+    let (mut file, temp_path) = file.into_parts();
+
+    let path = temp_path.to_path_buf();
+
+    assert!(path.exists());
+    drop(temp_path);
+    assert!(!path.exists());
+
+    write!(file, "efgh").expect("write failed");
+
+    file.seek(SeekFrom::Start(0)).unwrap();
+    let mut buf = String::new();
+    file.read_to_string(&mut buf).unwrap();
+    assert_eq!("abcdefgh", buf);
+}

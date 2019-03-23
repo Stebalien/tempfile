@@ -733,6 +733,14 @@ impl NamedTempFile {
     pub fn into_temp_path(self) -> TempPath {
         self.path
     }
+
+    /// Converts the named temporary file into its constituent parts.
+    ///
+    /// Note: When the path is dropped, the file is deleted but the file handle
+    /// is still usable.
+    pub fn into_parts(self) -> (File, TempPath) {
+        (self.file, self.path)
+    }
 }
 
 impl Read for NamedTempFile {
