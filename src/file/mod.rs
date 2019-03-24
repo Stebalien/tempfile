@@ -310,6 +310,56 @@ impl TempPath {
             }),
         }
     }
+
+    /// Keep the temporary file from being deleted. This function will turn the
+    /// temporary file into a non-temporary file without moving it.
+    ///
+    ///
+    /// # Errors
+    ///
+    /// On some platforms (e.g., Windows), we need to mark the file as
+    /// non-temporary. This operation could fail.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::io::{self, Write};
+    /// # extern crate tempfile;
+    /// use tempfile::NamedTempFile;
+    ///
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// let mut file = NamedTempFile::new()?;
+    /// writeln!(file, "Brian was here. Briefly.")?;
+    ///
+    /// let path = file.into_temp_path();
+    /// let path = path.keep()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`PathPersistError`]: struct.PathPersistError.html
+    pub fn keep(mut self) -> Result<PathBuf, PathPersistError> {
+        match imp::keep(&self.path) {
+            Ok(_) => {
+                // Don't drop `self`. We don't want to try deleting the old
+                // temporary file path. (It'll fail, but the failure is never
+                // seen.)
+                let mut path = PathBuf::new();
+                mem::swap(&mut self.path, &mut path);
+                mem::forget(self);
+                Ok(path)
+            }
+            Err(e) => Err(PathPersistError {
+                error: e,
+                path: self,
+            }),
+        }
+    }
 }
 
 impl fmt::Debug for TempPath {
@@ -671,6 +721,48 @@ impl NamedTempFile {
                     error,
                 })
             }
+        }
+    }
+
+    /// Keep the temporary file from being deleted. This function will turn the
+    /// temporary file into a non-temporary file without moving it.
+    ///
+    ///
+    /// # Errors
+    ///
+    /// On some platforms (e.g., Windows), we need to mark the file as
+    /// non-temporary. This operation could fail.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::io::{self, Write};
+    /// # extern crate tempfile;
+    /// use tempfile::NamedTempFile;
+    ///
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// let mut file = NamedTempFile::new()?;
+    /// writeln!(file, "Brian was here. Briefly.")?;
+    ///
+    /// let (file, path) = file.keep()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`PathPersistError`]: struct.PathPersistError.html
+    pub fn keep(self) -> Result<(File, PathBuf), PersistError> {
+        let (file, path) = (self.file, self.path);
+        match path.keep() {
+            Ok(path) => Ok((file, path)),
+            Err(PathPersistError { error, path }) => Err(PersistError {
+                file: NamedTempFile { path, file },
+                error,
+            }),
         }
     }
 

@@ -64,6 +64,17 @@ pub fn reopen(file: &File, _path: &Path) -> io::Result<File> {
     }
 }
 
+pub fn keep(path: &Path) -> io::Result<()> {
+    unsafe {
+        let path_w = to_utf16(path);
+        if SetFileAttributesW(path_w.as_ptr(), FILE_ATTRIBUTE_NORMAL) == 0 {
+            Err(io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
+    }
+}
+
 pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
     // TODO: We should probably do this in one-shot using SetFileInformationByHandle but the API is
     // really painful.
