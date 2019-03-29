@@ -238,3 +238,32 @@ fn test_into_parts() {
     file.read_to_string(&mut buf).unwrap();
     assert_eq!("abcdefgh", buf);
 }
+
+#[test]
+fn test_keep() {
+    let mut tmpfile = NamedTempFile::new().unwrap();
+    write!(tmpfile, "abcde").unwrap();
+    let (mut f, temp_path) = tmpfile.into_parts();
+    let path;
+    {
+        assert!(exists(&temp_path));
+        path = temp_path.keep().unwrap();
+        assert!(exists(&path));
+
+        // Check original file
+        f.seek(SeekFrom::Start(0)).unwrap();
+        let mut buf = String::new();
+        f.read_to_string(&mut buf).unwrap();
+        assert_eq!("abcde", buf);
+    }
+
+    {
+        // Try opening it again.
+        let mut f = File::open(&path).unwrap();
+        f.seek(SeekFrom::Start(0)).unwrap();
+        let mut buf = String::new();
+        f.read_to_string(&mut buf).unwrap();
+        assert_eq!("abcde", buf);
+    }
+    std::fs::remove_file(&path).unwrap();
+}

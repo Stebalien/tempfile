@@ -131,3 +131,7 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
     // XXX implement when possible
     Err(io::Error::from_raw_os_error(syscall::ENOSYS))
 }
+
+pub fn keep(_: &Path) -> io::Result<()> {
+    Ok(())
+}
