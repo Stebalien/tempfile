@@ -122,7 +122,7 @@ mod spooled;
 mod util;
 
 pub use dir::{tempdir, tempdir_in, TempDir};
-pub use file::{tempfile, tempfile_in, NamedTempFile, PersistError, TempPath};
+pub use file::{tempfile, tempfile_in, NamedTempFile, PathPersistError, PersistError, TempPath};
 pub use spooled::{spooled_tempfile, SpooledTempFile};
 
 /// Create a new temporary file or directory with custom parameters.
