@@ -20,7 +20,7 @@ fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
             .for_each(|b| buf.push(str::from_utf8_unchecked(&[b as u8])))
     }
     buf.push(suffix);
-    return buf;
+    buf
 }
 
 pub fn create_helper<F, R>(
