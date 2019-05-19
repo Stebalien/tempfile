@@ -1,3 +1,14 @@
+3.0.8
+=====
+
+This is a bugfix release.
+
+Fixes:
+
+* Export `PathPersistError`.
+* Fix a bug where flushing a `SpooledTempFile` to disk could fail to write part
+  of the file in some rare, yet-to-reproduced cases.
+
 3.0.7
 =====
 
