@@ -24,7 +24,8 @@
 //! a temporary file cleaner could delete the temporary file which an attacker could then replace.
 //!
 //! `tempfile` doesn't rely on file paths so this isn't an issue. However, `NamedTempFile` does
-//! rely on file paths.
+//! rely on file paths for _some_ operations. See the security documentation on
+//! the `NamedTempFile` type for more information.
 //!
 //! ## Examples
 //!
