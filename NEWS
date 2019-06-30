@@ -1,3 +1,20 @@
+3.0.9
+=====
+
+Documentation:
+
+* Add an example for reopening a named temporary file.
+* Flesh out the security documentation.
+
+Features:
+
+* Introduce an `append` option to the builder.
+* Errors:
+  * No longer implement the soft-deprecated `description`.
+  * Implement `source` instead of `cause`.
+
+Breaking: The minimum rust version is now 1.30.
+
 3.0.8
 =====
 
