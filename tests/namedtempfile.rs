@@ -96,6 +96,19 @@ fn test_customnamed() {
 }
 
 #[test]
+fn test_append() {
+    let mut tmpfile = Builder::new().append(true).tempfile().unwrap();
+    tmpfile.write(b"a").unwrap();
+    tmpfile.seek(SeekFrom::Start(0)).unwrap();
+    tmpfile.write(b"b").unwrap();
+
+    tmpfile.seek(SeekFrom::Start(0)).unwrap();
+    let mut buf = vec![0u8; 1];
+    tmpfile.read_exact(&mut buf).unwrap();
+    assert_eq!(buf, b"a");
+}
+
+#[test]
 fn test_reopen() {
     let source = NamedTempFile::new().unwrap();
     let mut first = source.reopen().unwrap();

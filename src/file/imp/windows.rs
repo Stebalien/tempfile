@@ -20,8 +20,8 @@ fn to_utf16(s: &Path) -> Vec<u16> {
     s.as_os_str().encode_wide().chain(iter::once(0)).collect()
 }
 
-pub fn create_named(path: &Path) -> io::Result<File> {
-    OpenOptions::new()
+pub fn create_named(path: &Path, open_options: &mut OpenOptions) -> io::Result<File> {
+    open_options
         .create_new(true)
         .read(true)
         .write(true)

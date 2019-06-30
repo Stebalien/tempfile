@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io;
 use std::path::Path;
 
@@ -9,7 +9,7 @@ fn not_supported<T>() -> io::Result<T> {
     ))
 }
 
-pub fn create_named(_path: &Path) -> io::Result<File> {
+pub fn create_named(_path: &Path, open_options: &mut OpenOptions) -> io::Result<File> {
     not_supported()
 }
 
