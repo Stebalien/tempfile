@@ -3,7 +3,7 @@ use std::env;
 use std::error;
 use std::ffi::OsStr;
 use std::fmt;
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::mem;
 use std::ops::Deref;
@@ -957,13 +957,16 @@ impl std::os::windows::io::AsRawHandle for NamedTempFile {
     }
 }
 
-pub(crate) fn create_named(mut path: PathBuf) -> io::Result<NamedTempFile> {
+pub(crate) fn create_named(
+    mut path: PathBuf,
+    open_options: &mut OpenOptions,
+) -> io::Result<NamedTempFile> {
     // Make the path absolute. Otherwise, changing directories could cause us to
     // delete the wrong file.
     if !path.is_absolute() {
         path = env::current_dir()?.join(path)
     }
-    imp::create_named(&path)
+    imp::create_named(&path, open_options)
         .with_err_path(|| path.clone())
         .map(|file| NamedTempFile {
             path: TempPath { path },

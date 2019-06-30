@@ -113,6 +113,7 @@ const NUM_RETRIES: u32 = 1 << 31;
 const NUM_RAND_CHARS: usize = 6;
 
 use std::ffi::OsStr;
+use std::fs::OpenOptions;
 use std::path::Path;
 use std::{env, io};
 
@@ -132,6 +133,7 @@ pub struct Builder<'a, 'b> {
     random_len: usize,
     prefix: &'a OsStr,
     suffix: &'b OsStr,
+    append: bool,
 }
 
 impl<'a, 'b> Default for Builder<'a, 'b> {
@@ -140,6 +142,7 @@ impl<'a, 'b> Default for Builder<'a, 'b> {
             random_len: ::NUM_RAND_CHARS,
             prefix: OsStr::new(".tmp"),
             suffix: OsStr::new(""),
+            append: false,
         }
     }
 }
@@ -303,6 +306,33 @@ impl<'a, 'b> Builder<'a, 'b> {
         self
     }
 
+    /// Set the file to be opened in append mode.
+    ///
+    /// Default: `false`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate tempfile;
+    /// # use std::io;
+    /// # fn main() {
+    /// #     if let Err(_) = run() {
+    /// #         ::std::process::exit(1);
+    /// #     }
+    /// # }
+    /// # fn run() -> Result<(), io::Error> {
+    /// # use tempfile::Builder;
+    /// let named_tempfile = Builder::new()
+    ///     .append(true)
+    ///     .tempfile()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn append(&mut self, append: bool) -> &mut Self {
+        self.append = append;
+        self
+    }
+
     /// Create the named temporary file.
     ///
     /// # Security
@@ -379,7 +409,11 @@ impl<'a, 'b> Builder<'a, 'b> {
             self.prefix,
             self.suffix,
             self.random_len,
-            file::create_named,
+            |path| {
+                let mut open_options = OpenOptions::new();
+                let open_options = open_options.append(self.append);
+                file::create_named(path, open_options)
+            },
         )
     }
 

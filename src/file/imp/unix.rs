@@ -32,8 +32,8 @@ pub fn cstr(path: &Path) -> io::Result<CString> {
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "path contained a null"))
 }
 
-pub fn create_named(path: &Path) -> io::Result<File> {
-    OpenOptions::new()
+pub fn create_named(path: &Path, open_options: &mut OpenOptions) -> io::Result<File> {
+    open_options
         .read(true)
         .write(true)
         .create_new(true)
