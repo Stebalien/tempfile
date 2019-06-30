@@ -441,11 +441,7 @@ impl<'a, 'b> Builder<'a, 'b> {
             self.prefix,
             self.suffix,
             self.random_len,
-            |path| {
-                let mut open_options = OpenOptions::new();
-                let open_options = open_options.append(self.append);
-                file::create_named(path, open_options)
-            },
+            |path| file::create_named(path, OpenOptions::new().append(self.append)),
         )
     }
 
