@@ -15,7 +15,7 @@ patterns and surprisingly difficult to implement securely).
 Usage
 -----
 
-Minimum required Rust version: 1.24.0
+Minimum required Rust version: 1.30.1
 
 Add this to your `Cargo.toml`:
 ```toml

@@ -129,11 +129,7 @@ impl fmt::Display for PathPersistError {
 }
 
 impl error::Error for PathPersistError {
-    fn description(&self) -> &str {
-        "failed to persist temporary file path"
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         Some(&self.error)
     }
 }
@@ -523,10 +519,7 @@ impl fmt::Display for PersistError {
 }
 
 impl error::Error for PersistError {
-    fn description(&self) -> &str {
-        "failed to persist temporary file"
-    }
-    fn cause(&self) -> Option<&error::Error> {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         Some(&self.error)
     }
 }
