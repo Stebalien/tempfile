@@ -51,7 +51,7 @@ fn create_unlinked(path: &Path) -> io::Result<File> {
         path = &tmp;
     }
 
-    let f = create_named(path)?;
+    let f = create_named(path, &mut OpenOptions::new())?;
     // don't care whether the path has already been unlinked,
     // but perhaps there are some IO error conditions we should send up?
     let _ = fs::remove_file(path);
