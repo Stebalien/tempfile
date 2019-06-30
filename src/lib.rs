@@ -50,6 +50,38 @@
 //! # }
 //! ```
 //!
+//! Create a named temporary file and open an independent file handle:
+//!
+//! ```
+//! # extern crate tempfile;
+//! use tempfile::NamedTempFile;
+//! use std::io::{self, Write, Read};
+//!
+//! # fn main() {
+//! #     if let Err(_) = run() {
+//! #         ::std::process::exit(1);
+//! #     }
+//! # }
+//! # fn run() -> Result<(), io::Error> {
+//! let text = "Brian was here. Briefly.";
+//!
+//! // Create a file inside of `std::env::temp_dir()`.
+//! let mut file1 = NamedTempFile::new()?;
+//!
+//! // Re-open it.
+//! let mut file2 = file1.reopen()?;
+//!
+//! // Write some test data to the first handle.
+//! file1.write_all(text.as_bytes())?;
+//!
+//! // Read the test data using the second handle.
+//! let mut buf = String::new();
+//! file2.read_to_string(&mut buf)?;
+//! assert_eq!(buf, text);
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! Create a temporary directory and add a file to it:
 //!
 //! ```
