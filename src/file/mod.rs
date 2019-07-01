@@ -9,8 +9,8 @@ use std::mem;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
-use error::IoResultExt;
-use Builder;
+use crate::error::IoResultExt;
+use crate::Builder;
 
 mod imp;
 

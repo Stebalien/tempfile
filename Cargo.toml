@@ -7,6 +7,7 @@ authors = [
   "Ashley Mannix <ashleymannix@live.com.au>",
   "Jason White <jasonaw0@gmail.com>",
 ]
+edition = "2018"
 description = """
 A library for managing temporary files and directories.
 """

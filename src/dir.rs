@@ -12,8 +12,8 @@ use remove_dir_all::remove_dir_all;
 use std::path::{self, Path, PathBuf};
 use std::{fmt, fs, io};
 
-use error::IoResultExt;
-use Builder;
+use crate::error::IoResultExt;
+use crate::Builder;
 
 /// Create a new temporary directory.
 ///

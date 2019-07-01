@@ -155,9 +155,9 @@ mod file;
 mod spooled;
 mod util;
 
-pub use dir::{tempdir, tempdir_in, TempDir};
-pub use file::{tempfile, tempfile_in, NamedTempFile, PathPersistError, PersistError, TempPath};
-pub use spooled::{spooled_tempfile, SpooledTempFile};
+pub use crate::dir::{tempdir, tempdir_in, TempDir};
+pub use crate::file::{tempfile, tempfile_in, NamedTempFile, PathPersistError, PersistError, TempPath};
+pub use crate::spooled::{spooled_tempfile, SpooledTempFile};
 
 /// Create a new temporary file or directory with custom parameters.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -171,7 +171,7 @@ pub struct Builder<'a, 'b> {
 impl<'a, 'b> Default for Builder<'a, 'b> {
     fn default() -> Self {
         Builder {
-            random_len: ::NUM_RAND_CHARS,
+            random_len: crate::NUM_RAND_CHARS,
             prefix: OsStr::new(".tmp"),
             suffix: OsStr::new(""),
             append: false,
