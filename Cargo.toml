@@ -1,6 +1,6 @@
 [package]
 name = "tempfile"
-version = "3.0.9"
+version = "3.1.0"
 authors = [
   "Steven Allen <steven@stebalien.com>",
   "The Rust Project Developers",
@@ -19,7 +19,7 @@ license = "MIT/Apache-2.0"
 exclude = ["/.travis.yml", "/appveyor.yml"]
 
 [dependencies]
-rand = "0.6"
+rand = "0.7"
 remove_dir_all = "0.5"
 cfg-if = "0.1"
 

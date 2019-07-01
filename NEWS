@@ -1,3 +1,12 @@
+3.1.0
+=====
+
+Features:
+
+* Bump rand dependency to `0.7`.
+
+Breaking: The minimum rust version is now `1.32.0`.
+
 3.0.9
 =====
 
@@ -152,7 +161,7 @@ Add LFS Support.
 
 * Implement `AsRef<File>` for `NamedTempFile` allowing named temporary files to
   be borrowed as `File`s.
-* Add a method to convert a `NamedTempFile` to an unnamed temporary `File`. 
+* Add a method to convert a `NamedTempFile` to an unnamed temporary `File`.
 
 2.0.1
 =====
