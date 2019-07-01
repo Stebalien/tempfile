@@ -7,27 +7,30 @@ authors = [
   "Ashley Mannix <ashleymannix@live.com.au>",
   "Jason White <jasonaw0@gmail.com>",
 ]
-description = """
-A library for managing temporary files and directories.
-"""
-
 documentation = "https://docs.rs/tempfile"
-repository = "https://github.com/Stebalien/tempfile"
+edition = "2018"
+exclude = ["/.travis.yml", "/appveyor.yml"]
 homepage = "http://stebalien.com/projects/tempfile-rs"
 keywords = ["tempfile", "tmpfile", "filesystem"]
-license = "MIT/Apache-2.0"
-exclude = ["/.travis.yml", "/appveyor.yml"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Stebalien/tempfile"
+description = "A library for managing temporary files and directories."
 
 [dependencies]
+cfg-if = "0.1"
 rand = "0.7"
 remove_dir_all = "0.5"
-cfg-if = "0.1"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.27"
 
-[target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["fileapi", "winbase", "handleapi"] }
+[target.'cfg(windows)'.dependencies.winapi]
+version = "0.3"
+features = [
+    "fileapi",
+    "handleapi",
+    "winbase",
+]
 
 [target.'cfg(target_os = "redox")'.dependencies]
 redox_syscall = "0.1"

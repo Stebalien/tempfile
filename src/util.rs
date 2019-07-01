@@ -4,7 +4,7 @@ use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use std::{io, str};
 
-use error::IoResultExt;
+use crate::error::IoResultExt;
 
 fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
     let mut buf = OsString::with_capacity(prefix.len() + suffix.len() + rand_len);
@@ -33,7 +33,7 @@ pub fn create_helper<F, R>(
 where
     F: Fn(PathBuf) -> io::Result<R>,
 {
-    let num_retries = if random_len != 0 { ::NUM_RETRIES } else { 1 };
+    let num_retries = if random_len != 0 { crate::NUM_RETRIES } else { 1 };
 
     for _ in 0..num_retries {
         let path = base.join(tmpname(prefix, suffix, random_len));

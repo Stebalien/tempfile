@@ -14,7 +14,7 @@ use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY};
 use winapi::um::winnt::{FILE_GENERIC_READ, FILE_GENERIC_WRITE, HANDLE};
 use winapi::um::winnt::{FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE};
 
-use util;
+use crate::util;
 
 fn to_utf16(s: &Path) -> Vec<u16> {
     s.as_os_str().encode_wide().chain(iter::once(0)).collect()
@@ -34,7 +34,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
         dir,
         OsStr::new(".tmp"),
         OsStr::new(""),
-        ::NUM_RAND_CHARS,
+        crate::NUM_RAND_CHARS,
         |path| {
             OpenOptions::new()
                 .create_new(true)

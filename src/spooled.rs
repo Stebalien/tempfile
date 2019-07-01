@@ -1,4 +1,4 @@
-use file::tempfile;
+use crate::file::tempfile;
 use std::fs::File;
 use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
 
@@ -34,7 +34,6 @@ pub struct SpooledTempFile {
 /// # Examples
 ///
 /// ```
-/// # extern crate tempfile;
 /// use tempfile::spooled_tempfile;
 /// use std::io::{self, Write};
 ///

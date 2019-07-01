@@ -5,7 +5,7 @@ use std::io;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
 use std::path::Path;
-use util;
+use crate::util;
 
 #[cfg(not(target_os = "redox"))]
 use libc::{c_char, c_int, link, rename, unlink};
@@ -85,7 +85,7 @@ fn create_unix(dir: &Path) -> io::Result<File> {
         dir,
         OsStr::new(".tmp"),
         OsStr::new(""),
-        ::NUM_RAND_CHARS,
+        crate::NUM_RAND_CHARS,
         |path| create_unlinked(&path),
     )
 }

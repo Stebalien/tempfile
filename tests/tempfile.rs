@@ -1,4 +1,5 @@
-extern crate tempfile;
+#![deny(rust_2018_idioms)]
+
 use std::fs;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::sync::mpsc::{sync_channel, TryRecvError};

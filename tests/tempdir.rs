@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate tempfile;
+#![deny(rust_2018_idioms)]
 
 use std::env;
 use std::fs;

@@ -9,8 +9,8 @@ use std::mem;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
-use error::IoResultExt;
-use Builder;
+use crate::error::IoResultExt;
+use crate::Builder;
 
 mod imp;
 
@@ -34,7 +34,6 @@ mod imp;
 /// # Examples
 ///
 /// ```
-/// # extern crate tempfile;
 /// use tempfile::tempfile;
 /// use std::io::{self, Write};
 ///
@@ -76,7 +75,6 @@ pub fn tempfile() -> io::Result<File> {
 /// # Examples
 ///
 /// ```
-/// # extern crate tempfile;
 /// use tempfile::tempfile_in;
 /// use std::io::{self, Write};
 ///
@@ -123,7 +121,7 @@ impl From<PathPersistError> for TempPath {
 }
 
 impl fmt::Display for PathPersistError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "failed to persist temporary file path: {}", self.error)
     }
 }
@@ -156,7 +154,6 @@ impl TempPath {
     /// # Examples
     ///
     /// ```no_run
-    /// # extern crate tempfile;
     /// # use std::io;
     /// use tempfile::NamedTempFile;
     ///
@@ -208,7 +205,6 @@ impl TempPath {
     ///
     /// ```no_run
     /// # use std::io::{self, Write};
-    /// # extern crate tempfile;
     /// use tempfile::NamedTempFile;
     ///
     /// # fn main() {
@@ -268,7 +264,6 @@ impl TempPath {
     ///
     /// ```no_run
     /// # use std::io::{self, Write};
-    /// # extern crate tempfile;
     /// use tempfile::NamedTempFile;
     ///
     /// # fn main() {
@@ -320,7 +315,6 @@ impl TempPath {
     ///
     /// ```no_run
     /// # use std::io::{self, Write};
-    /// # extern crate tempfile;
     /// use tempfile::NamedTempFile;
     ///
     /// # fn main() {
@@ -359,7 +353,7 @@ impl TempPath {
 }
 
 impl fmt::Debug for TempPath {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.path.fmt(f)
     }
 }
@@ -477,7 +471,7 @@ pub struct NamedTempFile {
 }
 
 impl fmt::Debug for NamedTempFile {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "NamedTempFile({:?})", self.path)
     }
 }
@@ -513,7 +507,7 @@ impl From<PersistError> for NamedTempFile {
 }
 
 impl fmt::Display for PersistError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "failed to persist temporary file: {}", self.error)
     }
 }
@@ -566,7 +560,6 @@ impl NamedTempFile {
     ///
     /// ```no_run
     /// # use std::io::{self, Write};
-    /// # extern crate tempfile;
     /// use tempfile::NamedTempFile;
     ///
     /// # fn main() {
@@ -608,7 +601,6 @@ impl NamedTempFile {
     ///
     /// ```no_run
     /// # use std::io::{self, Write};
-    /// # extern crate tempfile;
     /// use tempfile::NamedTempFile;
     ///
     /// # fn main() {
@@ -639,7 +631,6 @@ impl NamedTempFile {
     /// # Examples
     ///
     /// ```no_run
-    /// # extern crate tempfile;
     /// # use std::io;
     /// use tempfile::NamedTempFile;
     ///
@@ -687,7 +678,6 @@ impl NamedTempFile {
     ///
     /// ```no_run
     /// # use std::io::{self, Write};
-    /// # extern crate tempfile;
     /// use tempfile::NamedTempFile;
     ///
     /// # fn main() {
@@ -743,7 +733,6 @@ impl NamedTempFile {
     ///
     /// ```no_run
     /// # use std::io::{self, Write};
-    /// # extern crate tempfile;
     /// use tempfile::NamedTempFile;
     ///
     /// # fn main() {
@@ -786,7 +775,6 @@ impl NamedTempFile {
     ///
     /// ```no_run
     /// # use std::io::{self, Write};
-    /// # extern crate tempfile;
     /// use tempfile::NamedTempFile;
     ///
     /// # fn main() {
@@ -836,7 +824,6 @@ impl NamedTempFile {
     ///
     /// ```no_run
     /// # use std::io;
-    /// # extern crate tempfile;
     /// use tempfile::NamedTempFile;
     ///
     /// # fn main() {
