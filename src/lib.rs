@@ -32,7 +32,6 @@
 //! Create a temporary file and write some data into it:
 //!
 //! ```
-//! # extern crate tempfile;
 //! use tempfile::tempfile;
 //! use std::io::{self, Write};
 //!
@@ -53,7 +52,6 @@
 //! Create a named temporary file and open an independent file handle:
 //!
 //! ```
-//! # extern crate tempfile;
 //! use tempfile::NamedTempFile;
 //! use std::io::{self, Write, Read};
 //!
@@ -85,7 +83,6 @@
 //! Create a temporary directory and add a file to it:
 //!
 //! ```
-//! # extern crate tempfile;
 //! use tempfile::tempdir;
 //! use std::fs::File;
 //! use std::io::{self, Write};
@@ -126,20 +123,10 @@
     html_root_url = "https://docs.rs/tempfile/3.1.0"
 )]
 #![cfg_attr(test, deny(warnings))]
+#![deny(rust_2018_idioms)]
 
 #[macro_use]
 extern crate cfg_if;
-extern crate rand;
-extern crate remove_dir_all;
-
-#[cfg(unix)]
-extern crate libc;
-
-#[cfg(windows)]
-extern crate winapi;
-
-#[cfg(target_os = "redox")]
-extern crate syscall;
 
 const NUM_RETRIES: u32 = 1 << 31;
 const NUM_RAND_CHARS: usize = 6;
@@ -187,7 +174,6 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// Create a named temporary file and write some data into it:
     ///
     /// ```
-    /// # extern crate tempfile;
     /// # use std::io;
     /// # use std::ffi::OsStr;
     /// # fn main() {
@@ -220,7 +206,6 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// Create a temporary directory and add a file to it:
     ///
     /// ```
-    /// # extern crate tempfile;
     /// # use std::io::{self, Write};
     /// # use std::fs::File;
     /// # use std::ffi::OsStr;
@@ -263,7 +248,6 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate tempfile;
     /// # use std::io;
     /// # fn main() {
     /// #     if let Err(_) = run() {
@@ -291,7 +275,6 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate tempfile;
     /// # use std::io;
     /// # fn main() {
     /// #     if let Err(_) = run() {
@@ -318,7 +301,6 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate tempfile;
     /// # use std::io;
     /// # fn main() {
     /// #     if let Err(_) = run() {
@@ -345,7 +327,6 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate tempfile;
     /// # use std::io;
     /// # fn main() {
     /// #     if let Err(_) = run() {
@@ -382,7 +363,6 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate tempfile;
     /// # use std::io;
     /// # fn main() {
     /// #     if let Err(_) = run() {
@@ -419,7 +399,6 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate tempfile;
     /// # use std::io;
     /// # fn main() {
     /// #     if let Err(_) = run() {

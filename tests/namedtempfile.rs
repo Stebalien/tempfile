@@ -1,4 +1,5 @@
-extern crate tempfile;
+#![deny(rust_2018_idioms)]
+
 use std::env;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};

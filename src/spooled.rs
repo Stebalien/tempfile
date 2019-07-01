@@ -34,7 +34,6 @@ pub struct SpooledTempFile {
 /// # Examples
 ///
 /// ```
-/// # extern crate tempfile;
 /// use tempfile::spooled_tempfile;
 /// use std::io::{self, Write};
 ///

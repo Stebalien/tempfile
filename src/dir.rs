@@ -33,7 +33,6 @@ use crate::Builder;
 /// # Examples
 ///
 /// ```
-/// # extern crate tempfile;
 /// use tempfile::tempdir;
 /// use std::fs::File;
 /// use std::io::{self, Write};
@@ -83,7 +82,6 @@ pub fn tempdir() -> io::Result<TempDir> {
 /// # Examples
 ///
 /// ```
-/// # extern crate tempfile;
 /// use tempfile::tempdir;
 /// use std::fs::File;
 /// use std::io::{self, Write};
@@ -385,7 +383,7 @@ impl AsRef<Path> for TempDir {
 }
 
 impl fmt::Debug for TempDir {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TempDir")
             .field("path", &self.path())
             .finish()
