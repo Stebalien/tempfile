@@ -124,6 +124,7 @@
 )]
 #![cfg_attr(test, deny(warnings))]
 #![deny(rust_2018_idioms)]
+#![allow(clippy::redundant_field_names)]
 
 #[macro_use]
 extern crate cfg_if;
