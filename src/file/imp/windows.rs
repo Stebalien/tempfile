@@ -9,7 +9,7 @@ use std::{io, iter};
 use winapi::um::fileapi::SetFileAttributesW;
 use winapi::um::handleapi::INVALID_HANDLE_VALUE;
 use winapi::um::winbase::{MoveFileExW, ReOpenFile};
-use winapi::um::winbase::{FILE_FLAG_DELETE_ON_CLOSE, MOVEFILE_REPLACE_EXISTING};
+use winapi::um::winbase::{FILE_FLAG_DELETE_ON_CLOSE, MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH};
 use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY};
 use winapi::um::winnt::{FILE_GENERIC_READ, FILE_GENERIC_WRITE, HANDLE};
 use winapi::um::winnt::{FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE};
@@ -89,7 +89,7 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
             return Err(io::Error::last_os_error());
         }
 
-        let mut flags = 0;
+        let mut flags = MOVEFILE_WRITE_THROUGH;
 
         if overwrite {
             flags |= MOVEFILE_REPLACE_EXISTING;
