@@ -584,7 +584,7 @@ impl NamedTempFile {
     ///
     /// See [`NamedTempFile::new()`] for details.
     ///
-    /// [`NamedTempFile::new()`]: #method.new_in
+    /// [`NamedTempFile::new()`]: #method.new
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
         Builder::new().tempfile_in(dir)
     }
