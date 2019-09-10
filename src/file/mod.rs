@@ -189,7 +189,10 @@ impl TempPath {
     /// If this method fails, it will return `self` in the resulting
     /// [`PathPersistError`].
     ///
-    /// Note: Temporary files cannot be persisted across filesystems.
+    /// Note: Temporary files cannot be persisted across filesystems. Also
+    /// neither the file contents nor the containing directory are
+    /// synchronized, so the update may not yet have reached the disk when
+    /// `persist` returns.
     ///
     /// # Security
     ///
@@ -662,11 +665,14 @@ impl NamedTempFile {
     /// If this method fails, it will return `self` in the resulting
     /// [`PersistError`].
     ///
-    /// Note: Temporary files cannot be persisted across filesystems.
+    /// Note: Temporary files cannot be persisted across filesystems. Also
+    /// neither the file contents nor the containing directory are
+    /// synchronized, so the update may not yet have reached the disk when
+    /// `persist` returns.
     ///
     /// # Security
     ///
-    /// This method persists the temporary file using it's path and may not be
+    /// This method persists the temporary file using its path and may not be
     /// secure in the in all cases. Please read the security section on the top
     /// level documentation of this type for details.
     ///
