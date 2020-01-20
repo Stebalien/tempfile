@@ -243,7 +243,7 @@ impl TempPath {
         }
     }
 
-    /// Persist the temporary file at the target path iff no file exists there.
+    /// Persist the temporary file at the target path if and only if no file exists there.
     ///
     /// If a file exists at the target path, fail. If this method fails, it will
     /// return `self` in the resulting [`PathPersistError`].
@@ -715,7 +715,7 @@ impl NamedTempFile {
         }
     }
 
-    /// Persist the temporary file at the target path iff no file exists there.
+    /// Persist the temporary file at the target path if and only if no file exists there.
     ///
     /// If a file exists at the target path, fail. If this method fails, it will
     /// return `self` in the resulting PersistError.
@@ -726,7 +726,7 @@ impl NamedTempFile {
     ///
     /// # Security
     ///
-    /// This method persists the temporary file using it's path and may not be
+    /// This method persists the temporary file using its path and may not be
     /// secure in the in all cases. Please read the security section on the top
     /// level documentation of this type for details.
     ///
