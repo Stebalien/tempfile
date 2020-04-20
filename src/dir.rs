@@ -20,7 +20,7 @@ use crate::Builder;
 /// The `tempdir` function creates a directory in the file system
 /// and returns a [`TempDir`].
 /// The directory will be automatically deleted when the `TempDir`s
-/// desctructor is run.
+/// destructor is run.
 ///
 /// # Resource Leaking
 ///
@@ -69,7 +69,7 @@ pub fn tempdir() -> io::Result<TempDir> {
 /// The `tempdir` function creates a directory in the file system
 /// and returns a [`TempDir`].
 /// The directory will be automatically deleted when the `TempDir`s
-/// desctructor is run.
+/// destructor is run.
 ///
 /// # Resource Leaking
 ///
