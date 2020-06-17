@@ -1,32 +1,18 @@
-use rand::{self, Rng, SeedableRng};
-use rand::{distributions::Alphanumeric, rngs::SmallRng};
+use fastrand;
 use std::ffi::{OsStr, OsString};
-use std::thread_local;
-use std::{
-    cell::UnsafeCell,
-    path::{Path, PathBuf},
-};
-use std::{io, str};
+use std::path::{Path, PathBuf};
+use std::{io, iter::repeat_with};
 
 use crate::error::IoResultExt;
-
-thread_local! {
-    static THREAD_RNG: UnsafeCell<SmallRng> = UnsafeCell::new(SmallRng::from_entropy());
-}
 
 fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
     let mut buf = OsString::with_capacity(prefix.len() + suffix.len() + rand_len);
     buf.push(prefix);
-
-    // Push each character in one-by-one. Unfortunately, this is the only
-    // safe(ish) simple way to do this without allocating a temporary
-    // String/Vec.
-    THREAD_RNG.with(|rng| unsafe {
-        (&mut *rng.get())
-            .sample_iter(&Alphanumeric)
+    buf.push(
+        repeat_with(fastrand::alphanumeric)
             .take(rand_len)
-            .for_each(|b| buf.push(str::from_utf8_unchecked(&[b as u8])))
-    });
+            .collect::<String>(),
+    );
     buf.push(suffix);
     buf
 }
