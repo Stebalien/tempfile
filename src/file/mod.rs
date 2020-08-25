@@ -178,7 +178,7 @@ impl TempPath {
     /// ```
     pub fn close(mut self) -> io::Result<()> {
         let result = fs::remove_file(&self.path).with_err_path(|| &self.path);
-        mem::replace(&mut self.path, PathBuf::new());
+        self.path = PathBuf::new();
         mem::forget(self);
         result
     }
@@ -232,7 +232,7 @@ impl TempPath {
                 // Don't drop `self`. We don't want to try deleting the old
                 // temporary file path. (It'll fail, but the failure is never
                 // seen.)
-                mem::replace(&mut self.path, PathBuf::new());
+                self.path = PathBuf::new();
                 mem::forget(self);
                 Ok(())
             }
@@ -294,7 +294,7 @@ impl TempPath {
                 // Don't drop `self`. We don't want to try deleting the old
                 // temporary file path. (It'll fail, but the failure is never
                 // seen.)
-                mem::replace(&mut self.path, PathBuf::new());
+                self.path = PathBuf::new();
                 mem::forget(self);
                 Ok(())
             }
