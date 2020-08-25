@@ -1,36 +1,36 @@
 [package]
-name = "tempfile"
-version = "3.1.0"
 authors = [
   "Steven Allen <steven@stebalien.com>",
   "The Rust Project Developers",
   "Ashley Mannix <ashleymannix@live.com.au>",
   "Jason White <jasonaw0@gmail.com>",
 ]
+description = "A library for managing temporary files and directories."
 documentation = "https://docs.rs/tempfile"
 edition = "2018"
 exclude = ["/.travis.yml", "/appveyor.yml"]
 homepage = "http://stebalien.com/projects/tempfile-rs"
 keywords = ["tempfile", "tmpfile", "filesystem"]
 license = "MIT OR Apache-2.0"
+name = "tempfile"
 repository = "https://github.com/Stebalien/tempfile"
-description = "A library for managing temporary files and directories."
+version = "3.1.0"
 
 [dependencies]
 cfg-if = "0.1"
 rand = "0.7"
-remove_dir_all = "0.5"
+remove_dir_all = "0.6"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.27"
 
 [target.'cfg(windows)'.dependencies.winapi]
-version = "0.3"
 features = [
-    "fileapi",
-    "handleapi",
-    "winbase",
+  "fileapi",
+  "handleapi",
+  "winbase",
 ]
+version = "0.3"
 
 [target.'cfg(target_os = "redox")'.dependencies]
-redox_syscall = "0.1"
+redox_syscall = "0.2"
