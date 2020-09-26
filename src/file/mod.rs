@@ -1,4 +1,3 @@
-use std;
 use std::env;
 use std::error;
 use std::ffi::OsStr;
@@ -342,8 +341,7 @@ impl TempPath {
                 // Don't drop `self`. We don't want to try deleting the old
                 // temporary file path. (It'll fail, but the failure is never
                 // seen.)
-                let mut path = PathBuf::new();
-                mem::swap(&mut self.path, &mut path);
+                let path = mem::replace(&mut self.path, PathBuf::new());
                 mem::forget(self);
                 Ok(path)
             }
