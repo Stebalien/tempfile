@@ -19,7 +19,7 @@ description = "A library for managing temporary files and directories."
 [dependencies]
 cfg-if = "0.1"
 rand = "0.7"
-remove_dir_all = "0.5"
+remove_dir_all = "=0.5.3"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.27"
