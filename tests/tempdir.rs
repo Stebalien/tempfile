@@ -259,3 +259,9 @@ fn main() {
     in_tmpdir(dont_double_panic);
     in_tmpdir(pass_as_asref_path);
 }
+
+#[test]
+fn builder_shortcut() {
+    let mut builder = TempDir::builder();
+    builder.prefix("testing").tempdir().unwrap();
+}

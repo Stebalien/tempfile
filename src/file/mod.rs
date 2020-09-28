@@ -590,6 +590,13 @@ impl NamedTempFile {
         Builder::new().tempfile_in(dir)
     }
 
+    /// Shortcut for [`Builder::new()`].
+    ///
+    /// [`Builder::new()`]: struct.Builder.html#method.new
+    pub fn builder<'a, 'b>() -> Builder<'a, 'b> {
+        Builder::new()
+    }
+
     /// Get the temporary file's path.
     ///
     /// # Security

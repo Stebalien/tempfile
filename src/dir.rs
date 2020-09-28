@@ -263,6 +263,13 @@ impl TempDir {
         Builder::new().tempdir_in(dir)
     }
 
+    /// Shortcut for [`Builder::new()`].
+    ///
+    /// [`Builder::new()`]: struct.Builder.html#method.new
+    pub fn builder<'a, 'b>() -> Builder<'a, 'b> {
+        Builder::new()
+    }
+
     /// Accesses the [`Path`] to the temporary directory.
     ///
     /// [`Path`]: http://doc.rust-lang.org/std/path/struct.Path.html
