@@ -8,3 +8,15 @@ rust:
 os:
   - linux
   - osx
+env:
+  - CARGO_FLAGS=
+script:
+  - cargo test --verbose $CARGO_FLAGS
+jobs:
+  include:
+    - rust: 1.40.0
+      os: linux
+      env: CARGO_FLAGS=--target wasm32-wasi
+    - rust: nightly
+      os: linux
+      env: CARGO_FLAGS=--target wasm32-wasi --features nightly
