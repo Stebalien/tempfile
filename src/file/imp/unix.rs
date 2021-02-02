@@ -115,7 +115,7 @@ pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
 }
 
 #[cfg(all(target_os = "wasi", not(feature = "nightly")))]
-pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
+pub fn reopen(_file: &File, _path: &Path) -> io::Result<File> {
     return Err(io::Error::new(
         io::ErrorKind::Other,
         "this operation is supported on WASI only on nightly Rust (with `nightly` feature enabled)",
