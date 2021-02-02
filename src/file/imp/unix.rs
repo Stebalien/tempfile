@@ -100,26 +100,26 @@ fn create_unix(dir: &Path) -> io::Result<File> {
     )
 }
 
+#[cfg(any(not(target_os = "wasi"), feature = "nightly"))]
 pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
     let new_file = OpenOptions::new().read(true).write(true).open(path)?;
     let old_meta = file.metadata()?;
     let new_meta = new_file.metadata()?;
-    cfg_if! {
-        if #[cfg(any(not(target_os = "wasi"), feature = "nightly"))] {
-            if old_meta.dev() != new_meta.dev() || old_meta.ino() != new_meta.ino() {
-                return Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    "original tempfile has been replaced",
-                ));
-            }
-        } else {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "this operation is supported on WASI only on nightly Rust (with `nightly` feature enabled)"
-            ));
-        }
+    if old_meta.dev() != new_meta.dev() || old_meta.ino() != new_meta.ino() {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            "original tempfile has been replaced",
+        ));
     }
     Ok(new_file)
+}
+
+#[cfg(all(target_os = "wasi", not(feature = "nightly")))]
+pub fn reopen(file: &File, path: &Path) -> io::Result<File> {
+    return Err(io::Error::new(
+        io::ErrorKind::Other,
+        "this operation is supported on WASI only on nightly Rust (with `nightly` feature enabled)",
+    ));
 }
 
 #[cfg(not(target_os = "redox"))]
