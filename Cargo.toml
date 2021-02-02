@@ -21,7 +21,7 @@ cfg-if = "1"
 rand = "0.8"
 remove_dir_all = "0.5"
 
-[target.'cfg(unix)'.dependencies]
+[target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
 libc = "0.2.27"
 
 [target.'cfg(windows)'.dependencies.winapi]
@@ -34,3 +34,6 @@ features = [
 
 [target.'cfg(target_os = "redox")'.dependencies]
 redox_syscall = "0.2"
+
+[features]
+nightly = []
