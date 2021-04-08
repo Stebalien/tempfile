@@ -130,6 +130,13 @@
 #[macro_use]
 extern crate cfg_if;
 
+#[cfg(doctest)]
+#[macro_use]
+extern crate doc_comment;
+
+#[cfg(doctest)]
+doctest!("../README.md");
+
 const NUM_RETRIES: u32 = 1 << 31;
 const NUM_RAND_CHARS: usize = 6;
 
