@@ -70,11 +70,11 @@ fn create_unlinked(path: &Path) -> io::Result<File> {
 
 #[cfg(target_os = "linux")]
 pub fn create(dir: &Path) -> io::Result<File> {
-    use libc::{EISDIR, ENOENT, EOPNOTSUPP, O_EXCL, O_TMPFILE};
+    use libc::{EISDIR, ENOENT, EOPNOTSUPP, O_TMPFILE};
     OpenOptions::new()
         .read(true)
         .write(true)
-        .custom_flags(O_TMPFILE | O_EXCL) // do not mix with `create_new(true)`
+        .custom_flags(O_TMPFILE) // do not mix with `create_new(true)`
         .open(dir)
         .or_else(|e| {
             match e.raw_os_error() {
