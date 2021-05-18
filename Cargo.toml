@@ -19,7 +19,7 @@ description = "A library for managing temporary files and directories."
 [dependencies]
 cfg-if = "1"
 rand = { version = "0.8", features = ["small_rng", "getrandom"], default_features = false }
-remove_dir_all = "0.5"
+remove_dir_all = "0.7"
 
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
 libc = "0.2.27"
