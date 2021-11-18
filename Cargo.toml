@@ -33,7 +33,7 @@ features = [
 ]
 
 [target.'cfg(target_os = "redox")'.dependencies]
-redox_syscall = "0.2"
+redox_syscall = "0.2.9"
 
 [dev-dependencies]
 doc-comment = "0.3"
