@@ -1,5 +1,5 @@
 use rand::distributions::Alphanumeric;
-use rand::{self, Rng};
+use rand::Rng;
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use std::io;
@@ -14,11 +14,13 @@ fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
     // simple(ish) way to do this without allocating a temporary String/Vec.
     
     rand::thread_rng()
-        .sample_iter(&Alphanumeric)
+        .sample_iter(Alphanumeric)
         .take(rand_len)
         .for_each(|b| {
-            let mut chr = [0u8; 4];
-            buf.push(char::from(b).encode_utf8(&mut chr))
+            let mut chr = [0u8; 1];
+            if b < 128 {
+                buf.push(char::from(b).encode_utf8(&mut chr));
+            }
         });
 
     buf.push(suffix);
