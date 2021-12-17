@@ -192,7 +192,7 @@ pub fn tempdir_in<P: AsRef<Path>>(dir: P) -> io::Result<TempDir> {
 /// [`std::fs`]: http://doc.rust-lang.org/std/fs/index.html
 /// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
 pub struct TempDir {
-    path: Option<PathBuf>,
+    path: Option<Box<Path>>,
 }
 
 impl TempDir {
@@ -323,7 +323,7 @@ impl TempDir {
     /// # }
     /// ```
     pub fn into_path(mut self) -> PathBuf {
-        self.path.take().unwrap()
+        self.path.take().unwrap().into()
     }
 
     /// Closes and removes the temporary directory, returning a `Result`.
@@ -402,5 +402,7 @@ impl Drop for TempDir {
 pub(crate) fn create(path: PathBuf) -> io::Result<TempDir> {
     fs::create_dir(&path)
         .with_err_path(|| &path)
-        .map(|_| TempDir { path: Some(path) })
+        .map(|_| TempDir {
+            path: Some(path.into_boxed_path()),
+        })
 }
