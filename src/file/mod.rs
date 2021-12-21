@@ -351,6 +351,18 @@ impl TempPath {
             }),
         }
     }
+
+    /// Create a new TempPath from an existing path. This can be done even if no
+    /// file exists at the given path.
+    ///
+    /// This is mostly useful for interacting with libraries and external
+    /// components that provide files to be consumed or expect a path with no
+    /// existing file to be given.
+    pub fn from_path(path: impl Into<PathBuf>) -> Self {
+        Self {
+            path: path.into().into_boxed_path(),
+        }
+    }
 }
 
 impl fmt::Debug for TempPath {
