@@ -2,8 +2,9 @@ use crate::file::tempfile;
 use std::fs::File;
 use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
 
+/// A wrapper for the two states of a `SpooledTempFile`.
 #[derive(Debug)]
-enum SpooledInner {
+pub enum SpooledInner {
     InMemory(Cursor<Vec<u8>>),
     OnDisk(File),
 }
@@ -103,6 +104,11 @@ impl SpooledTempFile {
             }
             SpooledInner::OnDisk(ref mut file) => file.set_len(size),
         }
+    }
+
+    /// Consumes and returns the inner `SpooledInner` type.
+    pub fn into_inner(self) -> SpooledInner {
+        self.inner
     }
 }
 
