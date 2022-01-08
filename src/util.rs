@@ -8,11 +8,10 @@ use crate::error::IoResultExt;
 fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
     let mut buf = OsString::with_capacity(prefix.len() + suffix.len() + rand_len);
     buf.push(prefix);
-    buf.push(
-        repeat_with(fastrand::alphanumeric)
-            .take(rand_len)
-            .collect::<String>(),
-    );
+    let mut char_buf = [0u8; 4];
+    for c in repeat_with(fastrand::alphanumeric).take(rand_len) {
+        buf.push(c.encode_utf8(&mut char_buf));
+    }
     buf.push(suffix);
     buf
 }
