@@ -1,3 +1,18 @@
+3.3.0
+=====
+
+Features:
+
+* Replace rand with fastrand for a significantly smaller dependency tree. Cryptographic randomness
+  isn't necessary for temporary file names, and isn't all that helpful either.
+* Add limited WASI support.
+* Add a function to extract the inner data from a `SpooledTempFile`.
+
+Bug Fixes:
+
+* Make it possible to persist unnamed temporary files on linux by removing the `O_EXCL` flag.
+* Fix redox minimum crate version.
+
 3.2.0
 =====
 
