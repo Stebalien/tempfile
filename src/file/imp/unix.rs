@@ -2,7 +2,7 @@ use std::env;
 use std::ffi::{CString, OsStr};
 use std::fs::{self, File, OpenOptions};
 use std::io;
-cfg_if! {
+cfg_if::cfg_if! {
     if #[cfg(not(target_os = "wasi"))] {
         use std::os::unix::ffi::OsStrExt;
         use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
