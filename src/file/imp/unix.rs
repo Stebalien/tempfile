@@ -105,9 +105,30 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
     if overwrite {
         renameat(cwd(), old_path, cwd(), new_path)?;
     } else {
+        // On Linux, use `renameat_with` to avoid overwriting an existing name,
+        // if the kernel and the filesystem support it.
+        #[cfg(any(target_os = "android", target_os = "linux"))]
+        {
+            use rustix::fs::{renameat_with, RenameFlags};
+            use rustix::io::Errno;
+            use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
+
+            static NOSYS: AtomicBool = AtomicBool::new(false);
+            if !NOSYS.load(Relaxed) {
+                match renameat_with(cwd(), old_path, cwd(), new_path, RenameFlags::NOREPLACE) {
+                    Ok(()) => return Ok(()),
+                    Err(Errno::NOSYS) => NOSYS.store(true, Relaxed),
+                    Err(Errno::INVAL) => {}
+                    Err(e) => return Err(e.into()),
+                }
+            }
+        }
+
+        // Otherwise use `linkat` to create the new filesysten name, which
+        // will fail if the name already exists, and then `unlinkat` to remove
+        // the old name.
         linkat(cwd(), old_path, cwd(), new_path, AtFlags::empty())?;
         // Ignore unlink errors. Can we do better?
-        // On recent linux, we can use renameat2 to do this atomically.
         let _ = unlinkat(cwd(), old_path, AtFlags::empty());
     }
     Ok(())
