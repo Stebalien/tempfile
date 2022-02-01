@@ -543,6 +543,10 @@ impl NamedTempFile {
     /// platforms so please read the security section of this type's
     /// documentation.
     ///
+    /// On Unix systems, the file is created with `600` permissions, instead of the default `644`,
+    /// so that only the current user can read an write to it.
+    /// These permission remain if the file is persisted later on.
+    ///
     /// Reasons to use this method:
     ///
     ///   1. The file has a short lifetime and your temporary file cleaner is
@@ -685,6 +689,9 @@ impl NamedTempFile {
     /// This method persists the temporary file using its path and may not be
     /// secure in the in all cases. Please read the security section on the top
     /// level documentation of this type for details.
+    ///
+    /// When calling this method on Unix systems, the file keeps the `600` permissions
+    /// it was created with, to ensure the rename is atomic.
     ///
     /// # Errors
     ///
