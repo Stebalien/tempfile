@@ -11,11 +11,13 @@
 #![deny(rust_2018_idioms)]
 
 use std::env;
+use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
 use std::sync::mpsc::channel;
 use std::thread;
 
+use tempfile::tmpname;
 use tempfile::{Builder, TempDir};
 
 macro_rules! t {
@@ -60,6 +62,18 @@ fn test_customnamed() {
         .tempdir()
         .unwrap();
     let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
+    assert!(name.starts_with("prefix"));
+    assert!(name.ends_with("suffix"));
+    assert_eq!(name.len(), 24);
+}
+
+#[test]
+fn test_custom_named_dir_at() {
+    let dirname = tmpname(OsStr::new("prefix"), OsStr::new("suffix"), 12);
+    let path = env::temp_dir().join(dirname);
+    let tmpdir = TempDir::new_at(path).unwrap();
+
+    let name = tmpdir.path().file_name().unwrap().to_str().unwrap();
     assert!(name.starts_with("prefix"));
     assert!(name.ends_with("suffix"));
     assert_eq!(name.len(), 24);

@@ -185,6 +185,7 @@ pub use crate::file::{
     tempfile, tempfile_in, NamedTempFile, PathPersistError, PersistError, TempPath,
 };
 pub use crate::spooled::{spooled_tempfile, SpooledTempFile};
+pub use crate::util::tmpname;
 
 /// Create a new temporary file or directory with custom parameters.
 #[derive(Debug, Clone, Eq, PartialEq)]

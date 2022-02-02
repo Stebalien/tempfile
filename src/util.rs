@@ -5,7 +5,9 @@ use std::{io, iter::repeat_with};
 
 use crate::error::IoResultExt;
 
-fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
+// Hide this function in the docs as it's only exposed for usage in integration tests.
+#[doc(hidden)]
+pub fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
     let mut buf = OsString::with_capacity(prefix.len() + suffix.len() + rand_len);
     buf.push(prefix);
     let mut char_buf = [0u8; 4];

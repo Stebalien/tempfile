@@ -264,6 +264,40 @@ impl TempDir {
         Builder::new().tempdir_in(dir)
     }
 
+    /// Attempts to make a temporary directory at the specified `path`.
+    /// The directory and everything inside it will be automatically
+    /// deleted once the returned `TempDir` is destroyed.
+    ///
+    /// # Errors
+    ///
+    /// If the directory can not be created, `Err` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::{self, File};
+    /// use std::io::Write;
+    /// use tempfile::TempDir;
+    ///
+    /// # use std::io;
+    /// # fn run() -> Result<(), io::Error> {
+    /// // Create a directory inside of the current directory
+    /// let tmp_dir = TempDir::new_at("./temp_dir")?;
+    /// let file_path = tmp_dir.path().join("my-temporary-note.txt");
+    /// let mut tmp_file = File::create(file_path)?;
+    /// writeln!(tmp_file, "Brian was here. Briefly.")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn new_at<P: AsRef<Path>>(path: P) -> io::Result<TempDir> {
+        let path = path.as_ref().to_owned();
+        fs::create_dir(&path)
+            .with_err_path(|| &path)
+            .map(|_| TempDir {
+                path: path.into_boxed_path(),
+            })
+    }
+
     /// Accesses the [`Path`] to the temporary directory.
     ///
     /// [`Path`]: http://doc.rust-lang.org/std/path/struct.Path.html
