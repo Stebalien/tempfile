@@ -105,6 +105,18 @@ fn test_rm_tempdir() {
     assert!(!path.exists());
 }
 
+#[test]
+fn test_disable_tempdir_drop() {
+    let path = {
+        let mut tmp_dir = TempDir::new().unwrap();
+        tmp_dir.set_drop(false);
+
+        tmp_dir.path().clone().to_owned()
+    };
+
+    assert!(path.exists());
+}
+
 fn test_rm_tempdir_close() {
     let (tx, rx) = channel();
     let f = move || -> () {

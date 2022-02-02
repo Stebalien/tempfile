@@ -194,6 +194,7 @@ pub fn tempdir_in<P: AsRef<Path>>(dir: P) -> io::Result<TempDir> {
 /// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
 pub struct TempDir {
     path: Box<Path>,
+    drop: bool,
 }
 
 impl TempDir {
@@ -384,6 +385,41 @@ impl TempDir {
 
         result
     }
+
+    /// This function allows the user to disable the automatic folder removal on `Drop`.
+    /// If `drop` is set to `false`, the directory won't be removed when the struct goes out of
+    /// scope.
+    ///
+    /// For instance, this functionality is useful in case you need to look at artifacts when
+    /// encoutering an error.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use std::io::Write;
+    /// use tempfile::TempDir;
+    ///
+    /// # use std::io;
+    /// # fn run() -> Result<(), io::Error> {
+    /// // Create a directory inside of `std::env::temp_dir()`.
+    /// let mut tmp_dir = TempDir::new()?;
+    /// let file_path = tmp_dir.path().join("my-temporary-note.txt");
+    /// let mut tmp_file = File::create(file_path)?;
+    /// writeln!(tmp_file, "Brian was here. Briefly.")?;
+    ///
+    /// // Disable the automatic folder removal.
+    /// tmpdir.drop(false);
+    ///
+    /// // The folder won't be removed even if the TempDir is dropped.
+    /// drop(tmp_dir);
+    /// assert!(file_path.exists());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn set_drop(&mut self, drop: bool) {
+        self.drop = drop;
+    }
 }
 
 impl AsRef<Path> for TempDir {
@@ -402,7 +438,9 @@ impl fmt::Debug for TempDir {
 
 impl Drop for TempDir {
     fn drop(&mut self) {
-        let _ = remove_dir_all(self.path());
+        if self.drop {
+            let _ = remove_dir_all(self.path());
+        }
     }
 }
 
@@ -411,5 +449,6 @@ pub(crate) fn create(path: PathBuf) -> io::Result<TempDir> {
         .with_err_path(|| &path)
         .map(|_| TempDir {
             path: path.into_boxed_path(),
+            drop: true,
         })
 }
