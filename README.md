@@ -17,6 +17,7 @@ Usage
 Minimum required Rust version: 1.48.0
 
 Add this to your `Cargo.toml`:
+
 ```toml
 [dependencies]
 tempfile = "3"
