@@ -1,4 +1,3 @@
-use fastrand;
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use std::{io, iter::repeat_with};

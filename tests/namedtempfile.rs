@@ -87,7 +87,7 @@ fn test_persist_noclobber() {
 fn test_customnamed() {
     let tmpfile = Builder::new()
         .prefix("tmp")
-        .suffix(&".rs".to_string())
+        .suffix(&".rs")
         .rand_bytes(12)
         .tempfile()
         .unwrap();
@@ -100,9 +100,9 @@ fn test_customnamed() {
 #[test]
 fn test_append() {
     let mut tmpfile = Builder::new().append(true).tempfile().unwrap();
-    tmpfile.write(b"a").unwrap();
+    tmpfile.write_all(b"a").unwrap();
     tmpfile.seek(SeekFrom::Start(0)).unwrap();
-    tmpfile.write(b"b").unwrap();
+    tmpfile.write_all(b"b").unwrap();
 
     tmpfile.seek(SeekFrom::Start(0)).unwrap();
     let mut buf = vec![0u8; 1];
