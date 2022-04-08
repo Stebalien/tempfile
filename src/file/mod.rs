@@ -478,18 +478,18 @@ impl AsRef<OsStr> for TempPath {
 /// [`NamedTempFile::new_in()`]: #method.new_in
 /// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 /// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
-pub struct NamedTempFile {
+pub struct NamedTempFile<F = File> {
     path: TempPath,
-    file: File,
+    file: F,
 }
 
-impl fmt::Debug for NamedTempFile {
+impl<F> fmt::Debug for NamedTempFile<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "NamedTempFile({:?})", self.path)
     }
 }
 
-impl AsRef<Path> for NamedTempFile {
+impl<F> AsRef<Path> for NamedTempFile<F> {
     #[inline]
     fn as_ref(&self) -> &Path {
         self.path()
@@ -497,41 +497,46 @@ impl AsRef<Path> for NamedTempFile {
 }
 
 /// Error returned when persisting a temporary file fails.
-#[derive(Debug)]
-pub struct PersistError {
+pub struct PersistError<F = File> {
     /// The underlying IO error.
     pub error: io::Error,
     /// The temporary file that couldn't be persisted.
-    pub file: NamedTempFile,
+    pub file: NamedTempFile<F>,
 }
 
-impl From<PersistError> for io::Error {
+impl<F> fmt::Debug for PersistError<F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "PersistError({:?})", self.error)
+    }
+}
+
+impl<F> From<PersistError<F>> for io::Error {
     #[inline]
-    fn from(error: PersistError) -> io::Error {
+    fn from(error: PersistError<F>) -> io::Error {
         error.error
     }
 }
 
-impl From<PersistError> for NamedTempFile {
+impl<F> From<PersistError<F>> for NamedTempFile<F> {
     #[inline]
-    fn from(error: PersistError) -> NamedTempFile {
+    fn from(error: PersistError<F>) -> NamedTempFile<F> {
         error.file
     }
 }
 
-impl fmt::Display for PersistError {
+impl<F> fmt::Display for PersistError<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "failed to persist temporary file: {}", self.error)
     }
 }
 
-impl error::Error for PersistError {
+impl<F> error::Error for PersistError<F> {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         Some(&self.error)
     }
 }
 
-impl NamedTempFile {
+impl NamedTempFile<File> {
     /// Create a new named temporary file.
     ///
     /// See [`Builder`] for more configuration.
@@ -601,7 +606,9 @@ impl NamedTempFile {
     pub fn new_in<P: AsRef<Path>>(dir: P) -> io::Result<NamedTempFile> {
         Builder::new().tempfile_in(dir)
     }
+}
 
+impl<F> NamedTempFile<F> {
     /// Get the temporary file's path.
     ///
     /// # Security
@@ -711,7 +718,7 @@ impl NamedTempFile {
     /// ```
     ///
     /// [`PersistError`]: struct.PersistError.html
-    pub fn persist<P: AsRef<Path>>(self, new_path: P) -> Result<File, PersistError> {
+    pub fn persist<P: AsRef<Path>>(self, new_path: P) -> Result<F, PersistError<F>> {
         let NamedTempFile { path, file } = self;
         match path.persist(new_path) {
             Ok(_) => Ok(file),
@@ -764,7 +771,7 @@ impl NamedTempFile {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn persist_noclobber<P: AsRef<Path>>(self, new_path: P) -> Result<File, PersistError> {
+    pub fn persist_noclobber<P: AsRef<Path>>(self, new_path: P) -> Result<F, PersistError<F>> {
         let NamedTempFile { path, file } = self;
         match path.persist_noclobber(new_path) {
             Ok(_) => Ok(file),
@@ -808,7 +815,7 @@ impl NamedTempFile {
     /// ```
     ///
     /// [`PathPersistError`]: struct.PathPersistError.html
-    pub fn keep(self) -> Result<(File, PathBuf), PersistError> {
+    pub fn keep(self) -> Result<(F, PathBuf), PersistError<F>> {
         let (file, path) = (self.file, self.path);
         match path.keep() {
             Ok(path) => Ok((file, path)),
@@ -819,6 +826,41 @@ impl NamedTempFile {
         }
     }
 
+    /// Get a reference to the underlying file.
+    pub fn as_file(&self) -> &F {
+        &self.file
+    }
+
+    /// Get a mutable reference to the underlying file.
+    pub fn as_file_mut(&mut self) -> &mut F {
+        &mut self.file
+    }
+
+    /// Convert the temporary file into a `std::fs::File`.
+    ///
+    /// The inner file will be deleted.
+    pub fn into_file(self) -> F {
+        self.file
+    }
+
+    /// Closes the file, leaving only the temporary file path.
+    ///
+    /// This is useful when another process must be able to open the temporary
+    /// file.
+    pub fn into_temp_path(self) -> TempPath {
+        self.path
+    }
+
+    /// Converts the named temporary file into its constituent parts.
+    ///
+    /// Note: When the path is dropped, the file is deleted but the file handle
+    /// is still usable.
+    pub fn into_parts(self) -> (F, TempPath) {
+        (self.file, self.path)
+    }
+}
+
+impl NamedTempFile<File> {
     /// Securely reopen the temporary file.
     ///
     /// This function is useful when you need multiple independent handles to
@@ -858,54 +900,24 @@ impl NamedTempFile {
         imp::reopen(self.as_file(), NamedTempFile::path(self))
             .with_err_path(|| NamedTempFile::path(self))
     }
-
-    /// Get a reference to the underlying file.
-    pub fn as_file(&self) -> &File {
-        &self.file
-    }
-
-    /// Get a mutable reference to the underlying file.
-    pub fn as_file_mut(&mut self) -> &mut File {
-        &mut self.file
-    }
-
-    /// Convert the temporary file into a `std::fs::File`.
-    ///
-    /// The inner file will be deleted.
-    pub fn into_file(self) -> File {
-        self.file
-    }
-
-    /// Closes the file, leaving only the temporary file path.
-    ///
-    /// This is useful when another process must be able to open the temporary
-    /// file.
-    pub fn into_temp_path(self) -> TempPath {
-        self.path
-    }
-
-    /// Converts the named temporary file into its constituent parts.
-    ///
-    /// Note: When the path is dropped, the file is deleted but the file handle
-    /// is still usable.
-    pub fn into_parts(self) -> (File, TempPath) {
-        (self.file, self.path)
-    }
 }
 
-impl Read for NamedTempFile {
+impl<F: Read> Read for NamedTempFile<F> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.as_file_mut().read(buf).with_err_path(|| self.path())
     }
 }
 
-impl<'a> Read for &'a NamedTempFile {
+impl<'a, F> Read for &'a NamedTempFile<F>
+where
+    &'a F: Read,
+{
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.as_file().read(buf).with_err_path(|| self.path())
     }
 }
 
-impl Write for NamedTempFile {
+impl<F: Write> Write for NamedTempFile<F> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.as_file_mut().write(buf).with_err_path(|| self.path())
     }
@@ -915,7 +927,10 @@ impl Write for NamedTempFile {
     }
 }
 
-impl<'a> Write for &'a NamedTempFile {
+impl<'a, F> Write for &'a NamedTempFile<F>
+where
+    &'a F: Write,
+{
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.as_file().write(buf).with_err_path(|| self.path())
     }
@@ -925,20 +940,26 @@ impl<'a> Write for &'a NamedTempFile {
     }
 }
 
-impl Seek for NamedTempFile {
+impl<F: Seek> Seek for NamedTempFile<F> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.as_file_mut().seek(pos).with_err_path(|| self.path())
     }
 }
 
-impl<'a> Seek for &'a NamedTempFile {
+impl<'a, F> Seek for &'a NamedTempFile<F>
+where
+    &'a F: Seek,
+{
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.as_file().seek(pos).with_err_path(|| self.path())
     }
 }
 
 #[cfg(unix)]
-impl std::os::unix::io::AsRawFd for NamedTempFile {
+impl<F> std::os::unix::io::AsRawFd for NamedTempFile<F>
+where
+    F: std::os::unix::io::AsRawFd,
+{
     #[inline]
     fn as_raw_fd(&self) -> std::os::unix::io::RawFd {
         self.as_file().as_raw_fd()
@@ -946,7 +967,10 @@ impl std::os::unix::io::AsRawFd for NamedTempFile {
 }
 
 #[cfg(windows)]
-impl std::os::windows::io::AsRawHandle for NamedTempFile {
+impl<F> std::os::windows::io::AsRawHandle for NamedTempFile<F>
+where
+    F: std::os::windows::io::AsRawHandle,
+{
     #[inline]
     fn as_raw_handle(&self) -> std::os::windows::io::RawHandle {
         self.as_file().as_raw_handle()
