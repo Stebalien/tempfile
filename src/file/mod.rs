@@ -858,6 +858,14 @@ impl<F> NamedTempFile<F> {
     pub fn into_parts(self) -> (F, TempPath) {
         (self.file, self.path)
     }
+
+    /// Creates a `NamedTempFile` from its constituent parts.
+    ///
+    /// This can be used with [`NamedTempFile::into_parts`] to reconstruct the
+    /// `NamedTempFile`.
+    pub fn from_parts(file: F, path: TempPath) -> Self {
+        Self { file, path }
+    }
 }
 
 impl NamedTempFile<File> {

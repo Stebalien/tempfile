@@ -21,10 +21,10 @@ pub fn create_helper<F, R>(
     prefix: &OsStr,
     suffix: &OsStr,
     random_len: usize,
-    f: F,
+    mut f: F,
 ) -> io::Result<R>
 where
-    F: Fn(PathBuf) -> io::Result<R>,
+    F: FnMut(PathBuf) -> io::Result<R>,
 {
     let num_retries = if random_len != 0 {
         crate::NUM_RETRIES
@@ -36,6 +36,9 @@ where
         let path = base.join(tmpname(prefix, suffix, random_len));
         return match f(path) {
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+            // AddrInUse can happen if we're creating a UNIX domain socket and
+            // the path already exists.
+            Err(ref e) if e.kind() == io::ErrorKind::AddrInUse => continue,
             res => res,
         };
     }
