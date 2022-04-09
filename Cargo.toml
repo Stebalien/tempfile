@@ -5,7 +5,7 @@ authors = [
   "Steven Allen <steven@stebalien.com>",
   "The Rust Project Developers",
   "Ashley Mannix <ashleymannix@live.com.au>",
-  "Jason White <jasonaw0@gmail.com>",
+  "Jason White <me@jasonwhite.io>",
 ]
 documentation = "https://docs.rs/tempfile"
 edition = "2018"
