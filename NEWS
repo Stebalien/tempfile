@@ -1,3 +1,13 @@
+3.4.0 (WIP)
+=====
+
+Features:
+
+ * Add `Builder::make` and `Builder::make_in` for generalized temp file
+   creation.
+ * Add `NamedTempFile::from_parts` to complement `NamedTempFile::into_parts`.
+ * Add generic parameter to `NamedTempFile` to support wrapping non-File types.
+
 3.3.0
 =====
 
