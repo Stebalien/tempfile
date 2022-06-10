@@ -292,6 +292,7 @@ impl TempDir {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use]
     pub fn path(&self) -> &path::Path {
         self.path.as_ref()
     }
@@ -323,6 +324,7 @@ impl TempDir {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use]
     pub fn into_path(self) -> PathBuf {
         // Prevent the Drop impl from being called.
         let mut this = mem::ManuallyDrop::new(self);
