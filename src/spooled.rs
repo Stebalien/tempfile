@@ -64,6 +64,7 @@ pub fn spooled_tempfile(max_size: usize) -> SpooledTempFile {
 }
 
 impl SpooledTempFile {
+    #[must_use]
     pub fn new(max_size: usize) -> SpooledTempFile {
         SpooledTempFile {
             max_size: max_size,
@@ -72,6 +73,7 @@ impl SpooledTempFile {
     }
 
     /// Returns true if the file has been rolled over to disk.
+    #[must_use]
     pub fn is_rolled(&self) -> bool {
         match self.inner {
             SpooledData::InMemory(_) => false,
@@ -107,6 +109,7 @@ impl SpooledTempFile {
     }
 
     /// Consumes and returns the inner `SpooledData` type.
+    #[must_use]
     pub fn into_inner(self) -> SpooledData {
         self.inner
     }
