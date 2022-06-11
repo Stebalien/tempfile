@@ -67,7 +67,7 @@ impl SpooledTempFile {
     #[must_use]
     pub fn new(max_size: usize) -> SpooledTempFile {
         SpooledTempFile {
-            max_size: max_size,
+            max_size,
             inner: SpooledData::InMemory(Cursor::new(Vec::new())),
         }
     }

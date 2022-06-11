@@ -24,12 +24,11 @@ remove_dir_all = "0.5"
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
 libc = "0.2.27"
 
-[target.'cfg(windows)'.dependencies.winapi]
-version = "0.3"
+[target.'cfg(windows)'.dependencies.windows-sys]
+version = "0.36"
 features = [
-    "fileapi",
-    "handleapi",
-    "winbase",
+    "Win32_Storage_FileSystem",
+    "Win32_Foundation",
 ]
 
 [target.'cfg(target_os = "redox")'.dependencies]
