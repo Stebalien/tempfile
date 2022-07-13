@@ -14,9 +14,12 @@
 //!
 //! ## Resource Leaking
 //!
-//! `tempfile` will (almost) never fail to cleanup temporary resources, but `TempDir` and `NamedTempFile` will if
-//! their destructors don't run. This is because `tempfile` relies on the OS to cleanup the
-//! underlying file, while `TempDir` and `NamedTempFile` rely on their destructors to do so.
+//! `tempfile` will (almost) never fail to cleanup temporary resources. However `TempDir` and `NamedTempFile` will
+//! fail if their destructors don't run. This is because `tempfile` relies on the OS to cleanup the
+//! underlying file, while `TempDir` and `NamedTempFile` rely on rust destructors to do so.
+//! Destructors may fail to run if the process exits through an unhandled signal interrupt (like `SIGINT`),
+//! or if the instance is declared statically (like with [`lazy_static`]), among other possible
+//! reasons.
 //!
 //! ## Security
 //!
@@ -152,6 +155,7 @@
 //! [`TempDir`]: struct.TempDir.html
 //! [`NamedTempFile`]: struct.NamedTempFile.html
 //! [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
+//! [`lazy_static`]: https://github.com/rust-lang-nursery/lazy-static.rs/issues/62
 
 #![doc(
     html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",

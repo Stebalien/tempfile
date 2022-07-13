@@ -467,17 +467,19 @@ impl AsRef<OsStr> for TempPath {
 /// # Resource Leaking
 ///
 /// If the program exits before the `NamedTempFile` destructor is
-/// run, such as via [`std::process::exit()`], by segfaulting, or by
-/// receiving a signal like `SIGINT`, then the temporary file
-/// will not be deleted.
+/// run then the temporary file will not be deleted. This can happen
+/// if the process exits using [`std::process::exit()`], a segfault occurs,
+/// receiving an interrupt signal like `SIGINT` that is not handled, or by using
+/// a statically declared `NamedTempFile` instance (like with [`lazy_static`]).
 ///
-/// Use the [`tempfile()`] function unless you absolutely need a named file.
+/// Use the [`tempfile()`] function unless you need a named file or a file with a path.
 ///
 /// [`tempfile()`]: fn.tempfile.html
 /// [`NamedTempFile::new()`]: #method.new
 /// [`NamedTempFile::new_in()`]: #method.new_in
 /// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 /// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
+/// [`lazy_static`]: https://github.com/rust-lang-nursery/lazy-static.rs/issues/62
 pub struct NamedTempFile<F = File> {
     path: TempPath,
     file: F,
