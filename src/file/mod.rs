@@ -472,7 +472,7 @@ impl AsRef<OsStr> for TempPath {
 /// receiving an interrupt signal like `SIGINT` that is not handled, or by using
 /// a statically declared `NamedTempFile` instance (like with [`lazy_static`]).
 ///
-/// Use the [`tempfile()`] function unless you need a named file or a file with a path.
+/// Use the [`tempfile()`] function unless you need a named file path.
 ///
 /// [`tempfile()`]: fn.tempfile.html
 /// [`NamedTempFile::new()`]: #method.new
