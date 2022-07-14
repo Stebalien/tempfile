@@ -467,7 +467,7 @@ impl AsRef<OsStr> for TempPath {
 /// # Resource Leaking
 ///
 /// If the program exits before the `NamedTempFile` destructor is
-/// run then the temporary file will not be deleted. This can happen
+/// run, the temporary file will not be deleted. This can happen
 /// if the process exits using [`std::process::exit()`], a segfault occurs,
 /// receiving an interrupt signal like `SIGINT` that is not handled, or by using
 /// a statically declared `NamedTempFile` instance (like with [`lazy_static`]).
