@@ -124,7 +124,7 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
             }
         }
 
-        // Otherwise use `linkat` to create the new filesysten name, which
+        // Otherwise use `linkat` to create the new filesystem name, which
         // will fail if the name already exists, and then `unlinkat` to remove
         // the old name.
         linkat(cwd(), old_path, cwd(), new_path, AtFlags::empty())?;
