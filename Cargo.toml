@@ -22,7 +22,7 @@ fastrand = "1.6.0"
 remove_dir_all = "0.5"
 
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
-libc = "0.2.27"
+rustix = { version = "0.35.6", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
 version = "0.36"
