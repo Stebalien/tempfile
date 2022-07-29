@@ -8,6 +8,24 @@ Features:
  * Add `NamedTempFile::from_parts` to complement `NamedTempFile::into_parts`.
  * Add generic parameter to `NamedTempFile` to support wrapping non-File types.
 
+Changes:
+
+ * Switch to official windows-sys windows bindings.
+ * Switch from libc to rustix:
+     * Simplifies error handling, path handling, etc.
+     * Allows us to use `renameat2` when supported for atomic non-clobbering persist on Linux.
+     * Makes direct syscalls instead of calling through C on linux.
+
+Fixes:
+
+* Fix compiler warnings on windows.
+
+ Breaking:
+
+ * The minimum rust version is now `1.48.0`.
+ * Mark most functions as `must_use`.
+ * Uses direct syscalls on linux by default, instead of libc.
+
 3.3.0
 =====
 
