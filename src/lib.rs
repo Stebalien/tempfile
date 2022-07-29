@@ -165,7 +165,7 @@
 #![cfg_attr(test, deny(warnings))]
 #![deny(rust_2018_idioms)]
 #![allow(clippy::redundant_field_names)]
-#![cfg_attr(feature = "nightly", feature(wasi_ext))]
+#![cfg_attr(all(feature = "nightly", target_os = "wasi"), feature(wasi_ext))]
 
 #[cfg(doctest)]
 doc_comment::doctest!("../README.md");
