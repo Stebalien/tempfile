@@ -1,6 +1,7 @@
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use std::io;
+use std::io::ErrorKind;
 
 use crate::error::IoResultExt;
 
@@ -13,13 +14,14 @@ fn calculate_base64_len(binary_len: usize) -> usize {
     binary_len * 4 / 3 + 4
 }
 
-fn fill_with_random_base64(rand_buf: &mut [u8], char_buf: &mut Vec<u8>) {
-    getrandom::getrandom(rand_buf).expect("calling getrandom failed");
+fn fill_with_random_base64(rand_buf: &mut [u8], char_buf: &mut Vec<u8>) -> Result<(), getrandom::Error> {
+    getrandom::getrandom(rand_buf)?;
     char_buf.resize(calculate_base64_len(rand_buf.len()), 0);
     base64::encode_config_slice(rand_buf, base64::STANDARD_NO_PAD, char_buf);
+    Ok(())
 }
 
-fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
+fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> Result<OsString, getrandom::Error> {
     let mut buf = OsString::with_capacity(prefix.len() + suffix.len() + rand_len);
     buf.push(prefix);
 
@@ -27,7 +29,7 @@ fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
     let mut char_buf = vec![0; calculate_base64_len(rand_buf.len())];
     let mut remaining_chars = rand_len;
     loop {
-        fill_with_random_base64(&mut rand_buf, &mut char_buf);
+        fill_with_random_base64(&mut rand_buf, &mut char_buf)?;
         char_buf.retain(|&c| (c != b'+') & (c != b'/') & (c != 0));
         if char_buf.len() >= remaining_chars {
             buf.push(std::str::from_utf8(&char_buf[..remaining_chars]).unwrap());
@@ -39,7 +41,7 @@ fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
     }
 
     buf.push(suffix);
-    buf
+    Ok(buf)
 }
 
 pub fn create_helper<F, R>(
@@ -59,7 +61,9 @@ where
     };
 
     for _ in 0..num_retries {
-        let path = base.join(tmpname(prefix, suffix, random_len));
+        let name = tmpname(prefix, suffix, random_len)
+            .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
+        let path = base.join(name);
         return match f(path) {
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
             // AddrInUse can happen if we're creating a UNIX domain socket and
