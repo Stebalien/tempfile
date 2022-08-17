@@ -34,8 +34,8 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-  wasm:
-    name: WASM Test Build
+  wasi:
+    name: WASI Test Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -55,3 +55,20 @@ jobs:
         with:
           command: wasi
           args: build --features nightly
+  wasm:
+    name: WASM Test Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          target: wasm32-unknown-unknown
+          toolchain: stable
+          default: true
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target wasm32-unknown-unknown
