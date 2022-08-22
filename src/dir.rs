@@ -65,9 +65,9 @@ pub fn tempdir() -> io::Result<TempDir> {
     TempDir::new()
 }
 
-/// Create a new temporary directory.
+/// Create a new temporary directory in a specific directory.
 ///
-/// The `tempdir` function creates a directory in the file system
+/// The `tempdir_in` function creates a directory in the specified directory
 /// and returns a [`TempDir`].
 /// The directory will be automatically deleted when the `TempDir`s
 /// destructor is run.
@@ -83,7 +83,7 @@ pub fn tempdir() -> io::Result<TempDir> {
 /// # Examples
 ///
 /// ```
-/// use tempfile::tempdir;
+/// use tempfile::tempdir_in;
 /// use std::fs::File;
 /// use std::io::{self, Write};
 ///
@@ -93,8 +93,8 @@ pub fn tempdir() -> io::Result<TempDir> {
 /// #     }
 /// # }
 /// # fn run() -> Result<(), io::Error> {
-/// // Create a directory inside of `std::env::temp_dir()`,
-/// let dir = tempdir()?;
+/// // Create a directory inside of the current directory.
+/// let dir = tempdir_in(".")?;
 ///
 /// let file_path = dir.path().join("my-temporary-note.txt");
 /// let mut file = File::create(file_path)?;
