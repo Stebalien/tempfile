@@ -194,6 +194,7 @@ pub fn tempdir_in<P: AsRef<Path>>(dir: P) -> io::Result<TempDir> {
 /// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
 pub struct TempDir {
     path: Box<Path>,
+    disowned: bool,
 }
 
 impl TempDir {
@@ -386,6 +387,37 @@ impl TempDir {
 
         result
     }
+
+    /// Marks this directory so that it will not get cleaned up when the rust
+    /// object is dropped.
+    ///
+    /// # Examples
+    /// ```
+    /// use std::fs;
+    /// use std::fs::File;
+    /// use std::io::Write;
+    /// use tempfile::TempDir;
+    ///
+    /// # use std::io;
+    /// # fn run() -> Result<(), io::Error> {
+    /// let mut tmp_dir = TempDir::new()?;
+    ///
+    /// let file_path = tmp_dir.path().join("disowned-file.txt");
+    /// let mut tmp_file = File::create(&file_path)?;
+    /// writeln!(tmp_file, "some text")?;
+    ///
+    /// tmp_dir.keep(); // consumes tmp_dir struct
+    ///
+    /// assert_eq!(fs::read_to_string(&file_path)?, "some text");
+    ///
+    /// # let _ = fs::remove_dir_all(file_path.parent().unwrap());
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn keep(mut self) {
+        self.disowned = true;
+    }
 }
 
 impl AsRef<Path> for TempDir {
@@ -404,7 +436,9 @@ impl fmt::Debug for TempDir {
 
 impl Drop for TempDir {
     fn drop(&mut self) {
-        let _ = remove_dir_all(self.path());
+        if !self.disowned {
+            let _ = remove_dir_all(self.path());
+        }
     }
 }
 
@@ -413,5 +447,6 @@ pub(crate) fn create(path: PathBuf) -> io::Result<TempDir> {
         .with_err_path(|| &path)
         .map(|_| TempDir {
             path: path.into_boxed_path(),
+            disowned: false,
         })
 }
