@@ -334,6 +334,38 @@ impl TempDir {
         mem::replace(&mut this.path, PathBuf::new().into_boxed_path()).into()
     }
 
+    /// Marks this directory so that it will not get cleaned up when the rust
+    /// object is dropped.
+    ///
+    /// # Examples
+    /// ```
+    /// use std::fs;
+    /// use std::fs::File;
+    /// use std::io::Write;
+    /// use tempfile::TempDir;
+    ///
+    /// # use std::io;
+    /// # fn run() -> Result<(), io::Error> {
+    /// let mut tmp_dir = TempDir::new()?;
+    ///
+    /// let file_path = tmp_dir.path().join("disowned-file.txt");
+    /// let mut tmp_file = File::create(&file_path)?;
+    /// writeln!(tmp_file, "some text")?;
+    ///
+    /// tmp_dir.keep(); // consumes tmp_dir struct
+    ///
+    /// assert_eq!(fs::read_to_string(&file_path)?, "some text");
+    ///
+    /// # let _ = fs::remove_dir_all(file_path.parent().unwrap());
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn keep(self) -> PathBuf {
+    {
+        self.into_path()
+    }
+
     /// Closes and removes the temporary directory, returning a `Result`.
     ///
     /// Although `TempDir` removes the directory on drop, in the destructor
