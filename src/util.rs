@@ -34,10 +34,10 @@ where
     for _ in 0..num_retries {
         let path = base.join(tmpname(prefix, suffix, random_len));
         return match f(path) {
-            Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists && num_retries > 1 => continue,
             // AddrInUse can happen if we're creating a UNIX domain socket and
             // the path already exists.
-            Err(ref e) if e.kind() == io::ErrorKind::AddrInUse => continue,
+            Err(ref e) if e.kind() == io::ErrorKind::AddrInUse && num_retries > 1 => continue,
             res => res,
         };
     }
