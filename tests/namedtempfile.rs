@@ -5,6 +5,7 @@ use std::ffi::{OsStr, OsString};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
+use std::sync::Barrier;
 use tempfile::{tempdir, Builder, NamedTempFile, TempPath};
 
 fn exists<P: AsRef<Path>>(path: P) -> bool {
@@ -403,39 +404,35 @@ fn test_make_uds_conflict() {
     let tries = Arc::new(AtomicUsize::new(0));
 
     let mut threads = Vec::with_capacity(NTHREADS);
+    let barrier = Arc::new(Barrier::new(NTHREADS));
 
     for _ in 0..NTHREADS {
+        let c = Arc::clone(&barrier);
         let tries = tries.clone();
         threads.push(std::thread::spawn(move || {
-            // Ensure that every thread uses the same seed so we are guaranteed
-            // to retry. Note that fastrand seeds are thread-local.
-            fastrand::seed(42);
-
-            Builder::new()
+            let builder = Builder::new()
                 .prefix("tmp")
                 .suffix(".sock")
-                .rand_bytes(12)
+                .rand_bytes(1)
                 .make(|path| {
                     tries.fetch_add(1, Ordering::Relaxed);
                     UnixListener::bind(path)
-                })
+                });
+            c.wait();
+            builder
         }));
     }
 
-    // Join all threads, but don't drop the temp file yet. Otherwise, we won't
-    // get a deterministic number of `tries`.
+    // Join all threads, but don't drop the temp file yet.
     let sockets: Vec<_> = threads
         .into_iter()
         .map(|thread| thread.join().unwrap().unwrap())
         .collect();
 
-    // Number of tries is exactly equal to (n*(n+1))/2.
-    assert_eq!(
-        tries.load(Ordering::Relaxed),
-        (NTHREADS * (NTHREADS + 1)) / 2
-    );
+    assert!(tries.load(Ordering::Relaxed) > 15);
 
     for socket in sockets {
         assert!(socket.path().exists());
     }
 }
+

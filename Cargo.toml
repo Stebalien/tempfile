@@ -16,8 +16,9 @@ repository = "https://github.com/Stebalien/tempfile"
 description = "A library for managing temporary files and directories."
 
 [dependencies]
+base64 = "0.13.0"
 cfg-if = "1"
-fastrand = "1.6.0"
+getrandom = { version = "0.2.7", features = ["std"] }
 remove_dir_all = "0.5"
 
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
