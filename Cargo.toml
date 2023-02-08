@@ -9,8 +9,7 @@ authors = [
 ]
 documentation = "https://docs.rs/tempfile"
 edition = "2018"
-exclude = ["/.travis.yml", "/appveyor.yml"]
-homepage = "http://stebalien.com/projects/tempfile-rs"
+homepage = "https://stebalien.com/projects/tempfile-rs/"
 keywords = ["tempfile", "tmpfile", "filesystem"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Stebalien/tempfile"
