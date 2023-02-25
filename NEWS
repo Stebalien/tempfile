@@ -235,7 +235,7 @@ Add LFS Support.
 2.0.0
 =====
 
-This release replaces `TempFile` with a `tempfile()` function that returnes
+This release replaces `TempFile` with a `tempfile()` function that returns
 `std::fs::File` objects. These are significantly more useful because most rust
 libraries expect normal `File` objects.
 
