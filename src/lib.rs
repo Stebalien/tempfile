@@ -434,7 +434,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// [security]: struct.NamedTempFile.html#security
     /// [resource-leaking]: struct.NamedTempFile.html#resource-leaking
     pub fn tempfile(&self) -> io::Result<NamedTempFile> {
-        self.tempfile_in(&env::temp_dir())
+        self.tempfile_in(env::temp_dir())
     }
 
     /// Create the named temporary file in the specified directory.
@@ -508,7 +508,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// [resource-leaking]: struct.TempDir.html#resource-leaking
     pub fn tempdir(&self) -> io::Result<TempDir> {
-        self.tempdir_in(&env::temp_dir())
+        self.tempdir_in(env::temp_dir())
     }
 
     /// Attempts to make a temporary directory inside of `dir`.
@@ -657,7 +657,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     where
         F: FnMut(&Path) -> io::Result<R>,
     {
-        self.make_in(&env::temp_dir(), f)
+        self.make_in(env::temp_dir(), f)
     }
 
     /// This is the same as [`Builder::make`], except `dir` is used as the base
