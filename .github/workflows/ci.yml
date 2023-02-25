@@ -9,6 +9,7 @@ jobs:
   build_and_test:
     name: OS Test
     strategy:
+      fail-fast: false
       matrix:
         rust-version:
           - nightly
