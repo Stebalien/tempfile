@@ -28,13 +28,9 @@ jobs:
           toolchain: ${{ matrix.rust-version }}
           default: true
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
+        run: cargo build
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test
   wasi:
     name: WASI Test Build
     runs-on: ubuntu-latest
@@ -47,15 +43,9 @@ jobs:
           toolchain: nightly
           default: true
       - name: Install Cargo WASI
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-wasi
+        run: cargo install cargo-wasi
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: wasi
-          args: build --features nightly
+        run: cargo wasi build --features nightly
   wasm:
     name: WASM Test Build
     runs-on: ubuntu-latest
@@ -69,7 +59,4 @@ jobs:
           toolchain: stable
           default: true
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --target wasm32-unknown-unknown
+        run: cargo build --target wasm32-unknown-unknown
