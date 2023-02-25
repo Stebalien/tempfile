@@ -8,8 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use remove_dir_all::remove_dir_all;
 use std::mem;
+use std::fs::remove_dir_all;
 use std::path::{self, Path, PathBuf};
 use std::{fmt, fs, io};
 
