@@ -280,6 +280,16 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// Create a temporary directory with a chosen prefix under a chosen folder:
+    ///
+    /// ```
+    /// use tempfile::Builder;
+    ///
+    /// let dir = Builder::new()
+    ///     .prefix("my-temporary-dir")
+    ///     .tempdir_in("folder-with-tempdirs")?;
+    /// ```
     #[must_use]
     pub fn new() -> Self {
         Self::default()
