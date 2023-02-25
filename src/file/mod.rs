@@ -52,7 +52,7 @@ mod imp;
 ///
 /// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 pub fn tempfile() -> io::Result<File> {
-    tempfile_in(&env::temp_dir())
+    tempfile_in(env::temp_dir())
 }
 
 /// Create a new temporary file in the specified directory.
