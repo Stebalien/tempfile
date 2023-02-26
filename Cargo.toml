@@ -23,7 +23,7 @@ fastrand = "1.6.0"
 rustix = { version = "0.36.0", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
-version = "0.42"
+version = "0.45"
 features = [
     "Win32_Storage_FileSystem",
     "Win32_Foundation",
