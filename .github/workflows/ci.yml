@@ -23,10 +23,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust-version }}
-          default: true
       - name: Build
         run: cargo build
       - name: Test
@@ -38,10 +37,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-          default: true
       - name: Install Cargo WASI
         run: cargo install cargo-wasi
       - name: Build
@@ -53,10 +51,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
           target: wasm32-unknown-unknown
           toolchain: stable
-          default: true
       - name: Build
         run: cargo build --target wasm32-unknown-unknown
