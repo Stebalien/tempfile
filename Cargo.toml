@@ -23,14 +23,14 @@ fastrand = "1.6.0"
 rustix = { version = "0.36.0", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
-version = "0.42"
+version = "0.45"
 features = [
     "Win32_Storage_FileSystem",
     "Win32_Foundation",
 ]
 
 [target.'cfg(target_os = "redox")'.dependencies]
-redox_syscall = "0.2.9"
+redox_syscall = "0.3"
 
 [dev-dependencies]
 doc-comment = "0.3"
