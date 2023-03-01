@@ -9,6 +9,7 @@ authors = [
 ]
 documentation = "https://docs.rs/tempfile"
 edition = "2018"
+rust-version = "1.48"
 homepage = "https://stebalien.com/projects/tempfile-rs/"
 keywords = ["tempfile", "tmpfile", "filesystem"]
 license = "MIT OR Apache-2.0"
