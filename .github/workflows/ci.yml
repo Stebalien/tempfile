@@ -13,6 +13,7 @@ jobs:
       matrix:
         rust-version:
           - nightly
+          - stable
           - "1.48"
         os:
           - ubuntu-latest
