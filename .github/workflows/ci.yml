@@ -13,6 +13,7 @@ jobs:
       matrix:
         rust-version:
           - nightly
+          - stable
           - "1.48"
         os:
           - ubuntu-latest
@@ -26,6 +27,12 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust-version }}
+      # Workaround link failures if XCode 14 is combined with Rust <= 1.53
+      - name: Downgrade to XCode 13
+        if: ${{ matrix.os == 'macos-latest' && matrix.rust-version == '1.48' }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '13'
       - name: Build
         run: cargo build
       - name: Test
@@ -37,9 +44,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly
+        uses: dtolnay/rust-toolchain@nightly
       - name: Install Cargo WASI
         run: cargo install cargo-wasi
       - name: Build
@@ -51,9 +56,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          target: wasm32-unknown-unknown
-          toolchain: stable
+          targets: wasm32-unknown-unknown
       - name: Build
         run: cargo build --target wasm32-unknown-unknown
+  lint:
+    name: Clippy and fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Check formatting
+        run: cargo fmt --check
+      - name: Check for clippy lints
+        run: cargo clippy
