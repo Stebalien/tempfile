@@ -54,3 +54,17 @@ jobs:
           targets: wasm32-unknown-unknown
       - name: Build
         run: cargo build --target wasm32-unknown-unknown
+  lint:
+    name: Clippy and fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Check formatting
+        run: cargo fmt --check
+      - name: Check for clippy lints
+        run: cargo clippy
