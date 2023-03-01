@@ -37,9 +37,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly
+        uses: dtolnay/rust-toolchain@nightly
       - name: Install Cargo WASI
         run: cargo install cargo-wasi
       - name: Build
@@ -51,9 +49,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
           target: wasm32-unknown-unknown
-          toolchain: stable
       - name: Build
         run: cargo build --target wasm32-unknown-unknown
