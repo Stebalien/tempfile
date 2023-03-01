@@ -26,6 +26,12 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust-version }}
+      # Workaround link failures if XCode 14 is combined with Rust <= 1.53
+      - name: Downgrade to XCode 13
+        if: ${{ matrix.os == 'macos-latest' && matrix.rust-version == '1.48' }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '13'
       - name: Build
         run: cargo build
       - name: Test
