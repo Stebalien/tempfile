@@ -1,7 +1,7 @@
 3.4.0
 =====
 
-SECURITY: Prior `tempfile` releases depended on `remove_dir_all` version 0.5.0 which was vulnerabiel to a [TOCTOU race](https://github.com/XAMPPRocky/remove_dir_all/security/advisories/GHSA-mc8h-8q98-g5hr). This same race is present in rust versions prior to 1.58.1.
+SECURITY: Prior `tempfile` releases depended on `remove_dir_all` version 0.5.0 which was vulnerable to a [TOCTOU race](https://github.com/XAMPPRocky/remove_dir_all/security/advisories/GHSA-mc8h-8q98-g5hr). This same race is present in rust versions prior to 1.58.1.
 
 Features:
 
