@@ -439,3 +439,28 @@ fn test_make_uds_conflict() {
         assert!(socket.path().exists());
     }
 }
+
+// Issue #224.
+#[test]
+fn test_overly_generic_bounds() {
+    pub struct Foo<T>(T);
+
+    impl<T> Foo<T>
+    where
+        T: Sync + Send + 'static,
+        for<'a> &'a T: Write + Read,
+    {
+        pub fn new(foo: T) -> Self {
+            Self(foo)
+        }
+    }
+
+    // Don't really need to run this. Only care if it compiles.
+    if let Ok(file) = File::open("i_do_not_exist") {
+        let mut f;
+        let _x = {
+            f = Foo::new(file);
+            &mut f
+        };
+    }
+}
