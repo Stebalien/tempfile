@@ -918,10 +918,7 @@ impl<F: Read> Read for NamedTempFile<F> {
     }
 }
 
-impl<'a, F> Read for &'a NamedTempFile<F>
-where
-    &'a F: Read,
-{
+impl Read for &NamedTempFile<File> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.as_file().read(buf).with_err_path(|| self.path())
     }
@@ -937,10 +934,7 @@ impl<F: Write> Write for NamedTempFile<F> {
     }
 }
 
-impl<'a, F> Write for &'a NamedTempFile<F>
-where
-    &'a F: Write,
-{
+impl Write for &NamedTempFile<File> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.as_file().write(buf).with_err_path(|| self.path())
     }
@@ -956,10 +950,7 @@ impl<F: Seek> Seek for NamedTempFile<F> {
     }
 }
 
-impl<'a, F> Seek for &'a NamedTempFile<F>
-where
-    &'a F: Seek,
-{
+impl Seek for &NamedTempFile<File> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.as_file().seek(pos).with_err_path(|| self.path())
     }
