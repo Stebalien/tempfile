@@ -1,3 +1,10 @@
+3.5.0
+=====
+
+- Update rustix from 0.36 to 0.37.1. This makes wasi work on rust stable
+- Update `windows-sys`, `redox_syscall`
+- BREAKING: Remove the implementation of `Write for &NamedTempFile<F> where &F: Write`. Unfortunately, this can cause compile issues in unrelated code (https://github.com/Stebalien/tempfile/issues/224).
+
 3.4.0
 =====
 
