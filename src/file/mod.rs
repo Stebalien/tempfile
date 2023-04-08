@@ -1034,7 +1034,7 @@ impl Seek for &NamedTempFile<File> {
     }
 }
 
-#[cfg(unix)]
+#[cfg(all(fd, unix))]
 impl<F: std::os::fd::AsFd> std::os::fd::AsFd for NamedTempFile<F> {
     fn as_fd(&self) -> std::os::fd::BorrowedFd<'_> {
         self.as_file().as_fd()
@@ -1052,7 +1052,7 @@ where
     }
 }
 
-#[cfg(windows)]
+#[cfg(all(fd, windows))]
 impl<F> std::os::windows::io::AsHandle for NamedTempFile<F>
 where
     F: std::os::windows::io::AsHandle,
