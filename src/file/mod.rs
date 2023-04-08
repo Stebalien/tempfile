@@ -1035,13 +1035,31 @@ impl Seek for &NamedTempFile<File> {
 }
 
 #[cfg(unix)]
-impl<F> std::os::unix::io::AsRawFd for NamedTempFile<F>
+impl<F: std::os::fd::AsFd> std::os::fd::AsFd for NamedTempFile<F> {
+    fn as_fd(&self) -> std::os::fd::BorrowedFd<'_> {
+        self.as_file().as_fd()
+    }
+}
+
+#[cfg(unix)]
+impl<F> std::os::fd::AsRawFd for NamedTempFile<F>
 where
-    F: std::os::unix::io::AsRawFd,
+    F: std::os::fd::AsRawFd,
 {
     #[inline]
-    fn as_raw_fd(&self) -> std::os::unix::io::RawFd {
+    fn as_raw_fd(&self) -> std::os::fd::RawFd {
         self.as_file().as_raw_fd()
+    }
+}
+
+#[cfg(windows)]
+impl<F> std::os::windows::io::AsHandle for NamedTempFile<F>
+where
+    F: std::os::windows::io::AsHandle,
+{
+    #[inline]
+    fn as_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
+        self.as_file().as_handle()
     }
 }
 
