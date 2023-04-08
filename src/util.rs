@@ -15,16 +15,13 @@ fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
     buf
 }
 
-pub fn create_helper<F, R>(
+pub fn create_helper<R>(
     base: &Path,
     prefix: &OsStr,
     suffix: &OsStr,
     random_len: usize,
-    mut f: F,
-) -> io::Result<R>
-where
-    F: FnMut(PathBuf) -> io::Result<R>,
-{
+    mut f: impl FnMut(PathBuf) -> io::Result<R>,
+) -> io::Result<R> {
     let num_retries = if random_len != 0 {
         crate::NUM_RETRIES
     } else {
