@@ -21,7 +21,7 @@ cfg-if = "1"
 fastrand = "1.6.0"
 
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
-rustix = { version = "0.37.1", features = ["fs"] }
+rustix = { version = "0.37.11", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
 version = "0.48"
