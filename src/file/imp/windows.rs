@@ -75,9 +75,6 @@ pub fn keep(path: &Path) -> io::Result<()> {
 }
 
 pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
-    // TODO: We should probably do this in one-shot using SetFileInformationByHandle but the API is
-    // really painful.
-
     unsafe {
         let old_path_w = to_utf16(old_path);
         let new_path_w = to_utf16(new_path);
