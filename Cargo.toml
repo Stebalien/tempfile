@@ -1,6 +1,6 @@
 [package]
 name = "tempfile"
-version = "3.5.0"
+version = "3.5.1"
 authors = [
   "Steven Allen <steven@stebalien.com>",
   "The Rust Project Developers",
@@ -19,6 +19,7 @@ description = "A library for managing temporary files and directories."
 [dependencies]
 cfg-if = "1"
 fastrand = "1.6.0"
+serde = { version = "1.0.163",  optional = true, features = ["derive"] }
 
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
 rustix = { version = "0.37.11", features = ["fs"] }
@@ -41,3 +42,4 @@ autocfg = "1"
 
 [features]
 nightly = []
+serde = ["dep:serde"]

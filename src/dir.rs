@@ -13,6 +13,9 @@ use std::mem;
 use std::path::{self, Path, PathBuf};
 use std::{fmt, fs, io};
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use crate::error::IoResultExt;
 use crate::Builder;
 
@@ -192,6 +195,8 @@ pub fn tempdir_in<P: AsRef<Path>>(dir: P) -> io::Result<TempDir> {
 /// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 /// [`std::fs`]: http://doc.rust-lang.org/std/fs/index.html
 /// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)] // Debug and Display are implemented manually
 pub struct TempDir {
     path: Box<Path>,
 }
@@ -405,6 +410,12 @@ impl fmt::Debug for TempDir {
 impl Drop for TempDir {
     fn drop(&mut self) {
         let _ = remove_dir_all(self.path());
+    }
+}
+
+impl fmt::Display for TempDir {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.path.display())
     }
 }
 
