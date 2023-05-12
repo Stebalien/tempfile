@@ -45,16 +45,16 @@ use crate::Builder;
 /// # }
 /// # fn run() -> Result<(), io::Error> {
 /// // Create a directory inside of `std::env::temp_dir()`
-/// let dir = tempdir()?;
+/// let tmp_dir = tempdir()?;
 ///
-/// let file_path = dir.path().join("my-temporary-note.txt");
-/// let mut file = File::create(file_path)?;
-/// writeln!(file, "Brian was here. Briefly.")?;
+/// let file_path = tmp_dir.path().join("my-temporary-note.txt");
+/// let mut tmp_file = File::create(file_path)?;
+/// writeln!(tmp_file, "Brian was here. Briefly.")?;
 ///
 /// // `tmp_dir` goes out of scope, the directory as well as
 /// // `tmp_file` will be deleted here.
-/// drop(file);
-/// dir.close()?;
+/// drop(tmp_file);
+/// tmp_dir.close()?;
 /// # Ok(())
 /// # }
 /// ```
@@ -94,16 +94,16 @@ pub fn tempdir() -> io::Result<TempDir> {
 /// # }
 /// # fn run() -> Result<(), io::Error> {
 /// // Create a directory inside of the current directory.
-/// let dir = tempdir_in(".")?;
+/// let tmp_dir = tempdir_in(".")?;
 ///
-/// let file_path = dir.path().join("my-temporary-note.txt");
-/// let mut file = File::create(file_path)?;
-/// writeln!(file, "Brian was here. Briefly.")?;
+/// let file_path = tmp_dir.path().join("my-temporary-note.txt");
+/// let mut tmp_file = File::create(file_path)?;
+/// writeln!(tmp_file, "Brian was here. Briefly.")?;
 ///
 /// // `tmp_dir` goes out of scope, the directory as well as
 /// // `tmp_file` will be deleted here.
-/// drop(file);
-/// dir.close()?;
+/// drop(tmp_file);
+/// tmp_dir.close()?;
 /// # Ok(())
 /// # }
 /// ```
