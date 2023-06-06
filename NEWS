@@ -1,3 +1,13 @@
+3.6.0
+=====
+
+- Update windows-sys to 0.48.
+- Update rustix min version to 0.37.11
+- Forward some `NamedTempFile` and `SpooledTempFile` methods to the underlying `File` object for
+  better performance (especially vectorized writes, etc.).
+- Implement `AsFd` and `AsHandle`.
+- Misc documentation fixes and code cleanups.
+
 3.5.0
 =====
 
