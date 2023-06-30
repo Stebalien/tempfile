@@ -9,7 +9,7 @@ authors = [
 ]
 documentation = "https://docs.rs/tempfile"
 edition = "2018"
-rust-version = "1.48"
+rust-version = "1.63"
 homepage = "https://stebalien.com/projects/tempfile-rs/"
 keywords = ["tempfile", "tmpfile", "filesystem"]
 license = "MIT OR Apache-2.0"
@@ -21,7 +21,7 @@ cfg-if = "1"
 fastrand = "2.0.0"
 
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
-rustix = { version = "0.37.11", features = ["fs"] }
+rustix = { version = "0.38", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
 version = "0.48"
