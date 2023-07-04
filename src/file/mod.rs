@@ -8,6 +8,8 @@ use std::mem;
 use std::ops::Deref;
 #[cfg(unix)]
 use std::os::unix::io::{AsFd, AsRawFd, BorrowedFd, RawFd};
+#[cfg(target_os = "wasi")]
+use std::os::wasi::io::{AsFd, AsRawFd, BorrowedFd, RawFd};
 #[cfg(windows)]
 use std::os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, RawHandle};
 use std::path::{Path, PathBuf};
@@ -1038,14 +1040,14 @@ impl Seek for &NamedTempFile<File> {
     }
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_os = "wasi"))]
 impl<F: AsFd> AsFd for NamedTempFile<F> {
     fn as_fd(&self) -> BorrowedFd<'_> {
         self.as_file().as_fd()
     }
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_os = "wasi"))]
 impl<F: AsRawFd> AsRawFd for NamedTempFile<F> {
     #[inline]
     fn as_raw_fd(&self) -> RawFd {
