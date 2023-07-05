@@ -6,6 +6,12 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::mem;
 use std::ops::Deref;
+#[cfg(unix)]
+use std::os::unix::io::{AsFd, AsRawFd, BorrowedFd, RawFd};
+#[cfg(target_os = "wasi")]
+use std::os::wasi::io::{AsFd, AsRawFd, BorrowedFd, RawFd};
+#[cfg(windows)]
+use std::os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, RawHandle};
 use std::path::{Path, PathBuf};
 
 use crate::error::IoResultExt;
@@ -1034,42 +1040,33 @@ impl Seek for &NamedTempFile<File> {
     }
 }
 
-#[cfg(all(fd, unix))]
-impl<F: std::os::unix::io::AsFd> std::os::unix::io::AsFd for NamedTempFile<F> {
-    fn as_fd(&self) -> std::os::unix::io::BorrowedFd<'_> {
+#[cfg(any(unix, target_os = "wasi"))]
+impl<F: AsFd> AsFd for NamedTempFile<F> {
+    fn as_fd(&self) -> BorrowedFd<'_> {
         self.as_file().as_fd()
     }
 }
 
-#[cfg(unix)]
-impl<F> std::os::unix::io::AsRawFd for NamedTempFile<F>
-where
-    F: std::os::unix::io::AsRawFd,
-{
+#[cfg(any(unix, target_os = "wasi"))]
+impl<F: AsRawFd> AsRawFd for NamedTempFile<F> {
     #[inline]
-    fn as_raw_fd(&self) -> std::os::unix::io::RawFd {
+    fn as_raw_fd(&self) -> RawFd {
         self.as_file().as_raw_fd()
     }
 }
 
-#[cfg(all(fd, windows))]
-impl<F> std::os::windows::io::AsHandle for NamedTempFile<F>
-where
-    F: std::os::windows::io::AsHandle,
-{
+#[cfg(windows)]
+impl<F: AsHandle> AsHandle for NamedTempFile<F> {
     #[inline]
-    fn as_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
+    fn as_handle(&self) -> BorrowedHandle<'_> {
         self.as_file().as_handle()
     }
 }
 
 #[cfg(windows)]
-impl<F> std::os::windows::io::AsRawHandle for NamedTempFile<F>
-where
-    F: std::os::windows::io::AsRawHandle,
-{
+impl<F: AsRawHandle> AsRawHandle for NamedTempFile<F> {
     #[inline]
-    fn as_raw_handle(&self) -> std::os::windows::io::RawHandle {
+    fn as_raw_handle(&self) -> RawHandle {
         self.as_file().as_raw_handle()
     }
 }
