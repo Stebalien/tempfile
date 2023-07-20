@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.7.0
+
+BREAKING: This release updates the MSRV to 1.63. This isn't an API-breaking change (so no major
+release) but it's still a breaking change for some users.
+
+- Update fastrand from 1.6 to 2.0
+- Update rustix to 0.38
+- Updates the MSRV to 1.63.
+- Provide AsFd/AsRawFd on wasi.
+
 ## 3.6.0
 
 - Update windows-sys to 0.48.
