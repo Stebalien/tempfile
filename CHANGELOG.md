@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.7.1
+
+- Tempfile builds on haiku again.
+- Under the hood, we've switched from the unlinkat/linkat syscalls to the regular unlink/link syscalls where possible.
+
 ## 3.7.0
 
 BREAKING: This release updates the MSRV to 1.63. This isn't an API-breaking change (so no major
