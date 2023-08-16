@@ -43,7 +43,7 @@ impl PathExt for Path {
 
 fn test_tempdir() {
     let path = {
-        let p = t!(Builder::new().prefix("foobar").tempdir_in(&Path::new(".")));
+        let p = t!(Builder::new().prefix("foobar").tempdir_in(Path::new(".")));
         let p = p.path();
         assert!(p.to_str().unwrap().contains("foobar"));
         p.to_path_buf()
@@ -159,17 +159,17 @@ fn recursive_mkdir_rel() {
         cwd.display(),
         path.exists()
     );
-    t!(fs::create_dir(&path));
+    t!(fs::create_dir(path));
     assert!(path.is_dir());
-    t!(fs::create_dir_all(&path));
+    t!(fs::create_dir_all(path));
     assert!(path.is_dir());
 }
 
 fn recursive_mkdir_dot() {
     let dot = Path::new(".");
-    t!(fs::create_dir_all(&dot));
+    t!(fs::create_dir_all(dot));
     let dotdot = Path::new("..");
-    t!(fs::create_dir_all(&dotdot));
+    t!(fs::create_dir_all(dotdot));
 }
 
 fn recursive_mkdir_rel_2() {
@@ -181,7 +181,7 @@ fn recursive_mkdir_rel_2() {
         cwd.display(),
         path.exists()
     );
-    t!(fs::create_dir_all(&path));
+    t!(fs::create_dir_all(path));
     assert!(path.is_dir());
     assert!(path.parent().unwrap().is_dir());
     let path2 = Path::new("quux/blat");
@@ -191,7 +191,7 @@ fn recursive_mkdir_rel_2() {
         cwd.display()
     );
     t!(fs::create_dir("quux"));
-    t!(fs::create_dir_all(&path2));
+    t!(fs::create_dir_all(path2));
     assert!(path2.is_dir());
     assert!(path2.parent().unwrap().is_dir());
 }
@@ -204,9 +204,9 @@ pub fn test_remove_dir_all_ok() {
 
     println!("making {}", root.display());
     t!(fs::create_dir(&root));
-    t!(fs::create_dir(&root.join("foo")));
-    t!(fs::create_dir(&root.join("foo").join("bar")));
-    t!(fs::create_dir(&root.join("foo").join("bar").join("blat")));
+    t!(fs::create_dir(root.join("foo")));
+    t!(fs::create_dir(root.join("foo").join("bar")));
+    t!(fs::create_dir(root.join("foo").join("bar").join("blat")));
     t!(fs::remove_dir_all(&root));
     assert!(!root.exists());
     assert!(!root.join("bar").exists());
