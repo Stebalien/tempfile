@@ -51,6 +51,12 @@ fn test_tempdir() {
     assert!(!path.exists());
 }
 
+fn test_prefix() {
+    let tmpfile = TempDir::with_prefix_in("prefix", ".").unwrap();
+    let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
+    assert!(name.starts_with("prefix"));
+}
+
 fn test_customnamed() {
     let tmpfile = Builder::new()
         .prefix("prefix")
@@ -184,6 +190,7 @@ pub fn pass_as_asref_path() {
 #[test]
 fn main() {
     in_tmpdir(test_tempdir);
+    in_tmpdir(test_prefix);
     in_tmpdir(test_customnamed);
     in_tmpdir(test_rm_tempdir);
     in_tmpdir(test_rm_tempdir_close);
