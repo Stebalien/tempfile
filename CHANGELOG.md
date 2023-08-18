@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.8.0
+
+- Added `with_prefix` and `with_prefix_in` to `TempDir` and `NamedTempFile` to make it easier to create temporary files/directories with nice prefixes.
+- Misc cleanups.
+
 ## 3.7.1
 
 - Tempfile builds on haiku again.
