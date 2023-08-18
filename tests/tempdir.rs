@@ -18,32 +18,9 @@ use std::thread;
 
 use tempfile::{Builder, TempDir};
 
-macro_rules! t {
-    ($e:expr) => {
-        match $e {
-            Ok(n) => n,
-            Err(e) => panic!("error: {}", e),
-        }
-    };
-}
-
-trait PathExt {
-    fn exists(&self) -> bool;
-    fn is_dir(&self) -> bool;
-}
-
-impl PathExt for Path {
-    fn exists(&self) -> bool {
-        fs::metadata(self).is_ok()
-    }
-    fn is_dir(&self) -> bool {
-        fs::metadata(self).map(|m| m.is_dir()).unwrap_or(false)
-    }
-}
-
 fn test_tempdir() {
     let path = {
-        let p = t!(Builder::new().prefix("foobar").tempdir_in(Path::new(".")));
+        let p = Builder::new().prefix("foobar").tempdir_in(".").unwrap();
         let p = p.path();
         assert!(p.to_str().unwrap().contains("foobar"));
         p.to_path_buf()
@@ -73,7 +50,7 @@ fn test_customnamed() {
 fn test_rm_tempdir() {
     let (tx, rx) = channel();
     let f = move || {
-        let tmp = t!(TempDir::new());
+        let tmp = TempDir::new().unwrap();
         tx.send(tmp.path().to_path_buf()).unwrap();
         panic!("panic to unwind past `tmp`");
     };
@@ -81,7 +58,7 @@ fn test_rm_tempdir() {
     let path = rx.recv().unwrap();
     assert!(!path.exists());
 
-    let tmp = t!(TempDir::new());
+    let tmp = TempDir::new().unwrap();
     let path = tmp.path().to_path_buf();
     let f = move || {
         let _tmp = tmp;
@@ -92,7 +69,7 @@ fn test_rm_tempdir() {
 
     let path;
     {
-        let f = move || t!(TempDir::new());
+        let f = move || TempDir::new().unwrap();
 
         let tmp = thread::spawn(f).join().unwrap();
         path = tmp.path().to_path_buf();
@@ -102,31 +79,31 @@ fn test_rm_tempdir() {
 
     let path;
     {
-        let tmp = t!(TempDir::new());
+        let tmp = TempDir::new().unwrap();
         path = tmp.into_path();
     }
     assert!(path.exists());
-    t!(fs::remove_dir_all(&path));
+    fs::remove_dir_all(&path).unwrap();
     assert!(!path.exists());
 }
 
 fn test_rm_tempdir_close() {
     let (tx, rx) = channel();
     let f = move || {
-        let tmp = t!(TempDir::new());
+        let tmp = TempDir::new().unwrap();
         tx.send(tmp.path().to_path_buf()).unwrap();
-        t!(tmp.close());
+        tmp.close().unwrap();
         panic!("panic when unwinding past `tmp`");
     };
     let _ = thread::spawn(f).join();
     let path = rx.recv().unwrap();
     assert!(!path.exists());
 
-    let tmp = t!(TempDir::new());
+    let tmp = TempDir::new().unwrap();
     let path = tmp.path().to_path_buf();
     let f = move || {
         let tmp = tmp;
-        t!(tmp.close());
+        tmp.close().unwrap();
         panic!("panic when unwinding past `tmp`");
     };
     let _ = thread::spawn(f).join();
@@ -134,22 +111,22 @@ fn test_rm_tempdir_close() {
 
     let path;
     {
-        let f = move || t!(TempDir::new());
+        let f = move || TempDir::new().unwrap();
 
         let tmp = thread::spawn(f).join().unwrap();
         path = tmp.path().to_path_buf();
         assert!(path.exists());
-        t!(tmp.close());
+        tmp.close().unwrap();
     }
     assert!(!path.exists());
 
     let path;
     {
-        let tmp = t!(TempDir::new());
+        let tmp = TempDir::new().unwrap();
         path = tmp.into_path();
     }
     assert!(path.exists());
-    t!(fs::remove_dir_all(&path));
+    fs::remove_dir_all(&path).unwrap();
     assert!(!path.exists());
 }
 
@@ -158,7 +135,7 @@ fn dont_double_panic() {
         let tmpdir = TempDir::new().unwrap();
         // Remove the temporary directory so that TempDir sees
         // an error on drop
-        t!(fs::remove_dir(tmpdir.path()));
+        fs::remove_dir(tmpdir.path()).unwrap();
         // Panic. If TempDir panics *again* due to the rmdir
         // error then the process will abort.
         panic!();
@@ -171,14 +148,14 @@ fn in_tmpdir<F>(f: F)
 where
     F: FnOnce(),
 {
-    let tmpdir = t!(TempDir::new());
+    let tmpdir = TempDir::new().unwrap();
     assert!(env::set_current_dir(tmpdir.path()).is_ok());
 
     f();
 }
 
-pub fn pass_as_asref_path() {
-    let tempdir = t!(TempDir::new());
+fn pass_as_asref_path() {
+    let tempdir = TempDir::new().unwrap();
     takes_asref_path(&tempdir);
 
     fn takes_asref_path<T: AsRef<Path>>(path: T) {
