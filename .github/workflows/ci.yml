@@ -6,6 +6,18 @@ on:
 
 name: CI
 jobs:
+  deny:
+    name: Cargo deny
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: EmbarkStudios/cargo-deny-action@v1
+    timeout-minutes: 10
+
   build_and_test:
     name: OS Test
     strategy:
