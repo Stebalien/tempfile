@@ -611,7 +611,7 @@ impl NamedTempFile<File> {
     /// This is equivalent to:
     ///
     /// ```ignore
-    /// Builder::new().prefix(&prefix).tempfile()
+    /// Builder::new().tempfile_in(dir)
     /// ```
     ///
     /// See [`NamedTempFile::new()`] for details.
