@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.9.0
+
+- Updates windows-sys to 0.52
+- Updates minimum rustix version to 0.38.25
+
 ## 3.8.1
 
 - Update rustix to fix a potential panic on `persist_noclobber` on android.
