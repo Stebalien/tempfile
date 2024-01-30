@@ -141,7 +141,8 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
 #[cfg(target_os = "redox")]
 pub fn persist(_old_path: &Path, _new_path: &Path, _overwrite: bool) -> io::Result<()> {
     // XXX implement when possible
-    Err(io::Error::from_raw_os_error(syscall::ENOSYS))
+    use rustix::io::Errno;
+    Err(Errno::NOSYS.into())
 }
 
 pub fn keep(_: &Path) -> io::Result<()> {
