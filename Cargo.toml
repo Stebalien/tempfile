@@ -30,9 +30,6 @@ features = [
     "Win32_Foundation",
 ]
 
-[target.'cfg(target_os = "redox")'.dependencies]
-redox_syscall = "0.4"
-
 [dev-dependencies]
 doc-comment = "0.3"
 
