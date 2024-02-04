@@ -420,7 +420,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// ## Windows and others
     ///
-    /// This setting is ignored.
+    /// This setting is unsupported and trying to set a file or directory read-only
+    /// will cause an error to be returned..
     ///
     /// # Limitations
     ///

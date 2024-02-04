@@ -19,11 +19,18 @@ fn to_utf16(s: &Path) -> Vec<u16> {
     s.as_os_str().encode_wide().chain(iter::once(0)).collect()
 }
 
+fn not_supported<T>(msg: &str) -> io::Result<T> {
+    Err(io::Error::new(io::ErrorKind::Other, msg))
+}
+
 pub fn create_named(
     path: &Path,
     open_options: &mut OpenOptions,
-    _permissions: Option<&std::fs::Permissions>,
+    permissions: Option<&std::fs::Permissions>,
 ) -> io::Result<File> {
+    if permissions.map_or(false, |p| p.readonly()) {
+        return not_supported("changing permissions is not supported on this platform");
+    }
     open_options
         .create_new(true)
         .read(true)
