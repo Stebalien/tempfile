@@ -4,7 +4,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io;
 cfg_if::cfg_if! {
     if #[cfg(not(target_os = "wasi"))] {
-        use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
+        use std::os::unix::fs::MetadataExt;
     } else {
         #[cfg(feature = "nightly")]
         use std::os::wasi::fs::MetadataExt;
@@ -20,14 +20,11 @@ use {
 };
 
 pub fn create_named(path: &Path, open_options: &mut OpenOptions) -> io::Result<File> {
-    open_options.read(true).write(true).create_new(true);
-
-    #[cfg(not(target_os = "wasi"))]
-    {
-        open_options.mode(0o600);
-    }
-
-    open_options.open(path)
+    open_options
+        .read(true)
+        .write(true)
+        .create_new(true)
+        .open(path)
 }
 
 fn create_unlinked(path: &Path) -> io::Result<File> {
@@ -50,6 +47,7 @@ fn create_unlinked(path: &Path) -> io::Result<File> {
 #[cfg(target_os = "linux")]
 pub fn create(dir: &Path) -> io::Result<File> {
     use rustix::{fs::OFlags, io::Errno};
+    use std::os::unix::fs::OpenOptionsExt;
     OpenOptions::new()
         .read(true)
         .write(true)

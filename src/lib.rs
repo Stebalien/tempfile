@@ -532,7 +532,16 @@ impl<'a, 'b> Builder<'a, 'b> {
             self.prefix,
             self.suffix,
             self.random_len,
-            |path| file::create_named(path, OpenOptions::new().append(self.append)),
+            |path| {
+                let mut open_options = OpenOptions::new();
+                open_options.append(self.append);
+                #[cfg(all(unix, not(target_os = "wasi")))]
+                {
+                    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+                    open_options.mode(self.permissions.as_ref().map(|p| p.mode()).unwrap_or(0o600));
+                }
+                file::create_named(path, &mut open_options)
+            },
         )
     }
 
