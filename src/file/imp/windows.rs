@@ -45,7 +45,8 @@ pub fn create(dir: &Path) -> io::Result<File> {
         OsStr::new(".tmp"),
         OsStr::new(""),
         crate::NUM_RAND_CHARS,
-        |path| {
+        None,
+        |path, _permissions| {
             OpenOptions::new()
                 .create_new(true)
                 .read(true)
