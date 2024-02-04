@@ -19,12 +19,20 @@ use {
     std::fs::hard_link,
 };
 
-pub fn create_named(path: &Path, open_options: &mut OpenOptions) -> io::Result<File> {
-    open_options
-        .read(true)
-        .write(true)
-        .create_new(true)
-        .open(path)
+pub fn create_named(
+    path: &Path,
+    open_options: &mut OpenOptions,
+    #[cfg_attr(target_os = "wasi", allow(unused))] permissions: Option<&std::fs::Permissions>,
+) -> io::Result<File> {
+    open_options.read(true).write(true).create_new(true);
+
+    #[cfg(not(target_os = "wasi"))]
+    {
+        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+        open_options.mode(permissions.map(|p| p.mode()).unwrap_or(0o600));
+    }
+
+    open_options.open(path)
 }
 
 fn create_unlinked(path: &Path) -> io::Result<File> {
@@ -37,7 +45,7 @@ fn create_unlinked(path: &Path) -> io::Result<File> {
         path = &tmp;
     }
 
-    let f = create_named(path, &mut OpenOptions::new())?;
+    let f = create_named(path, &mut OpenOptions::new(), None)?;
     // don't care whether the path has already been unlinked,
     // but perhaps there are some IO error conditions we should send up?
     let _ = fs::remove_file(path);
