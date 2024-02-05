@@ -20,7 +20,8 @@ pub fn create_helper<R>(
     prefix: &OsStr,
     suffix: &OsStr,
     random_len: usize,
-    mut f: impl FnMut(PathBuf) -> io::Result<R>,
+    permissions: Option<&std::fs::Permissions>,
+    mut f: impl FnMut(PathBuf, Option<&std::fs::Permissions>) -> io::Result<R>,
 ) -> io::Result<R> {
     let num_retries = if random_len != 0 {
         crate::NUM_RETRIES
@@ -30,7 +31,7 @@ pub fn create_helper<R>(
 
     for _ in 0..num_retries {
         let path = base.join(tmpname(prefix, suffix, random_len));
-        return match f(path) {
+        return match f(path, permissions) {
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists && num_retries > 1 => continue,
             // AddrInUse can happen if we're creating a UNIX domain socket and
             // the path already exists.
