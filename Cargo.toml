@@ -18,10 +18,10 @@ description = "A library for managing temporary files and directories."
 
 [dependencies]
 cfg-if = "1"
-fastrand = "2.0.0"
+fastrand = "2.0.1"
 
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
-rustix = { version = "0.38.26", features = ["fs"] }
+rustix = { version = "0.38.31", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
 version = "0.52"
