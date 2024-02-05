@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.10.0
+
+- Drop `redox_syscall` dependency, we now use `rustix` for Redox.
+- Add `Builder::permissions` for setting the permissions on temporary files and directories (thanks to @Byron).
+- Update rustix to 0.38.31.
+- Update fastrand to 2.0.1.
+
 ## 3.9.0
 
 - Updates windows-sys to 0.52
