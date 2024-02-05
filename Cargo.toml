@@ -8,7 +8,7 @@ authors = [
   "Jason White <me@jasonwhite.io>",
 ]
 documentation = "https://docs.rs/tempfile"
-edition = "2018"
+edition = "2021"
 rust-version = "1.63"
 homepage = "https://stebalien.com/projects/tempfile-rs/"
 keywords = ["tempfile", "tmpfile", "filesystem"]
