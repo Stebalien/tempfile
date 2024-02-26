@@ -96,7 +96,7 @@ impl SpooledTempFile {
     }
 
     pub fn set_len(&mut self, size: u64) -> Result<(), io::Error> {
-        if size as usize > self.max_size {
+        if size > self.max_size as u64 {
             self.roll()?; // does nothing if already rolled over
         }
         match &mut self.inner {
