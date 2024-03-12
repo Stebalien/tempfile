@@ -27,26 +27,25 @@ pub fn create_helper<R>(
     permissions: Option<&std::fs::Permissions>,
     mut f: impl FnMut(PathBuf, Option<&std::fs::Permissions>) -> io::Result<R>,
 ) -> io::Result<R> {
-    let num_retries = if random_len != 0 {
-        crate::NUM_RETRIES
-    } else {
-        1
-    };
-
-    for _ in 0..num_retries {
+    if random_len == 0 {
         let path = base.join(tmpname(prefix, suffix, random_len));
-        return match f(path, permissions) {
-            Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists && num_retries > 1 => continue,
-            // AddrInUse can happen if we're creating a UNIX domain socket and
-            // the path already exists.
-            Err(ref e) if e.kind() == io::ErrorKind::AddrInUse && num_retries > 1 => continue,
-            res => res,
-        };
-    }
+        f(path, permissions)
+    } else {
+        for _ in 0..crate::NUM_RETRIES {
+            let path = base.join(tmpname(prefix, suffix, random_len));
+            return match f(path, permissions) {
+                Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+                // AddrInUse can happen if we're creating a UNIX domain socket and
+                // the path already exists.
+                Err(ref e) if e.kind() == io::ErrorKind::AddrInUse => continue,
+                res => res,
+            };
+        }
 
-    Err(io::Error::new(
-        io::ErrorKind::AlreadyExists,
-        "too many temporary files exist",
-    ))
-    .with_err_path(|| base)
+        Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            "too many temporary files exist",
+        ))
+        .with_err_path(|| base)
+    }
 }
