@@ -37,15 +37,9 @@
 //! generic over `AsRef<Path>`. Consider the following example:
 //!
 //! ```no_run
-//! # use tempfile::tempdir;
-//! # use std::io;
-//! # use std::process::Command;
-//! # fn main() {
-//! #     if let Err(_) = run() {
-//! #         ::std::process::exit(1);
-//! #     }
-//! # }
-//! # fn run() -> Result<(), io::Error> {
+//! use tempfile::tempdir;
+//! use std::process::Command;
+//!
 //! // Create a directory inside of `std::env::temp_dir()`.
 //! let temp_dir = tempdir()?;
 //!
@@ -54,8 +48,7 @@
 //! let exit_status = Command::new("touch").arg("tmp").current_dir(&temp_dir).status()?;
 //! assert!(exit_status.success());
 //!
-//! # Ok(())
-//! # }
+//! # Ok::<(), std::io::Error>(())
 //! ```
 //!
 //! This works because a reference to `temp_dir` is passed to `current_dir`, resulting in the
@@ -72,34 +65,21 @@
 //!
 //! ```
 //! use tempfile::tempfile;
-//! use std::io::{self, Write};
+//! use std::io::Write;
 //!
-//! # fn main() {
-//! #     if let Err(_) = run() {
-//! #         ::std::process::exit(1);
-//! #     }
-//! # }
-//! # fn run() -> Result<(), io::Error> {
 //! // Create a file inside of `std::env::temp_dir()`.
 //! let mut file = tempfile()?;
 //!
 //! writeln!(file, "Brian was here. Briefly.")?;
-//! # Ok(())
-//! # }
+//! # Ok::<(), std::io::Error>(())
 //! ```
 //!
 //! Create a named temporary file and open an independent file handle:
 //!
 //! ```
 //! use tempfile::NamedTempFile;
-//! use std::io::{self, Write, Read};
+//! use std::io::{Write, Read};
 //!
-//! # fn main() {
-//! #     if let Err(_) = run() {
-//! #         ::std::process::exit(1);
-//! #     }
-//! # }
-//! # fn run() -> Result<(), io::Error> {
 //! let text = "Brian was here. Briefly.";
 //!
 //! // Create a file inside of `std::env::temp_dir()`.
@@ -115,8 +95,7 @@
 //! let mut buf = String::new();
 //! file2.read_to_string(&mut buf)?;
 //! assert_eq!(buf, text);
-//! # Ok(())
-//! # }
+//! # Ok::<(), std::io::Error>(())
 //! ```
 //!
 //! Create a temporary directory and add a file to it:
@@ -124,14 +103,8 @@
 //! ```
 //! use tempfile::tempdir;
 //! use std::fs::File;
-//! use std::io::{self, Write};
+//! use std::io::Write;
 //!
-//! # fn main() {
-//! #     if let Err(_) = run() {
-//! #         ::std::process::exit(1);
-//! #     }
-//! # }
-//! # fn run() -> Result<(), io::Error> {
 //! // Create a directory inside of `std::env::temp_dir()`.
 //! let dir = tempdir()?;
 //!
@@ -146,8 +119,7 @@
 //! // succeeded.
 //! drop(file);
 //! dir.close()?;
-//! # Ok(())
-//! # }
+//! # Ok::<(), std::io::Error>(())
 //! ```
 //!
 //! [`tempfile()`]: fn.tempfile.html
@@ -220,14 +192,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// Create a named temporary file and write some data into it:
     ///
     /// ```
-    /// # use std::io;
-    /// # use std::ffi::OsStr;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
+    /// use std::ffi::OsStr;
     /// use tempfile::Builder;
     ///
     /// let named_tempfile = Builder::new()
@@ -245,22 +210,15 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     assert!(name.ends_with(".txt"));
     ///     assert_eq!(name.len(), "my-temporary-note.txt".len() + 5);
     /// }
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     ///
     /// Create a temporary directory and add a file to it:
     ///
     /// ```
-    /// # use std::io::{self, Write};
-    /// # use std::fs::File;
-    /// # use std::ffi::OsStr;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
+    /// use std::io::Write;
+    /// use std::fs::File;
+    /// use std::ffi::OsStr;
     /// use tempfile::Builder;
     ///
     /// let dir = Builder::new()
@@ -279,16 +237,18 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// // succeeded.
     /// drop(file);
     /// dir.close()?;
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     ///
     /// Create a temporary directory with a chosen prefix under a chosen folder:
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use tempfile::Builder;
+    ///
     /// let dir = Builder::new()
     ///     .prefix("my-temporary-dir")
     ///     .tempdir_in("folder-with-tempdirs")?;
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     #[must_use]
     pub fn new() -> Self {
@@ -303,19 +263,12 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # use std::io;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
+    /// use tempfile::Builder;
+    ///
     /// let named_tempfile = Builder::new()
     ///     .prefix("my-temporary-note")
     ///     .tempfile()?;
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     pub fn prefix<S: AsRef<OsStr> + ?Sized>(&mut self, prefix: &'a S) -> &mut Self {
         self.prefix = prefix.as_ref();
@@ -330,19 +283,12 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # use std::io;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
+    /// use tempfile::Builder;
+    ///
     /// let named_tempfile = Builder::new()
     ///     .suffix(".txt")
     ///     .tempfile()?;
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     pub fn suffix<S: AsRef<OsStr> + ?Sized>(&mut self, suffix: &'b S) -> &mut Self {
         self.suffix = suffix.as_ref();
@@ -356,19 +302,12 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # use std::io;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
+    /// use tempfile::Builder;
+    ///
     /// let named_tempfile = Builder::new()
     ///     .rand_bytes(5)
     ///     .tempfile()?;
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     pub fn rand_bytes(&mut self, rand: usize) -> &mut Self {
         self.random_len = rand;
@@ -382,19 +321,12 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # use std::io;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
+    /// use tempfile::Builder;
+    ///
     /// let named_tempfile = Builder::new()
     ///     .append(true)
     ///     .tempfile()?;
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     pub fn append(&mut self, append: bool) -> &mut Self {
         self.append = append;
@@ -429,55 +361,41 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// Create a named temporary file that is world-readable.
     ///
     /// ```
-    /// # use std::io;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
+    /// # #[cfg(unix)]
+    /// # {
+    /// use tempfile::Builder;
+    /// use std::os::unix::fs::PermissionsExt;
+    ///
+    /// let all_read_write = std::fs::Permissions::from_mode(0o666);
+    /// let tempfile = Builder::new().permissions(all_read_write).tempfile()?;
+    /// let actual_permissions = tempfile.path().metadata()?.permissions();
+    /// assert_ne!(
+    ///     actual_permissions.mode() & !0o170000,
+    ///     0o600,
+    ///     "we get broader permissions than the default despite umask"
+    /// );
     /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
-    /// #[cfg(unix)]
-    /// {
-    ///     use std::os::unix::fs::PermissionsExt;
-    ///     let all_read_write = std::fs::Permissions::from_mode(0o666);
-    ///     let tempfile = Builder::new().permissions(all_read_write).tempfile()?;
-    ///     let actual_permissions = tempfile.path().metadata()?.permissions();
-    ///     assert_ne!(
-    ///         actual_permissions.mode() & !0o170000,
-    ///         0o600,
-    ///         "we get broader permissions than the default despite umask"
-    ///     );
-    /// }
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     ///
     /// Create a named temporary directory that is restricted to the owner.
     ///
     /// ```
-    /// # use std::io;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
+    /// # #[cfg(unix)]
+    /// # {
+    /// use tempfile::Builder;
+    /// use std::os::unix::fs::PermissionsExt;
+    ///
+    /// let owner_rwx = std::fs::Permissions::from_mode(0o700);
+    /// let tempdir = Builder::new().permissions(owner_rwx).tempdir()?;
+    /// let actual_permissions = tempdir.path().metadata()?.permissions();
+    /// assert_eq!(
+    ///     actual_permissions.mode() & !0o170000,
+    ///     0o700,
+    ///     "we get the narrow permissions we asked for"
+    /// );
     /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
-    /// #[cfg(unix)]
-    /// {
-    ///     use std::os::unix::fs::PermissionsExt;
-    ///     let owner_rwx = std::fs::Permissions::from_mode(0o700);
-    ///     let tempdir = Builder::new().permissions(owner_rwx).tempdir()?;
-    ///     let actual_permissions = tempdir.path().metadata()?.permissions();
-    ///     assert_eq!(
-    ///         actual_permissions.mode() & !0o170000,
-    ///         0o700,
-    ///         "we get the narrow permissions we asked for"
-    ///     );
-    /// }
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     pub fn permissions(&mut self, permissions: std::fs::Permissions) -> &mut Self {
         self.permissions = Some(permissions);
@@ -501,17 +419,10 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # use std::io;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
+    /// use tempfile::Builder;
+    ///
     /// let tempfile = Builder::new().tempfile()?;
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     ///
     /// [security]: struct.NamedTempFile.html#security
@@ -537,17 +448,10 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # use std::io;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
+    /// use tempfile::Builder;
+    ///
     /// let tempfile = Builder::new().tempfile_in("./")?;
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     ///
     /// [security]: struct.NamedTempFile.html#security
@@ -581,15 +485,10 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// use std::fs::File;
-    /// use std::io::Write;
     /// use tempfile::Builder;
     ///
-    /// # use std::io;
-    /// # fn run() -> Result<(), io::Error> {
     /// let tmp_dir = Builder::new().tempdir()?;
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     ///
     /// [resource-leaking]: struct.TempDir.html#resource-leaking
@@ -612,15 +511,10 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// use std::fs::{self, File};
-    /// use std::io::Write;
     /// use tempfile::Builder;
     ///
-    /// # use std::io;
-    /// # fn run() -> Result<(), io::Error> {
     /// let tmp_dir = Builder::new().tempdir_in("./")?;
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     ///
     /// [resource-leaking]: struct.TempDir.html#resource-leaking
@@ -670,19 +564,13 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// For example, the following is **not** secure:
     ///
     /// ```
-    /// # use std::io;
-    /// # use std::fs::File;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
+    /// use std::fs::File;
+    /// use tempfile::Builder;
+    ///
     /// // This is NOT secure!
     /// let tempfile = Builder::new().make(|path| {
     ///     if path.is_file() {
-    ///         return Err(io::ErrorKind::AlreadyExists.into());
+    ///         return Err(std::io::ErrorKind::AlreadyExists.into());
     ///     }
     ///
     ///     // Between the check above and the usage below, an attacker could
@@ -691,25 +579,19 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     ///     File::create(path)
     /// })?;
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
+    ///
     /// Note that simply using [`std::fs::File::create`] alone is not correct
     /// because it does not fail if the file already exists:
+    ///
     /// ```
-    /// # use std::io;
-    /// # use std::fs::File;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
+    /// use tempfile::Builder;
+    /// use std::fs::File;
+    ///
     /// // This could overwrite an existing file!
     /// let tempfile = Builder::new().make(|path| File::create(path))?;
-    /// # Ok(())
-    /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     /// For creating regular temporary files, use [`Builder::tempfile`] instead
     /// to avoid these problems. This function is meant to enable more exotic
@@ -727,20 +609,14 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// # Examples
     /// ```
-    /// # use std::io;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
     /// # #[cfg(unix)]
+    /// # {
     /// use std::os::unix::net::UnixListener;
-    /// # #[cfg(unix)]
+    /// use tempfile::Builder;
+    ///
     /// let tempsock = Builder::new().make(|path| UnixListener::bind(path))?;
-    /// # Ok(())
     /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     ///
     /// [TOCTOU]: https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use
@@ -760,20 +636,14 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// # Examples
     /// ```
-    /// # use std::io;
-    /// # fn main() {
-    /// #     if let Err(_) = run() {
-    /// #         ::std::process::exit(1);
-    /// #     }
-    /// # }
-    /// # fn run() -> Result<(), io::Error> {
-    /// # use tempfile::Builder;
     /// # #[cfg(unix)]
+    /// # {
+    /// use tempfile::Builder;
     /// use std::os::unix::net::UnixListener;
-    /// # #[cfg(unix)]
+    ///
     /// let tempsock = Builder::new().make_in("./", |path| UnixListener::bind(path))?;
-    /// # Ok(())
     /// # }
+    /// # Ok::<(), std::io::Error>(())
     /// ```
     pub fn make_in<F, R, P>(&self, dir: P, mut f: F) -> io::Result<NamedTempFile<R>>
     where
