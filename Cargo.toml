@@ -19,6 +19,8 @@ description = "A library for managing temporary files and directories."
 [dependencies]
 cfg-if = "1"
 fastrand = "2.0.1"
+# Not available in stdlib until 1.70, but we support 1.63 to support Debian stable.
+once_cell = { version = "1.19.0", default-features = false, features = ["std"] }
 
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
 rustix = { version = "0.38.31", features = ["fs"] }

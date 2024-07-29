@@ -1,4 +1,3 @@
-use std::env;
 use std::error;
 use std::ffi::OsStr;
 use std::fmt;
@@ -14,6 +13,7 @@ use std::os::wasi::io::{AsFd, AsRawFd, BorrowedFd, RawFd};
 use std::os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, RawHandle};
 use std::path::{Path, PathBuf};
 
+use crate::env;
 use crate::error::IoResultExt;
 use crate::Builder;
 
@@ -21,7 +21,7 @@ mod imp;
 
 /// Create a new temporary file.
 ///
-/// The file will be created in the location returned by [`std::env::temp_dir()`].
+/// The file will be created in the location returned by [`env::temp_dir()`].
 ///
 /// # Security
 ///
@@ -42,14 +42,12 @@ mod imp;
 /// use tempfile::tempfile;
 /// use std::io::Write;
 ///
-/// // Create a file inside of `std::env::temp_dir()`.
+/// // Create a file inside of `env::temp_dir()`.
 /// let mut file = tempfile()?;
 ///
 /// writeln!(file, "Brian was here. Briefly.")?;
 /// # Ok::<(), std::io::Error>(())
 /// ```
-///
-/// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 pub fn tempfile() -> io::Result<File> {
     tempfile_in(env::temp_dir())
 }
@@ -59,7 +57,7 @@ pub fn tempfile() -> io::Result<File> {
 /// # Security
 ///
 /// This variant is secure/reliable in the presence of a pathological temporary file cleaner.
-/// If the temporary file isn't created in [`std::env::temp_dir()`] then temporary file cleaners aren't an issue.
+/// If the temporary file isn't created in [`env::temp_dir()`] then temporary file cleaners aren't an issue.
 ///
 /// # Resource Leaking
 ///
@@ -82,8 +80,6 @@ pub fn tempfile() -> io::Result<File> {
 /// writeln!(file, "Brian was here. Briefly.")?;
 /// # Ok::<(), std::io::Error>(())
 /// ```
-///
-/// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 pub fn tempfile_in<P: AsRef<Path>>(dir: P) -> io::Result<File> {
     imp::create(dir.as_ref())
 }
@@ -363,7 +359,7 @@ impl AsRef<OsStr> for TempPath {
 /// A named temporary file.
 ///
 /// The default constructor, [`NamedTempFile::new()`], creates files in
-/// the location returned by [`std::env::temp_dir()`], but `NamedTempFile`
+/// the location returned by [`env::temp_dir()`], but `NamedTempFile`
 /// can be configured to manage a temporary file in any location
 /// by constructing with [`NamedTempFile::new_in()`].
 ///
@@ -440,7 +436,6 @@ impl AsRef<OsStr> for TempPath {
 /// [`tempfile()`]: fn.tempfile.html
 /// [`NamedTempFile::new()`]: #method.new
 /// [`NamedTempFile::new_in()`]: #method.new_in
-/// [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 /// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
 /// [`lazy_static`]: https://github.com/rust-lang-nursery/lazy-static.rs/issues/62
 pub struct NamedTempFile<F = File> {
@@ -1017,7 +1012,7 @@ pub(crate) fn create_named(
     // Make the path absolute. Otherwise, changing directories could cause us to
     // delete the wrong file.
     if !path.is_absolute() {
-        path = env::current_dir()?.join(path)
+        path = std::env::current_dir()?.join(path)
     }
     imp::create_named(&path, open_options, permissions)
         .with_err_path(|| path.clone())

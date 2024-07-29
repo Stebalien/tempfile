@@ -40,7 +40,7 @@
 //! use tempfile::tempdir;
 //! use std::process::Command;
 //!
-//! // Create a directory inside of `std::env::temp_dir()`.
+//! // Create a directory inside of `env::temp_dir()`.
 //! let temp_dir = tempdir()?;
 //!
 //! // Spawn the `touch` command inside the temporary directory and collect the exit status
@@ -67,7 +67,7 @@
 //! use tempfile::tempfile;
 //! use std::io::Write;
 //!
-//! // Create a file inside of `std::env::temp_dir()`.
+//! // Create a file inside of `env::temp_dir()`.
 //! let mut file = tempfile()?;
 //!
 //! writeln!(file, "Brian was here. Briefly.")?;
@@ -82,7 +82,7 @@
 //!
 //! let text = "Brian was here. Briefly.";
 //!
-//! // Create a file inside of `std::env::temp_dir()`.
+//! // Create a file inside of `env::temp_dir()`.
 //! let mut file1 = NamedTempFile::new()?;
 //!
 //! // Re-open it.
@@ -105,7 +105,7 @@
 //! use std::fs::File;
 //! use std::io::Write;
 //!
-//! // Create a directory inside of `std::env::temp_dir()`.
+//! // Create a directory inside of `env::temp_dir()`.
 //! let dir = tempdir()?;
 //!
 //! let file_path = dir.path().join("my-temporary-note.txt");
@@ -126,7 +126,6 @@
 //! [`tempdir()`]: fn.tempdir.html
 //! [`TempDir`]: struct.TempDir.html
 //! [`NamedTempFile`]: struct.NamedTempFile.html
-//! [`std::env::temp_dir()`]: https://doc.rust-lang.org/std/env/fn.temp_dir.html
 //! [`lazy_static`]: https://github.com/rust-lang-nursery/lazy-static.rs/issues/62
 
 #![doc(
@@ -147,14 +146,16 @@ const NUM_RAND_CHARS: usize = 6;
 
 use std::ffi::OsStr;
 use std::fs::OpenOptions;
+use std::io;
 use std::path::Path;
-use std::{env, io};
 
 mod dir;
 mod error;
 mod file;
 mod spooled;
 mod util;
+
+pub mod env;
 
 pub use crate::dir::{tempdir, tempdir_in, TempDir};
 pub use crate::file::{
@@ -469,7 +470,7 @@ impl<'a, 'b> Builder<'a, 'b> {
         )
     }
 
-    /// Attempts to make a temporary directory inside of `env::temp_dir()` whose
+    /// Attempts to make a temporary directory inside of [`env::temp_dir()`] whose
     /// name will have the prefix, `prefix`. The directory and
     /// everything inside it will be automatically deleted once the
     /// returned `TempDir` is destroyed.
@@ -522,7 +523,7 @@ impl<'a, 'b> Builder<'a, 'b> {
         let storage;
         let mut dir = dir.as_ref();
         if !dir.is_absolute() {
-            let cur_dir = env::current_dir()?;
+            let cur_dir = std::env::current_dir()?;
             storage = cur_dir.join(dir);
             dir = &storage;
         }
@@ -540,7 +541,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// Attempts to create a temporary file (or file-like object) using the
     /// provided closure. The closure is passed a temporary file path and
     /// returns an [`std::io::Result`]. The path provided to the closure will be
-    /// inside of [`std::env::temp_dir()`]. Use [`Builder::make_in`] to provide
+    /// inside of [`env::temp_dir()`]. Use [`Builder::make_in`] to provide
     /// a custom temporary directory. If the closure returns one of the
     /// following errors, then another randomized file path is tried:
     ///  - [`std::io::ErrorKind::AlreadyExists`]

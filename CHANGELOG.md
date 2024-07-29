@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.11.0
+
+- Add the ability to override the default temporary directory. This API shouldn't be used in general, but there are some cases where it's unavoidable.
+
 ## 3.10.1
 
 - Handle potential integer overflows in 32-bit systems when seeking/truncating "spooled" temporary files past 4GiB (2³²).
