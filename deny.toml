@@ -1,8 +1,5 @@
 
 [advisories]
-notice = "deny"
-unmaintained = "deny"
-vulnerability = "deny"
 yanked = "deny"
 ignore = []
 
@@ -11,9 +8,7 @@ allow = [
     "Apache-2.0",
     "MIT",
 ]
-default = "deny"
 confidence-threshold = 1.0
-unlicensed = "deny"
 
 [bans]
 allow = []
