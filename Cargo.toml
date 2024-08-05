@@ -26,7 +26,7 @@ once_cell = { version = "1.19.0", default-features = false, features = ["std"] }
 rustix = { version = "0.38.31", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
-version = "0.52"
+version = "0.59"
 features = [
     "Win32_Storage_FileSystem",
     "Win32_Foundation",
