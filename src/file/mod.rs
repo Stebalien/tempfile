@@ -124,9 +124,11 @@ impl error::Error for PathPersistError {
 /// This is useful when the temporary file needs to be used by a child process,
 /// for example.
 ///
-/// When dropped, the temporary file is deleted.
+/// When dropped, the temporary file is deleted unless `keep(true)` was called
+/// on the builder that constructed this value.
 pub struct TempPath {
     path: Box<Path>,
+    keep: bool,
 }
 
 impl TempPath {
@@ -273,7 +275,6 @@ impl TempPath {
     /// Keep the temporary file from being deleted. This function will turn the
     /// temporary file into a non-temporary file without moving it.
     ///
-    ///
     /// # Errors
     ///
     /// On some platforms (e.g., Windows), we need to mark the file as
@@ -320,6 +321,14 @@ impl TempPath {
     pub fn from_path(path: impl Into<PathBuf>) -> Self {
         Self {
             path: path.into().into_boxed_path(),
+            keep: false,
+        }
+    }
+
+    pub(crate) fn new(path: PathBuf, keep: bool) -> Self {
+        Self {
+            path: path.into_boxed_path(),
+            keep,
         }
     }
 }
@@ -332,7 +341,9 @@ impl fmt::Debug for TempPath {
 
 impl Drop for TempPath {
     fn drop(&mut self) {
-        let _ = fs::remove_file(&self.path);
+        if !self.keep {
+            let _ = fs::remove_file(&self.path);
+        }
     }
 }
 
@@ -1008,6 +1019,7 @@ pub(crate) fn create_named(
     mut path: PathBuf,
     open_options: &mut OpenOptions,
     permissions: Option<&std::fs::Permissions>,
+    keep: bool,
 ) -> io::Result<NamedTempFile> {
     // Make the path absolute. Otherwise, changing directories could cause us to
     // delete the wrong file.
@@ -1019,6 +1031,7 @@ pub(crate) fn create_named(
         .map(|file| NamedTempFile {
             path: TempPath {
                 path: path.into_boxed_path(),
+                keep,
             },
             file,
         })
