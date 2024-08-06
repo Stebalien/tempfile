@@ -177,6 +177,7 @@ pub fn tempdir_in<P: AsRef<Path>>(dir: P) -> io::Result<TempDir> {
 /// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
 pub struct TempDir {
     path: Box<Path>,
+    keep: bool,
 }
 
 impl TempDir {
@@ -425,15 +426,18 @@ impl fmt::Debug for TempDir {
 
 impl Drop for TempDir {
     fn drop(&mut self) {
-        let _ = remove_dir_all(self.path());
+        if !self.keep {
+            let _ = remove_dir_all(self.path());
+        }
     }
 }
 
 pub(crate) fn create(
     path: PathBuf,
     permissions: Option<&std::fs::Permissions>,
+    keep: bool,
 ) -> io::Result<TempDir> {
-    imp::create(path, permissions)
+    imp::create(path, permissions, keep)
 }
 
 mod imp;

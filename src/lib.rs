@@ -171,6 +171,7 @@ pub struct Builder<'a, 'b> {
     suffix: &'b OsStr,
     append: bool,
     permissions: Option<std::fs::Permissions>,
+    keep: bool,
 }
 
 impl<'a, 'b> Default for Builder<'a, 'b> {
@@ -181,6 +182,7 @@ impl<'a, 'b> Default for Builder<'a, 'b> {
             suffix: OsStr::new(""),
             append: false,
             permissions: None,
+            keep: false,
         }
     }
 }
@@ -403,6 +405,27 @@ impl<'a, 'b> Builder<'a, 'b> {
         self
     }
 
+    /// Set the file/folder to be kept even when the [`NamedTempFile`]/[`TempDir`] goes out of
+    /// scope.
+    ///
+    /// By default, the file/folder is automatically cleaned up in the destructor of
+    /// [`NamedTempFile`]/[`TempDir`]. When `keep` is set to `true`, this behavior is supressed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use tempfile::Builder;
+    ///
+    /// let named_tempfile = Builder::new()
+    ///     .keep(true)
+    ///     .tempfile()?;
+    /// # Ok::<(), std::io::Error>(())
+    /// ```
+    pub fn keep(&mut self, keep: bool) -> &mut Self {
+        self.keep = keep;
+        self
+    }
+
     /// Create the named temporary file.
     ///
     /// # Security
@@ -463,9 +486,13 @@ impl<'a, 'b> Builder<'a, 'b> {
             self.prefix,
             self.suffix,
             self.random_len,
-            self.permissions.as_ref(),
-            |path, permissions| {
-                file::create_named(path, OpenOptions::new().append(self.append), permissions)
+            |path| {
+                file::create_named(
+                    path,
+                    OpenOptions::new().append(self.append),
+                    self.permissions.as_ref(),
+                    self.keep,
+                )
             },
         )
     }
@@ -528,14 +555,9 @@ impl<'a, 'b> Builder<'a, 'b> {
             dir = &storage;
         }
 
-        util::create_helper(
-            dir,
-            self.prefix,
-            self.suffix,
-            self.random_len,
-            self.permissions.as_ref(),
-            dir::create,
-        )
+        util::create_helper(dir, self.prefix, self.suffix, self.random_len, |path| {
+            dir::create(path, self.permissions.as_ref(), self.keep)
+        })
     }
 
     /// Attempts to create a temporary file (or file-like object) using the
@@ -656,11 +678,10 @@ impl<'a, 'b> Builder<'a, 'b> {
             self.prefix,
             self.suffix,
             self.random_len,
-            None,
-            move |path, _permissions| {
+            move |path| {
                 Ok(NamedTempFile::from_parts(
                     f(&path)?,
-                    TempPath::from_path(path),
+                    TempPath::new(path, self.keep),
                 ))
             },
         )

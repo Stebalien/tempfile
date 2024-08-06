@@ -346,6 +346,23 @@ fn test_keep() {
 }
 
 #[test]
+fn test_builder_keep() {
+    let mut tmpfile = Builder::new().keep(true).tempfile().unwrap();
+    write!(tmpfile, "abcde").unwrap();
+    let path = tmpfile.path().to_owned();
+    drop(tmpfile);
+
+    {
+        // Try opening it again.
+        let mut f = File::open(&path).unwrap();
+        let mut buf = String::new();
+        f.read_to_string(&mut buf).unwrap();
+        assert_eq!("abcde", buf);
+    }
+    std::fs::remove_file(&path).unwrap();
+}
+
+#[test]
 fn test_make() {
     let tmpfile = Builder::new().make(|path| File::create(path)).unwrap();
 

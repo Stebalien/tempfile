@@ -82,8 +82,7 @@ fn create_unix(dir: &Path) -> io::Result<File> {
         OsStr::new(".tmp"),
         OsStr::new(""),
         crate::NUM_RAND_CHARS,
-        None,
-        |path, _| create_unlinked(&path),
+        |path| create_unlinked(&path),
     )
 }
 
