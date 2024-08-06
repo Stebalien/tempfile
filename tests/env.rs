@@ -7,7 +7,7 @@ fn test_override_temp_dir() {
     assert_eq!(tempfile::env::temp_dir(), std::env::temp_dir());
 
     let new_tmp = Path::new("/tmp/override");
-    tempfile::env::override_temp_dir(&new_tmp).unwrap();
+    tempfile::env::override_temp_dir(new_tmp).unwrap();
     assert_eq!(tempfile::env::temp_dir(), new_tmp);
 
     let new_tmp2 = Path::new("/tmp/override2");
