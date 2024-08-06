@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.12.0
+
+- Add a `keep(keep: bool)` function to builder that suppresses delete-on-drop behavior (thanks to @RalfJung).
+- Update `windows-sys` from 0.52 to 0.59.
+
 ## 3.11.0
 
 - Add the ability to override the default temporary directory. This API shouldn't be used in general, but there are some cases where it's unavoidable.
