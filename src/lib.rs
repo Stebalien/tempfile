@@ -337,7 +337,6 @@ impl<'a, 'b> Builder<'a, 'b> {
     }
 
     /// The permissions to create the tempfile or [tempdir](Self::tempdir) with.
-    /// This allows to them differ from the default mode of `0o600` on Unix.
     ///
     /// # Security
     ///
@@ -350,9 +349,13 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Platform Notes
     /// ## Unix
     ///
-    /// The actual permission bits set on the tempfile or tempdir will be affected by the
-    /// `umask` applied by the underlying syscall.
+    /// The actual permission bits set on the tempfile or tempdir will be affected by the `umask`
+    /// applied by the underlying syscall. The actual permission bits are calculated via
+    /// `permissions & !umask`.
     ///
+    /// Permissions default to `0o600` for tempfiles and `0o777` for tempdirs. Note, this doesn't
+    /// include effects of the current `umask`. For example, combined with the standard umask
+    /// `0o022`, the defaults yield `0o600` for tempfiles and `0o755` for tempdirs.
     ///
     /// ## Windows and others
     ///
