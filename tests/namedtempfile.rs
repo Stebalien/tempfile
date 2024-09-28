@@ -18,6 +18,13 @@ fn test_prefix() {
 }
 
 #[test]
+fn test_suffix() {
+    let tmpfile = NamedTempFile::with_suffix("suffix").unwrap();
+    let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
+    assert!(name.ends_with("suffix"));
+}
+
+#[test]
 fn test_basic() {
     let mut tmpfile = NamedTempFile::new().unwrap();
     write!(tmpfile, "abcde").unwrap();

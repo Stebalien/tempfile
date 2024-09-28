@@ -577,6 +577,33 @@ impl NamedTempFile<File> {
         Builder::new().tempfile_in(dir)
     }
 
+    /// Create a new named temporary file with the specified filename suffix.
+    ///
+    /// See [`NamedTempFile::new()`] for details.
+    ///
+    /// [`NamedTempFile::new()`]: #method.new
+    pub fn with_suffix<S: AsRef<OsStr>>(suffix: S) -> io::Result<NamedTempFile> {
+        Builder::new().suffix(&suffix).tempfile()
+    }
+    /// Create a new named temporary file with the specified filename suffix,
+    /// in the specified directory.
+    ///
+    /// This is equivalent to:
+    ///
+    /// ```ignore
+    /// Builder::new().suffix(&suffix).tempfile_in(directory)
+    /// ```
+    ///
+    /// See [`NamedTempFile::new()`] for details.
+    ///
+    /// [`NamedTempFile::new()`]: #method.new
+    pub fn with_suffix_in<S: AsRef<OsStr>, P: AsRef<Path>>(
+        suffix: S,
+        dir: P,
+    ) -> io::Result<NamedTempFile> {
+        Builder::new().suffix(&suffix).tempfile_in(dir)
+    }
+
     /// Create a new named temporary file with the specified filename prefix.
     ///
     /// See [`NamedTempFile::new()`] for details.
