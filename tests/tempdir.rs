@@ -33,6 +33,12 @@ fn test_prefix() {
     assert!(name.starts_with("prefix"));
 }
 
+fn test_suffix() {
+    let tmpfile = TempDir::with_suffix_in("suffix", ".").unwrap();
+    let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
+    assert!(name.ends_with("suffix"));
+}
+
 fn test_customnamed() {
     let tmpfile = Builder::new()
         .prefix("prefix")
@@ -175,6 +181,7 @@ fn test_keep() {
 fn main() {
     in_tmpdir(test_tempdir);
     in_tmpdir(test_prefix);
+    in_tmpdir(test_suffix);
     in_tmpdir(test_customnamed);
     in_tmpdir(test_rm_tempdir);
     in_tmpdir(test_rm_tempdir_close);
