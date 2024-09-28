@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.13.0
+
+- Add `with_suffix` constructors for easily creating new temporary files with a specific suffix (e.g., a specific file extension). Thanks to @Borgerr.
+- Update dependencies (fastrand & rustix).
+
 ## 3.12.0
 
 - Add a `keep(keep: bool)` function to builder that suppresses delete-on-drop behavior (thanks to @RalfJung).
