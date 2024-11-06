@@ -1,6 +1,9 @@
 // wasip2 conditionally gates stdlib APIs.
 // https://github.com/rust-lang/rust/issues/130323
-#![cfg_attr(all(target_os = "wasi", target_env = "p2"), feature(wasip2))]
+#![cfg_attr(
+    all(target_os = "wasi", target_env = "p2", feature = "unstable"),
+    feature(wasip2)
+)]
 //! Temporary files and directories.
 //!
 //! - Use the [`tempfile()`] function for temporary files
