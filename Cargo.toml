@@ -37,4 +37,3 @@ doc-comment = "0.3"
 
 [features]
 nightly = []
-unstable = []

@@ -1,9 +1,3 @@
-// wasip2 conditionally gates stdlib APIs.
-// https://github.com/rust-lang/rust/issues/130323
-#![cfg_attr(
-    all(target_os = "wasi", target_env = "p2", feature = "unstable"),
-    feature(wasip2)
-)]
 //! Temporary files and directories.
 //!
 //! - Use the [`tempfile()`] function for temporary files
@@ -142,6 +136,12 @@
 #![cfg_attr(test, deny(warnings))]
 #![deny(rust_2018_idioms)]
 #![allow(clippy::redundant_field_names)]
+// wasip2 conditionally gates stdlib APIs.
+// https://github.com/rust-lang/rust/issues/130323
+#![cfg_attr(
+    all(feature = "nightly", target_os = "wasi", target_env = "p2"),
+    feature(wasip2)
+)]
 #![cfg_attr(all(feature = "nightly", target_os = "wasi"), feature(wasi_ext))]
 
 #[cfg(doctest)]
