@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.14.0
+
+- Make the wasip2 target work (requires tempfile's "nightly" feature to be enabled). [#305](https://github.com/Stebalien/tempfile/pull/305).
+- Allow older windows-sys versions [#304](https://github.com/Stebalien/tempfile/pull/305).
+
 ## 3.13.0
 
 - Add `with_suffix` constructors for easily creating new temporary files with a specific suffix (e.g., a specific file extension). Thanks to @Borgerr.
