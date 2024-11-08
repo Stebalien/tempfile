@@ -57,6 +57,18 @@ jobs:
           targets: wasm32-wasip1
       - name: Build
         run: cargo build --target wasm32-wasip1 --features nightly
+  wasip2:
+    name: WASI P2 Test Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-wasip2
+      - name: Build
+        run: cargo build --target wasm32-wasip2 --features nightly
   wasm:
     name: WASM Test Build
     runs-on: ubuntu-latest

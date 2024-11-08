@@ -23,7 +23,7 @@ fastrand = "2.1.1"
 once_cell = { version = "1.19.0", default-features = false, features = ["std"] }
 
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
-rustix = { version = "0.38.37", features = ["fs"] }
+rustix = { version = "0.38.39", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
 version = ">=0.52,<=0.59"
