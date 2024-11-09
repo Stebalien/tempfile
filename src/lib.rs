@@ -171,21 +171,23 @@ pub use crate::spooled::{spooled_tempfile, SpooledData, SpooledTempFile};
 
 /// Create a new temporary file or directory with custom parameters.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Builder<'a, 'b> {
+pub struct Builder<'a, 'b, 'c> {
     random_len: usize,
     prefix: &'a OsStr,
     suffix: &'b OsStr,
+    dir: Option<&'c Path>,
     append: bool,
     permissions: Option<std::fs::Permissions>,
     keep: bool,
 }
 
-impl<'a, 'b> Default for Builder<'a, 'b> {
+impl<'a, 'b, 'c> Default for Builder<'a, 'b, 'c> {
     fn default() -> Self {
         Builder {
             random_len: crate::NUM_RAND_CHARS,
             prefix: OsStr::new(".tmp"),
             suffix: OsStr::new(""),
+            dir: None, // Use env::temp_dir().
             append: false,
             permissions: None,
             keep: false,
@@ -193,7 +195,7 @@ impl<'a, 'b> Default for Builder<'a, 'b> {
     }
 }
 
-impl<'a, 'b> Builder<'a, 'b> {
+impl<'a, 'b, 'c> Builder<'a, 'b, 'c> {
     /// Create a new `Builder`.
     ///
     /// # Examples
@@ -301,6 +303,28 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// ```
     pub fn suffix<S: AsRef<OsStr> + ?Sized>(&mut self, suffix: &'b S) -> &mut Self {
         self.suffix = suffix.as_ref();
+        self
+    }
+
+    /// Set a directory to create files in.
+    ///
+    /// This is an alternative API that achieves essentially the same thing as
+    /// `tempfile_in` and `tempdir_in`.
+    ///
+    /// Default: `env::temp_dir()`
+    ///
+    /// # Examples
+    /// ```
+    /// use tempfile::Builder;
+    /// use tempfile::tempdir;
+    ///
+    /// let parent = tempdir()?;
+    /// let tempfile_in_parent = Builder::new()
+    ///     .parent_dir(parent.path())
+    ///     .tempfile()?;
+    /// # Ok::<(), std::io::Error>(())
+    pub fn parent_dir<P: AsRef<Path> + ?Sized>(&mut self, dir: &'c P) -> &mut Self {
+        self.dir = Some(dir.as_ref());
         self
     }
 
@@ -461,7 +485,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// [security]: struct.NamedTempFile.html#security
     /// [resource-leaking]: struct.NamedTempFile.html#resource-leaking
     pub fn tempfile(&self) -> io::Result<NamedTempFile> {
-        self.tempfile_in(env::temp_dir())
+        self.tempfile_in(self.dir.unwrap_or(&env::temp_dir()))
     }
 
     /// Create the named temporary file in the specified directory.
@@ -530,7 +554,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// [resource-leaking]: struct.TempDir.html#resource-leaking
     pub fn tempdir(&self) -> io::Result<TempDir> {
-        self.tempdir_in(env::temp_dir())
+        self.tempdir_in(self.dir.unwrap_or(&env::temp_dir()))
     }
 
     /// Attempts to make a temporary directory inside of `dir`.
