@@ -382,9 +382,9 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// permissions of the created file may be more restrictive (but never more permissive) than the
     /// ones you specified.
     ///
-    /// Permissions default to `0o600` for tempfiles and `0o777` for tempdirs. Note, this doesn't
-    /// include effects of the current `umask`. For example, combined with the standard umask
-    /// `0o022`, the defaults yield `0o600` for tempfiles and `0o755` for tempdirs.
+    /// Permissions default to `0o600` for temporary files and `0o700` for temporary directories.
+    /// Note, this doesn't include effects of the current `umask`. For example, combined with the
+    /// standard umask `0o022`, the defaults yield `0o600` for files and `0o700` for directories.
     ///
     /// ## WASI
     ///
