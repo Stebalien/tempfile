@@ -197,9 +197,11 @@ doc_comment::doctest!("../README.md");
 
 const NUM_RETRIES: u32 = 65536;
 const NUM_RAND_CHARS: usize = 6;
+const DEFAULT_PREFIX: &str = "tmp";
+const DEFAULT_SUFFIX: &str = "";
 
 use std::ffi::OsStr;
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, Permissions};
 use std::io;
 use std::path::Path;
 
@@ -219,29 +221,22 @@ pub use crate::spooled::{spooled_tempfile, SpooledData, SpooledTempFile};
 
 /// Create a new temporary file or directory with custom options.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Builder<'a, 'b> {
+pub struct Builder<'a> {
     random_len: usize,
-    prefix: &'a OsStr,
-    suffix: &'b OsStr,
+    prefix: Option<&'a OsStr>,
+    suffix: Option<&'a OsStr>,
     append: bool,
-    permissions: Option<std::fs::Permissions>,
+    permissions: Option<Permissions>,
     keep: bool,
 }
 
-impl Default for Builder<'_, '_> {
+impl Default for Builder<'_> {
     fn default() -> Self {
-        Builder {
-            random_len: crate::NUM_RAND_CHARS,
-            prefix: OsStr::new(".tmp"),
-            suffix: OsStr::new(""),
-            append: false,
-            permissions: None,
-            keep: false,
-        }
+        Builder::new()
     }
 }
 
-impl<'a, 'b> Builder<'a, 'b> {
+impl<'a> Builder<'a> {
     /// Create a new `Builder`.
     ///
     /// # Examples
@@ -308,14 +303,21 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Ok::<(), std::io::Error>(())
     /// ```
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
+    pub const fn new() -> Self {
+        Builder {
+            random_len: crate::NUM_RAND_CHARS,
+            prefix: None,
+            suffix: None,
+            append: false,
+            permissions: None,
+            keep: false,
+        }
     }
 
     /// Set a custom filename prefix.
     ///
     /// Path separators are legal but not advisable.
-    /// Default: `.tmp`.
+    /// Default: `tmp`.
     ///
     /// # Examples
     ///
@@ -328,7 +330,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Ok::<(), std::io::Error>(())
     /// ```
     pub fn prefix<S: AsRef<OsStr> + ?Sized>(&mut self, prefix: &'a S) -> &mut Self {
-        self.prefix = prefix.as_ref();
+        self.prefix = Some(prefix.as_ref());
         self
     }
 
@@ -347,8 +349,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn suffix<S: AsRef<OsStr> + ?Sized>(&mut self, suffix: &'b S) -> &mut Self {
-        self.suffix = suffix.as_ref();
+    pub fn suffix<S: AsRef<OsStr> + ?Sized>(&mut self, suffix: &'a S) -> &mut Self {
+        self.suffix = Some(suffix.as_ref());
         self
     }
 
@@ -540,8 +542,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     pub fn tempfile_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
         util::create_helper(
             dir.as_ref(),
-            self.prefix,
-            self.suffix,
+            self.prefix.unwrap_or(DEFAULT_PREFIX.as_ref()),
+            self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
             self.random_len,
             |path| {
                 file::create_named(
@@ -612,9 +614,13 @@ impl<'a, 'b> Builder<'a, 'b> {
             dir = &storage;
         }
 
-        util::create_helper(dir, self.prefix, self.suffix, self.random_len, |path| {
-            dir::create(path, self.permissions.as_ref(), self.keep)
-        })
+        util::create_helper(
+            dir,
+            self.prefix.unwrap_or(DEFAULT_PREFIX.as_ref()),
+            self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
+            self.random_len,
+            |path| dir::create(path, self.permissions.as_ref(), self.keep),
+        )
     }
 
     /// Attempts to create a temporary file (or file-like object) using the
@@ -732,8 +738,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     {
         util::create_helper(
             dir.as_ref(),
-            self.prefix,
-            self.suffix,
+            self.prefix.unwrap_or(DEFAULT_PREFIX.as_ref()),
+            self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
             self.random_len,
             move |path| {
                 Ok(NamedTempFile::from_parts(
