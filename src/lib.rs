@@ -316,7 +316,7 @@ impl<'a> Builder<'a> {
 
     /// Set a custom filename prefix.
     ///
-    /// Path separators are legal but not advisable.
+    /// Path separators are not allowed.
     /// Default: `tmp`.
     ///
     /// # Examples
@@ -336,7 +336,7 @@ impl<'a> Builder<'a> {
 
     /// Set a custom filename suffix.
     ///
-    /// Path separators are legal but not advisable.
+    /// Path separators are not allowed.
     /// Default: empty.
     ///
     /// # Examples
