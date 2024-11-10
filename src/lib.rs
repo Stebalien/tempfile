@@ -177,6 +177,7 @@ const DEFAULT_SUFFIX: &str = "";
 use std::ffi::OsStr;
 use std::fs::{OpenOptions, Permissions};
 use std::io;
+use std::ops::Deref;
 use std::path::Path;
 
 mod dir;
@@ -603,11 +604,13 @@ impl<'a> Builder<'a> {
     }
 
     /// Attempts to create a temporary file (or file-like object) using the
-    /// provided closure. The closure is passed a temporary file path and
-    /// returns an [`std::io::Result`]. The path provided to the closure will be
-    /// inside of [`env::temp_dir()`]. Use [`Builder::make_in`] to provide
-    /// a custom temporary directory. If the closure returns one of the
-    /// following errors, then another randomized file path is tried:
+    /// provided closure. The closure is passed a [`MakeParams`], which
+    /// dereferences into the path at which the temporary file should be
+    /// created, and returns an [`std::io::Result`]. The path provided to the
+    /// closure will be inside of [`env::temp_dir()`]. Use [`Builder::make_in`]
+    /// to provide a custom temporary directory. If the closure returns one of
+    /// the following errors, then another randomized file path is tried:
+    ///
     ///  - [`std::io::ErrorKind::AlreadyExists`]
     ///  - [`std::io::ErrorKind::AddrInUse`]
     ///
@@ -615,8 +618,6 @@ impl<'a> Builder<'a> {
     /// leaving the temporary file path construction up to the library. This
     /// also enables creating a temporary UNIX domain socket, since it is not
     /// possible to bind to a socket that already exists.
-    ///
-    /// Note that [`Builder::append`] is ignored when using [`Builder::make`].
     ///
     /// # Security
     ///
@@ -633,8 +634,8 @@ impl<'a> Builder<'a> {
     /// use tempfile::Builder;
     ///
     /// // This is NOT secure!
-    /// let tempfile = Builder::new().make(|path| {
-    ///     if path.is_file() {
+    /// let tempfile = Builder::new().make(|params| {
+    ///     if params.is_file() {
     ///         return Err(std::io::ErrorKind::AlreadyExists.into());
     ///     }
     ///
@@ -642,7 +643,7 @@ impl<'a> Builder<'a> {
     ///     // have replaced `path` with another file, which would get truncated
     ///     // by `File::create`.
     ///
-    ///     File::create(path)
+    ///     File::create(params)
     /// })?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
@@ -679,7 +680,7 @@ impl<'a> Builder<'a> {
     /// use std::os::unix::net::UnixListener;
     /// use tempfile::Builder;
     ///
-    /// let tempsock = Builder::new().make(|path| UnixListener::bind(path))?;
+    /// let tempsock = Builder::new().make(|params| UnixListener::bind(params))?;
     /// # }
     /// # Ok::<(), std::io::Error>(())
     /// ```
@@ -689,7 +690,7 @@ impl<'a> Builder<'a> {
     /// [resource-leaking]: struct.NamedTempFile.html#resource-leaking
     pub fn make<F, R>(&self, f: F) -> io::Result<NamedTempFile<R>>
     where
-        F: FnMut(&Path) -> io::Result<R>,
+        F: FnMut(&MakeParams<'_>) -> io::Result<R>,
     {
         self.make_in(env::temp_dir(), f)
     }
@@ -706,13 +707,13 @@ impl<'a> Builder<'a> {
     /// use tempfile::Builder;
     /// use std::os::unix::net::UnixListener;
     ///
-    /// let tempsock = Builder::new().make_in("./", |path| UnixListener::bind(path))?;
+    /// let tempsock = Builder::new().make_in("./", |params| UnixListener::bind(params))?;
     /// # }
     /// # Ok::<(), std::io::Error>(())
     /// ```
     pub fn make_in<F, R, P>(&self, dir: P, mut f: F) -> io::Result<NamedTempFile<R>>
     where
-        F: FnMut(&Path) -> io::Result<R>,
+        F: FnMut(&MakeParams<'_>) -> io::Result<R>,
         P: AsRef<Path>,
     {
         util::create_helper(
@@ -722,10 +723,44 @@ impl<'a> Builder<'a> {
             self.random_len,
             move |path| {
                 Ok(NamedTempFile::from_parts(
-                    f(&path)?,
+                    f(&MakeParams {
+                        path: &path,
+                        permissions: self.permissions.as_ref(),
+                        append_only: self.append,
+                    })?,
                     TempPath::new(path, self.disable_cleanup),
                 ))
             },
         )
+    }
+}
+
+/// Parameters passed to the callback in [`Builder::make`] and [`Builder::make_in`].
+#[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+pub struct MakeParams<'a> {
+    /// The path that should be used for the new temporary file.
+    pub path: &'a Path,
+    /// The permissions that should be used when creating the temporary file, if
+    /// specified by the user.
+    pub permissions: Option<&'a Permissions>,
+    /// Whether or not the new file should be opened in append-only mode.
+    pub append_only: bool,
+}
+
+impl Deref for MakeParams<'_> {
+    type Target = Path;
+
+    fn deref(&self) -> &Self::Target {
+        self.path
+    }
+}
+
+impl<T: ?Sized> AsRef<T> for MakeParams<'_>
+where
+    Path: AsRef<T>,
+{
+    fn as_ref(&self) -> &T {
+        self.path.as_ref()
     }
 }
