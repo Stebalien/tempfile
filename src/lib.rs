@@ -164,6 +164,8 @@ doc_comment::doctest!("../README.md");
 
 const NUM_RETRIES: u32 = 65536;
 const NUM_RAND_CHARS: usize = 6;
+const DEFAULT_PREFIX: &str = "tmp";
+const DEFAULT_SUFFIX: &str = "";
 
 use std::ffi::OsStr;
 use std::fs::{OpenOptions, Permissions};
@@ -186,29 +188,22 @@ pub use crate::spooled::{SpooledData, SpooledTempFile, spooled_tempfile, spooled
 
 /// Create a new temporary file or directory with custom options.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Builder<'a, 'b> {
+pub struct Builder<'a> {
     random_len: usize,
-    prefix: &'a OsStr,
-    suffix: &'b OsStr,
+    prefix: Option<&'a OsStr>,
+    suffix: Option<&'a OsStr>,
     append: bool,
     permissions: Option<Permissions>,
     disable_cleanup: bool,
 }
 
-impl Default for Builder<'_, '_> {
+impl Default for Builder<'_> {
     fn default() -> Self {
-        Builder {
-            random_len: crate::NUM_RAND_CHARS,
-            prefix: OsStr::new(".tmp"),
-            suffix: OsStr::new(""),
-            append: false,
-            permissions: None,
-            disable_cleanup: false,
-        }
+        Builder::new()
     }
 }
 
-impl<'a, 'b> Builder<'a, 'b> {
+impl<'a> Builder<'a> {
     /// Create a new `Builder`.
     ///
     /// # Examples
@@ -275,14 +270,21 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Ok::<(), std::io::Error>(())
     /// ```
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
+    pub const fn new() -> Self {
+        Builder {
+            random_len: crate::NUM_RAND_CHARS,
+            prefix: None,
+            suffix: None,
+            append: false,
+            permissions: None,
+            disable_cleanup: false,
+        }
     }
 
     /// Set a custom filename prefix.
     ///
     /// Path separators are legal but not advisable.
-    /// Default: `.tmp`.
+    /// Default: `tmp`.
     ///
     /// # Examples
     ///
@@ -295,7 +297,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Ok::<(), std::io::Error>(())
     /// ```
     pub fn prefix<S: AsRef<OsStr> + ?Sized>(&mut self, prefix: &'a S) -> &mut Self {
-        self.prefix = prefix.as_ref();
+        self.prefix = Some(prefix.as_ref());
         self
     }
 
@@ -314,8 +316,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn suffix<S: AsRef<OsStr> + ?Sized>(&mut self, suffix: &'b S) -> &mut Self {
-        self.suffix = suffix.as_ref();
+    pub fn suffix<S: AsRef<OsStr> + ?Sized>(&mut self, suffix: &'a S) -> &mut Self {
+        self.suffix = Some(suffix.as_ref());
         self
     }
 
@@ -333,7 +335,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn rand_bytes(&mut self, rand: usize) -> &mut Self {
+    pub const fn rand_bytes(&mut self, rand: usize) -> &mut Self {
         self.random_len = rand;
         self
     }
@@ -352,7 +354,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn append(&mut self, append: bool) -> &mut Self {
+    pub const fn append(&mut self, append: bool) -> &mut Self {
         self.append = append;
         self
     }
@@ -428,7 +430,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn permissions(&mut self, permissions: Permissions) -> &mut Self {
+    pub const fn permissions(&mut self, permissions: Permissions) -> &mut Self {
         self.permissions = Some(permissions);
         self
     }
@@ -458,7 +460,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn disable_cleanup(&mut self, disable_cleanup: bool) -> &mut Self {
+    pub const fn disable_cleanup(&mut self, disable_cleanup: bool) -> &mut Self {
         self.disable_cleanup = disable_cleanup;
         self
     }
@@ -520,8 +522,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     pub fn tempfile_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
         util::create_helper(
             dir.as_ref(),
-            self.prefix,
-            self.suffix,
+            self.prefix.unwrap_or(DEFAULT_PREFIX.as_ref()),
+            self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
             self.random_len,
             |path| {
                 file::create_named(
@@ -586,8 +588,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     pub fn tempdir_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<TempDir> {
         util::create_helper(
             dir.as_ref(),
-            self.prefix,
-            self.suffix,
+            self.prefix.unwrap_or(DEFAULT_PREFIX.as_ref()),
+            self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
             self.random_len,
             |path| dir::create(path, self.permissions.as_ref(), self.disable_cleanup),
         )
@@ -708,8 +710,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     {
         util::create_helper(
             dir.as_ref(),
-            self.prefix,
-            self.suffix,
+            self.prefix.unwrap_or(DEFAULT_PREFIX.as_ref()),
+            self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
             self.random_len,
             move |path| {
                 Ok(NamedTempFile::from_parts(
