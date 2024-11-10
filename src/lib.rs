@@ -81,35 +81,6 @@
 //!    create temporary a file (when the `getrandom` feature is enabled as it is by default on all
 //!    major platforms).
 //!
-//! ## Early drop pitfall
-//!
-//! Because `TempDir` and `NamedTempFile` rely on their destructors for cleanup, this can lead
-//! to an unexpected early removal of the directory/file, usually when working with APIs which are
-//! generic over `AsRef<Path>`. Consider the following example:
-//!
-//! ```no_run
-//! use tempfile::tempdir;
-//! use std::process::Command;
-//!
-//! // Create a directory inside of `env::temp_dir()`.
-//! let temp_dir = tempdir()?;
-//!
-//! // Spawn the `touch` command inside the temporary directory and collect the exit status
-//! // Note that `temp_dir` is **not** moved into `current_dir`, but passed as a reference
-//! let exit_status = Command::new("touch").arg("tmp").current_dir(&temp_dir).status()?;
-//! assert!(exit_status.success());
-//!
-//! # Ok::<(), std::io::Error>(())
-//! ```
-//!
-//! This works because a reference to `temp_dir` is passed to `current_dir`, resulting in the
-//! destructor of `temp_dir` being run after the `Command` has finished execution. Moving the
-//! `TempDir` into the `current_dir` call would result in the `TempDir` being converted into
-//! an internal representation, with the original value being dropped and the directory thus
-//! being deleted, before the command can be executed.
-//!
-//! The `touch` command would fail with an `No such file or directory` error.
-//!
 //! ## Examples
 //!
 //! Create a temporary file and write some data into it:
