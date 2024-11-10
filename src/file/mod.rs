@@ -355,13 +355,13 @@ impl Deref for TempPath {
     }
 }
 
-impl AsRef<Path> for TempPath {
+impl AsRef<Path> for &TempPath {
     fn as_ref(&self) -> &Path {
         &self.path
     }
 }
 
-impl AsRef<OsStr> for TempPath {
+impl AsRef<OsStr> for &TempPath {
     fn as_ref(&self) -> &OsStr {
         self.path.as_os_str()
     }
@@ -445,7 +445,7 @@ impl<F> fmt::Debug for NamedTempFile<F> {
     }
 }
 
-impl<F> AsRef<Path> for NamedTempFile<F> {
+impl<F> AsRef<Path> for &NamedTempFile<F> {
     #[inline]
     fn as_ref(&self) -> &Path {
         self.path()
