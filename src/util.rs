@@ -4,7 +4,7 @@ use std::{io, iter::repeat_with};
 
 use crate::error::IoResultExt;
 
-fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
+fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> io::Result<OsString> {
     let capacity = prefix
         .len()
         .saturating_add(suffix.len())
@@ -16,7 +16,24 @@ fn tmpname(prefix: &OsStr, suffix: &OsStr, rand_len: usize) -> OsString {
         buf.push(c.encode_utf8(&mut char_buf));
     }
     buf.push(suffix);
-    buf
+
+    if buf.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "temporary filename is empty",
+        ));
+    }
+
+    // TODO: check for forbidden file names?
+    let name_as_path = Path::new(&buf);
+    if name_as_path.file_name() != Some(&buf) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("temporary filename {name_as_path:?} is not a valid path component"),
+        ));
+    }
+
+    Ok(buf)
 }
 
 pub fn create_helper<R>(
@@ -61,7 +78,7 @@ pub fn create_helper<R>(
                 fastrand::seed(u64::from_ne_bytes(seed));
             }
         }
-        let path = base.join(tmpname(prefix, suffix, random_len));
+        let path = base.join(tmpname(prefix, suffix, random_len)?);
         return match f(path) {
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists && num_retries > 1 => continue,
             // AddrInUse can happen if we're creating a UNIX domain socket and
