@@ -476,7 +476,10 @@ impl TempDir {
     }
 }
 
-impl AsRef<Path> for TempDir {
+// NOTE: This is implemented on &TempDir, not TempDir, to prevent accidentally moving the TempDir
+// into a function that calls `as_ref()` before immediately dropping it (deleting the underlying
+// temporary directory).
+impl AsRef<Path> for &TempDir {
     fn as_ref(&self) -> &Path {
         self.path()
     }

@@ -317,7 +317,13 @@ fn test_write_after_close() {
     configure_wasi_temp_dir();
 
     let path = NamedTempFile::new().unwrap().into_temp_path();
-    File::create(path).unwrap().write_all(b"test").unwrap();
+    let mut f = File::options()
+        .read(true)
+        .write(true)
+        .create(false)
+        .open(&path)
+        .unwrap();
+    f.write_all(b"test").unwrap();
 }
 
 #[test]
