@@ -8,6 +8,8 @@ use std::{
     thread,
 };
 
+use tempfile::{Builder, TempDir};
+
 #[test]
 fn test_basic() {
     let mut tmpfile = tempfile::tempfile().unwrap();
@@ -17,6 +19,20 @@ fn test_basic() {
     tmpfile.read_to_string(&mut buf).unwrap();
     assert_eq!("abcde", buf);
 }
+
+#[test]
+fn test_stored_parent_dir() {
+    let parent = TempDir::new().unwrap();
+    let child = Builder::new().parent_dir(parent.path()).tempfile().unwrap();
+    let path_str = child.path().to_str().unwrap();
+    assert!(
+        path_str.starts_with(child.path().to_str().unwrap()),
+        "{:?} not in {:?}",
+        child,
+        parent
+    );
+}
+
 
 #[test]
 fn test_cleanup() {

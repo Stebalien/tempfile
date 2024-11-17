@@ -39,6 +39,18 @@ fn test_suffix() {
     assert!(name.ends_with("suffix"));
 }
 
+fn test_stored_parent_dir() {
+    let parent = TempDir::new().unwrap();
+    let child = Builder::new().parent_dir(parent.path()).tempdir().unwrap();
+    let path_str = child.path().to_str().unwrap();
+    assert!(
+        path_str.starts_with(child.path().to_str().unwrap()),
+        "{:?} not in {:?}",
+        child,
+        parent
+    );
+}
+
 fn test_customnamed() {
     let tmpfile = Builder::new()
         .prefix("prefix")
@@ -182,6 +194,8 @@ fn main() {
     in_tmpdir(test_tempdir);
     in_tmpdir(test_prefix);
     in_tmpdir(test_suffix);
+    in_tmpdir(test_suffix);
+    in_tmpdir(test_stored_parent_dir);
     in_tmpdir(test_customnamed);
     in_tmpdir(test_rm_tempdir);
     in_tmpdir(test_rm_tempdir_close);
