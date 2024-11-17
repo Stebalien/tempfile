@@ -26,10 +26,13 @@
 //! In the presence of pathological temporary file cleaner, relying on file paths is unsafe because
 //! a temporary file cleaner could delete the temporary file which an attacker could then replace.
 //!
-//! `tempfile` doesn't rely on file paths so this isn't an issue. However, `NamedTempFile` does
-//! rely on file paths for _some_ operations. See the security documentation on
-//! the `NamedTempFile` type for more information.
-//! 
+//! `tempfile` doesn't rely on file paths, so this should not be an issue. However,
+//! `NamedTempFile` does rely on file paths for _some_ operations. On Unix-like
+//! operating systems and depending on your use case, it may be possible to
+//! mitigate this issue by overriding the crate's default options. For more information,
+//! consult the Security documentation of the [`NamedTempFile`] type,
+//! [`Builder::permissions`] and [`env::override_temp_dir`].
+//!
 //! The OWASP Foundation provides a resource on vulnerabilities concerning insecure
 //! temporary files: https://owasp.org/www-community/vulnerabilities/Insecure_Temporary_File
 //!
@@ -172,7 +175,7 @@ pub use crate::file::{
 };
 pub use crate::spooled::{spooled_tempfile, SpooledData, SpooledTempFile};
 
-/// Create a new temporary file or directory with custom parameters.
+/// Create a new temporary file or directory with custom parameters and permissions.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Builder<'a, 'b> {
     random_len: usize,
@@ -349,7 +352,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// # Security
     ///
-    /// By default, the permissions of tempfiles on unix are set for it to be
+    /// By default, the permissions of tempfiles on Unix are set for it to be
     /// readable and writable by the owner only, yielding the greatest amount
     /// of security.
     /// As this method allows to widen the permissions, security would be
@@ -369,7 +372,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// ## Windows and others
     ///
     /// This setting is unsupported and trying to set a file or directory read-only
-    /// will cause an error to be returned..
+    /// will return an error.
     ///
     /// # Examples
     ///
