@@ -7,11 +7,16 @@ use once_cell::sync::OnceCell as OnceLock;
 static DEFAULT_TEMPDIR: OnceLock<PathBuf> = OnceLock::new();
 
 /// Override the default temporary directory (defaults to [`std::env::temp_dir`]). This function
-/// changes the _global_ default temporary directory for the entire program and should not be called
-/// except in exceptional cases where it's not configured correctly by the platform.
+/// changes the default temporary directory **globally**, as in **process-wide**.
 ///
-/// Only the first call to this function will succeed. All further calls will fail with `Err(path)`
-/// where `path` is previously set default temporary directory override.
+/// It only be called in exceptional cases where the temporary directory is not configured
+/// correctly by the platform. Only the first call to this function will succeed. All
+/// further calls will fail with `Err(path)` where `path` is the previously set default
+/// temporary directory override.
+///
+/// You may want to use [`crate::Builder::tempdir_in`] instead, particularly if your software
+/// project follows a more "object-oriented" architecture paradigm. For example, when working
+/// with multiple struct objects that include a separate temporary directory field.
 ///
 /// **NOTE:** This function does not check if the specified directory exists and/or is writable.
 pub fn override_temp_dir(path: &Path) -> Result<(), PathBuf> {
