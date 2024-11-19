@@ -35,7 +35,7 @@
 //! on your use case and threat model, some additional security issues may occur.
 //! On Unix-like operating systems, you may be able to mitigate such issues by
 //! overriding the crate's default options for temporary directories.
-//! See [`Builder::permissions`] and [`env::override_temp_dir`].
+//! See [`Builder::permissions`], [`Builder::rand_bytes`] and [`env::override_temp_dir`].
 //!
 //! The OWASP Foundation provides a resource on vulnerabilities concerning insecure
 //! temporary files: https://owasp.org/www-community/vulnerabilities/Insecure_Temporary_File
