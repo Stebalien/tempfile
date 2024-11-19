@@ -22,6 +22,9 @@ fastrand = "2.1.1"
 # Not available in stdlib until 1.70, but we support 1.63 to support Debian stable.
 once_cell = { version = "1.19.0", default-features = false, features = ["std"] }
 
+[target.'cfg(any(unix, windows, target_os = "wasi"))'.dependencies]
+getrandom = { version = "0.2.15", default-features = false, optional = true }
+
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
 rustix = { version = "0.38.39", features = ["fs"] }
 
@@ -36,4 +39,5 @@ features = [
 doc-comment = "0.3"
 
 [features]
+default = ["getrandom"]
 nightly = []
