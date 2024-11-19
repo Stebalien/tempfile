@@ -164,7 +164,6 @@ doc_comment::doctest!("../README.md");
 
 const NUM_RETRIES: u32 = 65536;
 const NUM_RAND_CHARS: usize = 6;
-const DEFAULT_PREFIX: &str = "tmp";
 const DEFAULT_SUFFIX: &str = "";
 
 use std::ffi::OsStr;
@@ -523,7 +522,7 @@ impl<'a> Builder<'a> {
     pub fn tempfile_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
         util::create_helper(
             dir.as_ref(),
-            self.prefix.unwrap_or(DEFAULT_PREFIX.as_ref()),
+            self.prefix.unwrap_or(env::default_prefix()),
             self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
             self.random_len,
             |path| {
@@ -589,7 +588,7 @@ impl<'a> Builder<'a> {
     pub fn tempdir_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<TempDir> {
         util::create_helper(
             dir.as_ref(),
-            self.prefix.unwrap_or(DEFAULT_PREFIX.as_ref()),
+            self.prefix.unwrap_or(env::default_prefix()),
             self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
             self.random_len,
             |path| dir::create(path, self.permissions.as_ref(), self.disable_cleanup),
@@ -711,7 +710,7 @@ impl<'a> Builder<'a> {
     {
         util::create_helper(
             dir.as_ref(),
-            self.prefix.unwrap_or(DEFAULT_PREFIX.as_ref()),
+            self.prefix.unwrap_or(env::default_prefix()),
             self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
             self.random_len,
             move |path| {
