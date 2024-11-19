@@ -31,9 +31,11 @@
 //! However, `NamedTempFile` does rely on file paths for _some_ operations.
 //! Take a look at the Security documentation of [`NamedTempFile`] for more information.
 //!
-//! On Unix-like operating systems and depending on your use case, it may be possible to
-//! mitigate this issue by overriding the crate's default options for temporary
-//! directories. See [`Builder::permissions`] and [`env::override_temp_dir`].
+//! If a process is able to predict the name of a temporary file / directory, depending
+//! on your use case and threat model, some additional security issues may occur.
+//! On Unix-like operating systems, you may be able to mitigate such issues by
+//! overriding the crate's default options for temporary directories.
+//! See [`Builder::permissions`] and [`env::override_temp_dir`].
 //!
 //! The OWASP Foundation provides a resource on vulnerabilities concerning insecure
 //! temporary files: https://owasp.org/www-community/vulnerabilities/Insecure_Temporary_File
