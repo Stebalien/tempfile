@@ -29,7 +29,7 @@
 //! `tempfile` doesn't rely on file paths so this isn't an issue. However, `NamedTempFile` does
 //! rely on file paths for _some_ operations. See the security documentation on
 //! the `NamedTempFile` type for more information.
-//! 
+//!
 //! The OWASP Foundation provides a resource on vulnerabilities concerning insecure
 //! temporary files: https://owasp.org/www-community/vulnerabilities/Insecure_Temporary_File
 //!
@@ -150,7 +150,7 @@
 #[cfg(doctest)]
 doc_comment::doctest!("../README.md");
 
-const NUM_RETRIES: u32 = 1 << 31;
+const NUM_RETRIES: u32 = 65536;
 const NUM_RAND_CHARS: usize = 6;
 
 use std::ffi::OsStr;

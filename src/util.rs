@@ -32,7 +32,25 @@ pub fn create_helper<R>(
         1
     };
 
-    for _ in 0..num_retries {
+    for i in 0..num_retries {
+        // If we fail to create the file the first three times, re-seed from system randomness in
+        // case an attacker is predicting our randomness (fastrand is predictable). If re-seeding
+        // doesn't help, either:
+        //
+        // 1. We have lots of temporary files, possibly created by an attacker but not necessarily.
+        //    Re-seeding the randomness won't help here.
+        // 2. We're failing to create random files for some other reason. This shouldn't be the case
+        //    given that we're checking error kinds, but it could happen.
+        #[cfg(all(
+            feature = "getrandom",
+            any(windows, unix, target_os = "redox", target_os = "wasi")
+        ))]
+        if i == 3 {
+            let mut seed = [0u8; 8];
+            if getrandom::getrandom(&mut seed).is_ok() {
+                fastrand::seed(u64::from_ne_bytes(seed));
+            }
+        }
         let path = base.join(tmpname(prefix, suffix, random_len));
         return match f(path) {
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists && num_retries > 1 => continue,
