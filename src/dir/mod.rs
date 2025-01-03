@@ -22,14 +22,19 @@ use crate::env;
 
 /// Create a new temporary directory.
 ///
-/// The `tempdir` function creates a directory in the file system
-/// and returns a [`TempDir`].
-/// The directory will be automatically deleted when the `TempDir`s
+/// The `tempdir` function creates a directory in the file system and returns a
+/// [`TempDir`]. The directory will be automatically deleted when the `TempDir`'s
 /// destructor is run.
 ///
 /// # Resource Leaking
 ///
 /// See [the resource leaking][resource-leaking] docs on `TempDir`.
+///
+/// # Security
+///
+/// Temporary directories are created with the default permissions unless otherwise
+/// specified via [`Builder::permissions`]. Depending on your platform, this may make
+/// them world-readable.
 ///
 /// # Errors
 ///

@@ -14,24 +14,69 @@
 //!
 //! ## Resource Leaking
 //!
-//! `tempfile` will (almost) never fail to cleanup temporary resources. However `TempDir` and `NamedTempFile` will
-//! fail if their destructors don't run. This is because `tempfile` relies on the OS to cleanup the
-//! underlying file, while `TempDir` and `NamedTempFile` rely on rust destructors to do so.
-//! Destructors may fail to run if the process exits through an unhandled signal interrupt (like `SIGINT`),
-//! or if the instance is declared statically (like with [`lazy_static`]), among other possible
-//! reasons.
+//! `tempfile` will (almost) never fail to cleanup temporary resources. However `TempDir` and
+//! `NamedTempFile` will fail if their destructors don't run. This is because `tempfile` relies on
+//! the OS to cleanup the underlying file, while `TempDir` and `NamedTempFile` rely on rust
+//! destructors to do so. Destructors may fail to run if the process exits through an unhandled
+//! signal interrupt (like `SIGINT`), or if the instance is declared statically (like with
+//! [`lazy_static`]), among other possible reasons.
+//!
+//! ## Unexpected File Deletion
+//!
+//! Most operating systems periodically clean up temporary files that haven't been accessed recently
+//! (often on the order of multiple days). This issue does not affect unnamed temporary files but
+//! can invalidate the paths associated with named temporary files on Unix-like systems because the
+//! temporary file can be unlinked from the filesystem while still open and in-use. See the
+//! [temporary file cleaner](#temporary-file-cleaners) section for more security implications.
 //!
 //! ## Security
+//!
+//! This section discusses security issues relevant to Unix-like operating systems that use shared
+//! temporary directories by default. Importantly, it's not relevant for Windows or macOS as both
+//! operating systems use private per-user temporary directories by default.
+//!
+//! Applications can mitigate the issues described below by using [`env::override_temp_dir`] to
+//! change the default temporary directory but should do so if and only if default the temporary
+//! directory ([`env::temp_dir`]) is unsuitable (is world readable, world writable, managed by a
+//! temporary file cleaner, etc.).
+//!
+//! ### Temporary File Cleaners
 //!
 //! In the presence of pathological temporary file cleaner, relying on file paths is unsafe because
 //! a temporary file cleaner could delete the temporary file which an attacker could then replace.
 //!
-//! `tempfile` doesn't rely on file paths so this isn't an issue. However, `NamedTempFile` does
-//! rely on file paths for _some_ operations. See the security documentation on
-//! the `NamedTempFile` type for more information.
+//! This isn't an issue for [`tempfile`] as it doesn't rely on file paths. However, [`NamedTempFile`]
+//! and temporary directories _do_ rely on file paths for _some_ operations. See the security
+//! documentation on the [`NamedTempFile`] and the [`TempDir`] types for more information.
 //!
-//! The OWASP Foundation provides a resource on vulnerabilities concerning insecure
-//! temporary files: https://owasp.org/www-community/vulnerabilities/Insecure_Temporary_File
+//! Mitigation:
+//!
+//! - This is rarely an issue for short-lived files as temporary file cleaners usually only remove
+//!   temporary files that haven't been modified or accessed within many (10-30) days.
+//! - Very long lived temporary files should be placed in directories not managed by temporary file
+//!   cleaners.
+//!
+//! ### Access Permissions
+//!
+//! Temporary _files_ created with this library are private by default on all operating systems.
+//! However, temporary _directories_ are created with the default permissions and will therefore be
+//! world-readable by default unless the user has changed their umask and/or default temporary
+//! directory.
+//!
+//! ### Denial of Service
+//!
+//! If the file-name randomness ([`Builder::rand_bytes`]) is too small and/or this crate is built
+//! without the `getrandom` feature, it may be possible for an attacker to predict the random file
+//! names chosen by this library, preventing temporary file creation by creating temporary files
+//! with these predicted file names. By default, this library mitigates this denial of service
+//! attack by:
+//!
+//! 1. Defaulting to 6 random characters per temporary file forcing an attacker to create billions
+//!    of files before random collisions are expected (at which point you probably have larger
+//!    problems).
+//! 2. Re-seeding the random filename generator from system randomness after 3 failed attempts to
+//!    create temporary a file (when the `getrandom` feature is enabled as it is by default on all
+//!    major platforms).
 //!
 //! ## Early drop pitfall
 //!
@@ -172,7 +217,7 @@ pub use crate::file::{
 };
 pub use crate::spooled::{spooled_tempfile, SpooledData, SpooledTempFile};
 
-/// Create a new temporary file or directory with custom parameters.
+/// Create a new temporary file or directory with custom options.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Builder<'a, 'b> {
     random_len: usize,
@@ -349,7 +394,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// # Security
     ///
-    /// By default, the permissions of tempfiles on unix are set for it to be
+    /// By default, the permissions of tempfiles on Unix are set for it to be
     /// readable and writable by the owner only, yielding the greatest amount
     /// of security.
     /// As this method allows to widen the permissions, security would be
@@ -369,7 +414,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// ## Windows and others
     ///
     /// This setting is unsupported and trying to set a file or directory read-only
-    /// will cause an error to be returned..
+    /// will return an error.
     ///
     /// # Examples
     ///
