@@ -228,7 +228,7 @@ pub struct Builder<'a, 'b> {
     keep: bool,
 }
 
-impl<'a, 'b> Default for Builder<'a, 'b> {
+impl Default for Builder<'_, '_> {
     fn default() -> Self {
         Builder {
             random_len: crate::NUM_RAND_CHARS,
