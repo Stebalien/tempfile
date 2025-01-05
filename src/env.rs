@@ -8,7 +8,8 @@ static DEFAULT_TEMPDIR: OnceLock<PathBuf> = OnceLock::new();
 
 /// Override the default temporary directory (defaults to [`std::env::temp_dir`]). This function
 /// changes the _global_ default temporary directory for the entire program and should not be called
-/// except in exceptional cases where it's not configured correctly by the platform.
+/// except in exceptional cases where it's not configured correctly by the platform. Applications
+/// should first check if the path returned by [`env::temp_dir`] is acceptable.
 ///
 /// Only the first call to this function will succeed. All further calls will fail with `Err(path)`
 /// where `path` is previously set default temporary directory override.
