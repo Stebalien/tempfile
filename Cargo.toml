@@ -29,7 +29,7 @@ getrandom = { version = "0.2.15", default-features = false, optional = true }
 rustix = { version = "0.38.39", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
-version = ">=0.52,<=0.59"
+version = ">=0.52,<0.60"
 features = [
     "Win32_Storage_FileSystem",
     "Win32_Foundation",
