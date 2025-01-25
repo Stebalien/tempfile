@@ -47,7 +47,7 @@ pub fn create_helper<R>(
         ))]
         if i == 3 {
             let mut seed = [0u8; 8];
-            if getrandom::getrandom(&mut seed).is_ok() {
+            if getrandom::fill(&mut seed).is_ok() {
                 fastrand::seed(u64::from_ne_bytes(seed));
             }
         }
