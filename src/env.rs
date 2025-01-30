@@ -1,18 +1,12 @@
 use std::env;
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
+use std::sync::{LazyLock, OnceLock};
 
 #[cfg(doc)]
 use crate::{tempdir_in, tempfile_in, Builder};
 
-// Once rust 1.70 is wide-spread (Debian stable), we can use OnceLock from stdlib.
-use once_cell::sync::Lazy;
-use once_cell::sync::OnceCell as OnceLock;
-
-#[cfg(doc)]
-use crate::Builder;
-
-static ENV_TEMPDIR: Lazy<PathBuf> = Lazy::new(env::temp_dir);
+static ENV_TEMPDIR: LazyLock<PathBuf> = LazyLock::new(env::temp_dir);
 static DEFAULT_TEMPDIR: OnceLock<PathBuf> = OnceLock::new();
 static DEFAULT_PREFIX: OnceLock<OsString> = OnceLock::new();
 
