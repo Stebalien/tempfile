@@ -26,6 +26,16 @@ pub fn create_helper<R>(
     random_len: usize,
     mut f: impl FnMut(PathBuf) -> io::Result<R>,
 ) -> io::Result<R> {
+    // Make the path absolute. Otherwise, changing the current directory can invalidate a stored
+    // path (causing issues when cleaning up temporary files.
+    let mut base = &*base; // re-borrow to shrink lifetime
+    let base_path_storage; // slot to store the absolute path, if necessary.
+    if !base.is_absolute() {
+        let cur_dir = std::env::current_dir()?;
+        base_path_storage = cur_dir.join(base);
+        base = &base_path_storage;
+    }
+
     let num_retries = if random_len != 0 {
         crate::NUM_RETRIES
     } else {
