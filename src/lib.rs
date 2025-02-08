@@ -760,7 +760,7 @@ pub struct MakeParams<'a> {
     pub append_only: bool,
 }
 
-impl<'a> Deref for MakeParams<'a> {
+impl Deref for MakeParams<'_> {
     type Target = Path;
 
     fn deref(&self) -> &Self::Target {
@@ -768,7 +768,7 @@ impl<'a> Deref for MakeParams<'a> {
     }
 }
 
-impl<'a> AsRef<Path> for MakeParams<'a> {
+impl AsRef<Path> for MakeParams<'_> {
     fn as_ref(&self) -> &Path {
         self.path
     }
