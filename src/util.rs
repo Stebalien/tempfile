@@ -39,8 +39,7 @@ pub fn create_helper<R>(
     let mut base = base; // re-borrow to shrink lifetime
     let base_path_storage; // slot to store the absolute path, if necessary.
     if !base.is_absolute() {
-        let cur_dir = std::env::current_dir()?;
-        base_path_storage = cur_dir.join(base);
+        base_path_storage = std::path::absolute(base)?;
         base = &base_path_storage;
     }
 
