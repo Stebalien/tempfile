@@ -291,6 +291,16 @@ fn test_change_dir() {
 }
 
 #[test]
+fn test_change_dir_make() {
+    std::env::set_current_dir(env::temp_dir()).unwrap();
+    let tmpfile = Builder::new().make_in(".", |p| File::create(p)).unwrap();
+    let path = std::env::current_dir().unwrap().join(tmpfile.path());
+    std::env::set_current_dir("/").unwrap();
+    drop(tmpfile);
+    assert!(!exists(path))
+}
+
+#[test]
 fn test_into_parts() {
     let mut file = NamedTempFile::new().unwrap();
     write!(file, "abcd").expect("write failed");
