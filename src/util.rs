@@ -58,9 +58,8 @@ pub fn create_helper<R>(
             any(windows, unix, target_os = "redox", target_os = "wasi")
         ))]
         if i == 3 {
-            let mut seed = [0u8; 8];
-            if getrandom::fill(&mut seed).is_ok() {
-                rng.seed(u64::from_ne_bytes(seed));
+            if let Ok(seed) = getrandom::u64() {
+                rng.seed(seed);
             }
         }
         let path = base.join(tmpname(&mut rng, prefix, suffix, random_len));
