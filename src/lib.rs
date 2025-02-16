@@ -466,7 +466,10 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// scope.
     ///
     /// By default, the file/folder is automatically cleaned up in the destructor of
-    /// [`NamedTempFile`]/[`TempDir`]. When `keep` is set to `true`, this behavior is supressed.
+    /// [`NamedTempFile`]/[`TempDir`]. When `keep` is set to `true`, this behavior is suppressed.
+    ///
+    /// If you wish to keep a temporary file or directory after creating it, call
+    /// [`NamedTempFile::keep`] or [`TempDir::into_path`] respectively.
     ///
     /// # Examples
     ///
