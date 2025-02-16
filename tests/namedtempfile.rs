@@ -24,6 +24,24 @@ fn test_suffix() {
     assert!(name.ends_with("suffix"));
 }
 
+static TEST_BUILDER: Builder<'static> = {
+    let mut b = Builder::new();
+    b.prefix("prefix");
+    b
+};
+
+#[test]
+fn test_static_builder() {
+    let tmpfile = TEST_BUILDER
+        .clone()
+        .suffix(&String::from("suffix"))
+        .tempfile()
+        .unwrap();
+    let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
+    assert!(name.starts_with("prefix"));
+    assert!(name.ends_with("suffix"));
+}
+
 #[test]
 fn test_basic() {
     let mut tmpfile = NamedTempFile::new().unwrap();

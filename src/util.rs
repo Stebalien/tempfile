@@ -6,8 +6,8 @@ use crate::error::IoResultExt;
 
 fn tmpname(
     rng: &mut fastrand::Rng,
-    prefix: &OsStr,
-    suffix: &OsStr,
+    prefix: &str,
+    suffix: &str,
     rand_len: usize,
 ) -> io::Result<OsString> {
     let capacity = prefix
@@ -29,8 +29,8 @@ fn tmpname(
 
 pub fn create_helper<R>(
     base: &Path,
-    prefix: &OsStr,
-    suffix: &OsStr,
+    prefix: &str,
+    suffix: &str,
     random_len: usize,
     mut f: impl FnMut(PathBuf) -> io::Result<R>,
 ) -> io::Result<R> {

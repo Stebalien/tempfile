@@ -199,7 +199,6 @@ const NUM_RETRIES: u32 = 65536;
 const NUM_RAND_CHARS: usize = 6;
 const DEFAULT_SUFFIX: &str = "";
 
-use std::ffi::OsStr;
 use std::fs::{OpenOptions, Permissions};
 use std::io;
 use std::ops::Deref;
@@ -223,8 +222,8 @@ pub use crate::spooled::{spooled_tempfile, SpooledData, SpooledTempFile};
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Builder<'a> {
     random_len: usize,
-    prefix: Option<&'a OsStr>,
-    suffix: Option<&'a OsStr>,
+    prefix: Option<&'a str>,
+    suffix: Option<&'a str>,
     append: bool,
     permissions: Option<Permissions>,
     keep: bool,
@@ -329,8 +328,8 @@ impl<'a> Builder<'a> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn prefix<S: AsRef<OsStr> + ?Sized>(&mut self, prefix: &'a S) -> &mut Self {
-        self.prefix = Some(prefix.as_ref());
+    pub const fn prefix(&mut self, prefix: &'a str) -> &mut Self {
+        self.prefix = Some(prefix);
         self
     }
 
@@ -349,8 +348,8 @@ impl<'a> Builder<'a> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn suffix<S: AsRef<OsStr> + ?Sized>(&mut self, suffix: &'a S) -> &mut Self {
-        self.suffix = Some(suffix.as_ref());
+    pub const fn suffix(&mut self, suffix: &'a str) -> &mut Self {
+        self.suffix = Some(suffix);
         self
     }
 
