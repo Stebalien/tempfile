@@ -1,4 +1,3 @@
-use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::fs::OpenOptionsExt;
@@ -43,7 +42,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
     util::create_helper(
         dir,
         crate::env::default_prefix(),
-        OsStr::new(""),
+        "",
         crate::NUM_RAND_CHARS,
         |path| {
             let f = OpenOptions::new()

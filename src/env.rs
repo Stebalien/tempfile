@@ -1,5 +1,4 @@
 use std::env;
-use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, OnceLock};
 
@@ -8,7 +7,7 @@ use crate::Builder;
 
 static ENV_TEMPDIR: LazyLock<PathBuf> = LazyLock::new(env::temp_dir);
 static DEFAULT_TEMPDIR: OnceLock<PathBuf> = OnceLock::new();
-static DEFAULT_PREFIX: OnceLock<OsString> = OnceLock::new();
+static DEFAULT_PREFIX: OnceLock<String> = OnceLock::new();
 
 /// Override the default temporary directory (defaults to [`std::env::temp_dir`]). This function
 /// changes the _global_ default temporary directory for the entire program and should not be called
@@ -53,9 +52,7 @@ pub fn temp_dir() -> &'static Path {
 /// Only the **first** call to this function will succeed and return `Ok(prefix)` where `prefix` is
 /// a static reference to the default temporary file prefix. All further calls will fail with
 /// `Err(prefix)` where `prefix` is the previously set default temporary file prefix.
-pub fn override_default_prefix(
-    prefix: impl Into<OsString>,
-) -> Result<&'static OsStr, &'static OsStr> {
+pub fn override_default_prefix(prefix: impl Into<String>) -> Result<&'static str, &'static str> {
     let mut prefix = Some(prefix.into());
     let val = DEFAULT_PREFIX.get_or_init(|| prefix.take().unwrap());
     match prefix {
@@ -66,6 +63,6 @@ pub fn override_default_prefix(
 
 /// Returns the default prefix used for new temporary files if no prefix is explicitly specified via
 /// [`Builder::prefix`].
-pub fn default_prefix() -> &'static OsStr {
+pub fn default_prefix() -> &'static str {
     DEFAULT_PREFIX.get().map(|p| &**p).unwrap_or("tmp".as_ref())
 }
