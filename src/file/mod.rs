@@ -399,35 +399,20 @@ impl AsRef<OsStr> for TempPath {
 ///
 /// ### Windows
 ///
-/// On Windows, open files _can't_ be deleted. This removes most of the concerns
-/// around temporary file cleaners.
-///
-/// Furthermore, temporary files are, by default, created in per-user temporary
+/// On Windows, temporary files are, by default, created in per-user temporary
 /// file directories so only an application running as the same user would be
 /// able to interfere (which they could do anyways). However, an application
 /// running as the same user can still _accidentally_ re-create deleted
 /// temporary files if the number of random bytes in the temporary file name is
 /// too small.
 ///
-/// So, the only real concern on Windows is:
-///
-/// 1. Opening a named temporary file in a world-writable directory.
-/// 2. Using the `into_temp_path()` and/or `into_parts()` APIs to close the file
-///    handle without deleting the underlying file.
-/// 3. Continuing to use the file by path.
-///
-/// ### UNIX
-///
-/// Unlike on Windows, UNIX (and UNIX like) systems allow open files to be
-/// "unlinked" (deleted).
-///
-/// #### MacOS
+/// ### MacOS
 ///
 /// Like on Windows, temporary files are created in per-user temporary file
 /// directories by default so calling `NamedTempFile::new()` should be
 /// relatively safe.
 ///
-/// #### Linux
+/// ### Linux
 ///
 /// Unfortunately, most _Linux_ distributions don't create per-user temporary
 /// file directories. Worse, systemd's tmpfiles daemon (a common temporary file
