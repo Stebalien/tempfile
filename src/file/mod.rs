@@ -580,8 +580,8 @@ impl NamedTempFile<File> {
     /// See [`NamedTempFile::new()`] for details.
     ///
     /// [`NamedTempFile::new()`]: #method.new
-    pub fn with_suffix<S: AsRef<OsStr>>(suffix: S) -> io::Result<NamedTempFile> {
-        Builder::new().suffix(&suffix).tempfile()
+    pub fn with_suffix(suffix: &str) -> io::Result<NamedTempFile> {
+        Builder::new().suffix(suffix).tempfile()
     }
     /// Create a new named temporary file with the specified filename suffix,
     /// in the specified directory.
@@ -595,11 +595,8 @@ impl NamedTempFile<File> {
     /// See [`NamedTempFile::new()`] for details.
     ///
     /// [`NamedTempFile::new()`]: #method.new
-    pub fn with_suffix_in<S: AsRef<OsStr>, P: AsRef<Path>>(
-        suffix: S,
-        dir: P,
-    ) -> io::Result<NamedTempFile> {
-        Builder::new().suffix(&suffix).tempfile_in(dir)
+    pub fn with_suffix_in<P: AsRef<Path>>(suffix: &str, dir: P) -> io::Result<NamedTempFile> {
+        Builder::new().suffix(suffix).tempfile_in(dir)
     }
 
     /// Create a new named temporary file with the specified filename prefix.
@@ -607,8 +604,8 @@ impl NamedTempFile<File> {
     /// See [`NamedTempFile::new()`] for details.
     ///
     /// [`NamedTempFile::new()`]: #method.new
-    pub fn with_prefix<S: AsRef<OsStr>>(prefix: S) -> io::Result<NamedTempFile> {
-        Builder::new().prefix(&prefix).tempfile()
+    pub fn with_prefix(prefix: &str) -> io::Result<NamedTempFile> {
+        Builder::new().prefix(prefix).tempfile()
     }
     /// Create a new named temporary file with the specified filename prefix,
     /// in the specified directory.
@@ -622,11 +619,8 @@ impl NamedTempFile<File> {
     /// See [`NamedTempFile::new()`] for details.
     ///
     /// [`NamedTempFile::new()`]: #method.new
-    pub fn with_prefix_in<S: AsRef<OsStr>, P: AsRef<Path>>(
-        prefix: S,
-        dir: P,
-    ) -> io::Result<NamedTempFile> {
-        Builder::new().prefix(&prefix).tempfile_in(dir)
+    pub fn with_prefix_in<P: AsRef<Path>>(prefix: &str, dir: P) -> io::Result<NamedTempFile> {
+        Builder::new().prefix(prefix).tempfile_in(dir)
     }
 }
 
