@@ -823,9 +823,11 @@ impl<F> NamedTempFile<F> {
         &mut self.file
     }
 
-    /// Convert the temporary file into a `std::fs::File`.
+    /// Turn this named temporary file into an "unnamed" temporary file as if you
+    /// had constructed it with [`tempfile()`].
     ///
-    /// The inner file will be deleted.
+    /// The underlying file will be removed from the filesystem but the returned [`File`]
+    /// can still be read/written.
     pub fn into_file(self) -> F {
         self.file
     }
@@ -840,8 +842,8 @@ impl<F> NamedTempFile<F> {
 
     /// Converts the named temporary file into its constituent parts.
     ///
-    /// Note: When the path is dropped, the file is deleted but the file handle
-    /// is still usable.
+    /// Note: When the path is dropped, the underlying file will be removed from the filesystem but
+    /// the returned [`File`] can still be read/written.
     pub fn into_parts(self) -> (F, TempPath) {
         (self.file, self.path)
     }
