@@ -8,9 +8,11 @@ use std::{io, iter};
 
 use windows_sys::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::Storage::FileSystem::{
-    MoveFileExW, ReOpenFile, SetFileAttributesW, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY,
-    FILE_FLAG_DELETE_ON_CLOSE, FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_DELETE,
-    FILE_SHARE_READ, FILE_SHARE_WRITE, MOVEFILE_REPLACE_EXISTING,
+    FileDispositionInfoEx, MoveFileExW, ReOpenFile, SetFileAttributesW, SetFileInformationByHandle,
+    FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY, FILE_DISPOSITION_FLAG_DELETE,
+    FILE_DISPOSITION_FLAG_POSIX_SEMANTICS, FILE_DISPOSITION_INFO_EX, FILE_FLAG_DELETE_ON_CLOSE,
+    FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+    MOVEFILE_REPLACE_EXISTING,
 };
 
 use crate::util;
@@ -21,6 +23,25 @@ fn to_utf16(s: &Path) -> Vec<u16> {
 
 fn not_supported<T>(msg: &str) -> io::Result<T> {
     Err(io::Error::new(io::ErrorKind::Other, msg))
+}
+
+fn delete_open_file(f: &File) -> io::Result<()> {
+    unsafe {
+        let info = FILE_DISPOSITION_INFO_EX {
+            Flags: FILE_DISPOSITION_FLAG_DELETE | FILE_DISPOSITION_FLAG_POSIX_SEMANTICS,
+        };
+        if SetFileInformationByHandle(
+            f.as_raw_handle(),
+            FileDispositionInfoEx,
+            &info as *const _ as *const _,
+            std::mem::size_of::<FILE_DISPOSITION_INFO_EX>() as u32,
+        ) == 0
+        {
+            Err(io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
+    }
 }
 
 pub fn create_named(
@@ -46,13 +67,17 @@ pub fn create(dir: &Path) -> io::Result<File> {
         OsStr::new(""),
         crate::NUM_RAND_CHARS,
         |path| {
-            OpenOptions::new()
+            let f = OpenOptions::new()
                 .create_new(true)
                 .read(true)
                 .write(true)
                 .share_mode(0)
                 .custom_flags(FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE)
-                .open(path)
+                .open(path)?;
+            // Attempt to delete the file by-handle. If this fails, do nothing; the file will be
+            // deleted on close anyways.
+            let _ = delete_open_file(&f);
+            Ok(f)
         },
     )
 }
