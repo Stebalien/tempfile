@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.17.1
+
+- Fix build with `windows-sys` 0.52. Unfortunately, we have no CI for older `windows-sys` versions at the moment...
+
 ## 3.17.0
 
 - Make sure to use absolute paths in when creating unnamed temporary files (avoids a small race in the "immediate unlink" logic) and in `Builder::make_in` (when creating temporary files of arbitrary types).
