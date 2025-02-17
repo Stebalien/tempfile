@@ -31,7 +31,7 @@ fn delete_open_file(f: &File) -> io::Result<()> {
             Flags: FILE_DISPOSITION_FLAG_DELETE | FILE_DISPOSITION_FLAG_POSIX_SEMANTICS,
         };
         if SetFileInformationByHandle(
-            f.as_raw_handle(),
+            f.as_raw_handle() as HANDLE,
             FileDispositionInfoEx,
             &info as *const _ as *const _,
             std::mem::size_of::<FILE_DISPOSITION_INFO_EX>() as u32,
