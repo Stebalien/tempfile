@@ -355,13 +355,13 @@ impl Deref for TempPath {
     }
 }
 
-impl AsRef<Path> for TempPath {
+impl AsRef<Path> for &TempPath {
     fn as_ref(&self) -> &Path {
         &self.path
     }
 }
 
-impl AsRef<OsStr> for TempPath {
+impl AsRef<OsStr> for &TempPath {
     fn as_ref(&self) -> &OsStr {
         self.path.as_os_str()
     }
@@ -445,7 +445,7 @@ impl<F> fmt::Debug for NamedTempFile<F> {
     }
 }
 
-impl<F> AsRef<Path> for NamedTempFile<F> {
+impl<F> AsRef<Path> for &NamedTempFile<F> {
     #[inline]
     fn as_ref(&self) -> &Path {
         self.path()
@@ -990,11 +990,18 @@ impl<F: Seek> Seek for NamedTempFile<F> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.as_file_mut().seek(pos).with_err_path(|| self.path())
     }
+    fn rewind(&mut self) -> io::Result<()> {
+        self.as_file_mut().rewind().with_err_path(|| self.path())
+    }
 }
 
 impl Seek for &NamedTempFile<File> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.as_file().seek(pos).with_err_path(|| self.path())
+    }
+
+    fn rewind(&mut self) -> io::Result<()> {
+        self.as_file().rewind().with_err_path(|| self.path())
     }
 }
 
