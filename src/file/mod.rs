@@ -728,8 +728,8 @@ impl<F> NamedTempFile<F> {
     /// **Atomicity:** This method is not guaranteed to be atomic on all platforms, although it will
     /// generally be atomic on Windows and modern Linux filesystems. While it will never overwrite a
     /// file at the target path, it may leave the original link to the temporary file behind leaving
-    /// you with two [hard links][] in your filesystem pointing at the same underlying file. This
-    /// can happen if either (a) we lack permission to "unlink" the original filename; (b) this
+    /// you with two [hard links][hardlink] in your filesystem pointing at the same underlying file.
+    /// This can happen if either (a) we lack permission to "unlink" the original filename; (b) this
     /// program crashes while persisting the temporary file; or (c) the filesystem is removed,
     /// unmounted, etc. while we're performing this operation.
     ///
