@@ -675,7 +675,7 @@ impl<F> NamedTempFile<F> {
     /// If this method fails, it will return `self` in the resulting
     /// [`PersistError`].
     ///
-    /// Note: Temporary files cannot be persisted across filesystems. Also
+    /// **Note:** Temporary files cannot be persisted across filesystems. Also
     /// neither the file contents nor the containing directory are
     /// synchronized, so the update may not yet have reached the disk when
     /// `persist` returns.
@@ -723,9 +723,15 @@ impl<F> NamedTempFile<F> {
     /// If a file exists at the target path, fail. If this method fails, it will
     /// return `self` in the resulting PersistError.
     ///
-    /// Note: Temporary files cannot be persisted across filesystems. Also Note:
-    /// This method is not atomic. It can leave the original link to the
-    /// temporary file behind.
+    /// **Note:** Temporary files cannot be persisted across filesystems.
+    ///
+    /// **Atomicity:** This method is not guaranteed to be atomic on all platforms, although it will
+    /// generally be atomic on Windows and modern Linux filesystems. While it will never overwrite a
+    /// file at the target path, it may leave the original link to the temporary file behind leaving
+    /// you with two [hard links][] in your filesystem pointing at the same underlying file. This
+    /// can happen if either (a) we lack permission to "unlink" the original filename; (b) this
+    /// program crashes while persisting the temporary file; or (c) the filesystem is removed,
+    /// unmounted, etc. while we're performing this operation.
     ///
     /// # Security
     ///
@@ -750,6 +756,8 @@ impl<F> NamedTempFile<F> {
     /// writeln!(persisted_file, "Brian was here. Briefly.")?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
+    ///
+    /// [hardlink]: https://en.wikipedia.org/wiki/Hard_link
     pub fn persist_noclobber<P: AsRef<Path>>(self, new_path: P) -> Result<F, PersistError<F>> {
         let NamedTempFile { path, file } = self;
         match path.persist_noclobber(new_path) {
