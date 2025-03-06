@@ -355,13 +355,13 @@ impl Deref for TempPath {
     }
 }
 
-impl AsRef<Path> for TempPath {
+impl AsRef<Path> for &TempPath {
     fn as_ref(&self) -> &Path {
         &self.path
     }
 }
 
-impl AsRef<OsStr> for TempPath {
+impl AsRef<OsStr> for &TempPath {
     fn as_ref(&self) -> &OsStr {
         self.path.as_os_str()
     }
@@ -445,7 +445,7 @@ impl<F> fmt::Debug for NamedTempFile<F> {
     }
 }
 
-impl<F> AsRef<Path> for NamedTempFile<F> {
+impl<F> AsRef<Path> for &NamedTempFile<F> {
     #[inline]
     fn as_ref(&self) -> &Path {
         self.path()
@@ -567,8 +567,8 @@ impl NamedTempFile<File> {
     /// See [`NamedTempFile::new()`] for details.
     ///
     /// [`NamedTempFile::new()`]: #method.new
-    pub fn with_suffix<S: AsRef<OsStr>>(suffix: S) -> io::Result<NamedTempFile> {
-        Builder::new().suffix(&suffix).tempfile()
+    pub fn with_suffix(suffix: &str) -> io::Result<NamedTempFile> {
+        Builder::new().suffix(suffix).tempfile()
     }
     /// Create a new named temporary file with the specified filename suffix,
     /// in the specified directory.
@@ -582,11 +582,8 @@ impl NamedTempFile<File> {
     /// See [`NamedTempFile::new()`] for details.
     ///
     /// [`NamedTempFile::new()`]: #method.new
-    pub fn with_suffix_in<S: AsRef<OsStr>, P: AsRef<Path>>(
-        suffix: S,
-        dir: P,
-    ) -> io::Result<NamedTempFile> {
-        Builder::new().suffix(&suffix).tempfile_in(dir)
+    pub fn with_suffix_in<P: AsRef<Path>>(suffix: &str, dir: P) -> io::Result<NamedTempFile> {
+        Builder::new().suffix(suffix).tempfile_in(dir)
     }
 
     /// Create a new named temporary file with the specified filename prefix.
@@ -594,8 +591,8 @@ impl NamedTempFile<File> {
     /// See [`NamedTempFile::new()`] for details.
     ///
     /// [`NamedTempFile::new()`]: #method.new
-    pub fn with_prefix<S: AsRef<OsStr>>(prefix: S) -> io::Result<NamedTempFile> {
-        Builder::new().prefix(&prefix).tempfile()
+    pub fn with_prefix(prefix: &str) -> io::Result<NamedTempFile> {
+        Builder::new().prefix(prefix).tempfile()
     }
     /// Create a new named temporary file with the specified filename prefix,
     /// in the specified directory.
@@ -609,11 +606,8 @@ impl NamedTempFile<File> {
     /// See [`NamedTempFile::new()`] for details.
     ///
     /// [`NamedTempFile::new()`]: #method.new
-    pub fn with_prefix_in<S: AsRef<OsStr>, P: AsRef<Path>>(
-        prefix: S,
-        dir: P,
-    ) -> io::Result<NamedTempFile> {
-        Builder::new().prefix(&prefix).tempfile_in(dir)
+    pub fn with_prefix_in<P: AsRef<Path>>(prefix: &str, dir: P) -> io::Result<NamedTempFile> {
+        Builder::new().prefix(prefix).tempfile_in(dir)
     }
 }
 
@@ -998,11 +992,18 @@ impl<F: Seek> Seek for NamedTempFile<F> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.as_file_mut().seek(pos).with_err_path(|| self.path())
     }
+    fn rewind(&mut self) -> io::Result<()> {
+        self.as_file_mut().rewind().with_err_path(|| self.path())
+    }
 }
 
 impl Seek for &NamedTempFile<File> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.as_file().seek(pos).with_err_path(|| self.path())
+    }
+
+    fn rewind(&mut self) -> io::Result<()> {
+        self.as_file().rewind().with_err_path(|| self.path())
     }
 }
 
