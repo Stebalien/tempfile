@@ -113,9 +113,17 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
     if overwrite {
         rename(old_path, new_path)?;
     } else {
-        // On Linux, use `renameat_with` to avoid overwriting an existing name,
-        // if the kernel and the filesystem support it.
-        #[cfg(any(target_os = "android", target_os = "linux"))]
+        // On Linux and apple operating systems, use `renameat_with` to avoid overwriting an
+        // existing name, if the kernel and the filesystem support it.
+        #[cfg(any(
+            target_os = "android",
+            target_os = "linux",
+            target_os = "macos",
+            target_os = "ios",
+            target_os = "tvos",
+            target_os = "visionos",
+            target_os = "watchos",
+        ))]
         {
             use rustix::fs::{renameat_with, RenameFlags, CWD};
             use rustix::io::Errno;
