@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.18.0
+
+- Update `rustix` to 1.0.0.
+- Make `NamedTempFile::persist_noclobber` atomic on Apple operating systems. It's now atomic on MacOS, Windows, and Linux (depending on the OS version and filesystem used).
+
 ## 3.17.1
 
 - Fix build with `windows-sys` 0.52. Unfortunately, we have no CI for older `windows-sys` versions at the moment...
