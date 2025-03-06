@@ -17,7 +17,6 @@ repository = "https://github.com/Stebalien/tempfile"
 description = "A library for managing temporary files and directories."
 
 [dependencies]
-cfg-if = "1"
 fastrand = "2.1.1"
 # Not available in stdlib until 1.70, but we support 1.63 to support Debian stable.
 once_cell = { version = "1.19.0", default-features = false, features = ["std"] }
