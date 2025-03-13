@@ -76,6 +76,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
                 .open(path)?;
             // Attempt to delete the file by-handle. If this fails, do nothing; the file will be
             // deleted on close anyways.
+            #[cfg(not(feature = "unstable-windows-keep-open-tempfile"))]
             let _ = delete_open_file(&f);
             Ok(f)
         },
