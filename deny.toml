@@ -14,10 +14,7 @@ confidence-threshold = 1.0
 allow = []
 deny = []
 multiple-versions = "deny"
-skip = [
-    # Dependency of this crate and and rustix (rustix has older). We only use one at a time.
-    { name = "windows-sys" },
-]
+skip = []
 skip-tree = []
 wildcards = "deny"
 
