@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.19.0
+
+- Remove direct dependency on `cfg-if`. It's still in the tree, but we didn't really need to use it in this crate.
+- Add an unstable feature (`unstable-windows-keep-open-tempfile`) to test a potential fix to #339.
+
 ## 3.18.0
 
 - Update `rustix` to 1.0.0.
