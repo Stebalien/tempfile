@@ -40,3 +40,6 @@ doc-comment = "0.3"
 [features]
 default = ["getrandom"]
 nightly = []
+# Disables immediate deletion of newly opened tempfiles on windows, instead relying on the old
+# "delete on close" behavior. This will hopefully fix #339.
+unstable-windows-keep-open-tempfile = []
