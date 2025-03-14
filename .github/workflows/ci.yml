@@ -41,6 +41,11 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust-version }}
+      - name: Generating the Cargo.lock
+        run: cargo generate-lockfile
+      - name: Downgrading once_cell
+        if: matrix.rust-version == 1.63
+        run: cargo update -p once_cell --precise 1.20.3
       - name: Build
         run: cargo build
       - name: Test
