@@ -28,7 +28,7 @@ jobs:
         rust-version:
           - nightly
           - stable
-          - "1.63"
+          - "1.84"
         os:
           - ubuntu-latest
           - windows-latest
