@@ -8,11 +8,9 @@ use std::{io, iter};
 
 use windows_sys::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::Storage::FileSystem::{
-    FileDispositionInfoEx, MoveFileExW, ReOpenFile, SetFileAttributesW, SetFileInformationByHandle,
-    FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY, FILE_DISPOSITION_FLAG_DELETE,
-    FILE_DISPOSITION_FLAG_POSIX_SEMANTICS, FILE_DISPOSITION_INFO_EX, FILE_FLAG_DELETE_ON_CLOSE,
-    FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
-    MOVEFILE_REPLACE_EXISTING,
+    MoveFileExW, ReOpenFile, SetFileAttributesW, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY,
+    FILE_FLAG_DELETE_ON_CLOSE, FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_DELETE,
+    FILE_SHARE_READ, FILE_SHARE_WRITE, MOVEFILE_REPLACE_EXISTING,
 };
 
 use crate::util;
@@ -23,25 +21,6 @@ fn to_utf16(s: &Path) -> Vec<u16> {
 
 fn not_supported<T>(msg: &str) -> io::Result<T> {
     Err(io::Error::new(io::ErrorKind::Other, msg))
-}
-
-fn delete_open_file(f: &File) -> io::Result<()> {
-    unsafe {
-        let info = FILE_DISPOSITION_INFO_EX {
-            Flags: FILE_DISPOSITION_FLAG_DELETE | FILE_DISPOSITION_FLAG_POSIX_SEMANTICS,
-        };
-        if SetFileInformationByHandle(
-            f.as_raw_handle() as HANDLE,
-            FileDispositionInfoEx,
-            &info as *const _ as *const _,
-            std::mem::size_of::<FILE_DISPOSITION_INFO_EX>() as u32,
-        ) == 0
-        {
-            Err(io::Error::last_os_error())
-        } else {
-            Ok(())
-        }
-    }
 }
 
 pub fn create_named(
@@ -74,10 +53,9 @@ pub fn create(dir: &Path) -> io::Result<File> {
                 .share_mode(0)
                 .custom_flags(FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE)
                 .open(path)?;
-            // Attempt to delete the file by-handle. If this fails, do nothing; the file will be
-            // deleted on close anyways.
-            #[cfg(not(feature = "unstable-windows-keep-open-tempfile"))]
-            let _ = delete_open_file(&f);
+            // NOTE: in theory, we could delete the file immediately (we open the file in "unix
+            // semantics" mode) but this seemed to corrupt something in Windows at scale (see #339).
+            // So we just rely on `FILE_FLAG_DELETE_ON_CLOSE`.
             Ok(f)
         },
     )
