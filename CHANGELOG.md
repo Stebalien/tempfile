@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.19.1 [unreleased]
+
+- Don't unlink temporary files immediately on Windows (fixes #339). Unfortunately, this seemed to corrupt the file object (possibly a Windows kernel bug) in rare cases and isn't strictly speaking necessary.
+
 ## 3.19.0
 
 - Remove direct dependency on `cfg-if`. It's still in the tree, but we didn't really need to use it in this crate.
