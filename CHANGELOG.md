@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.19.1 [unreleased]
+## 3.19.1
 
 - Don't unlink temporary files immediately on Windows (fixes #339). Unfortunately, this seemed to corrupt the file object (possibly a Windows kernel bug) in rare cases and isn't strictly speaking necessary.
 
