@@ -60,8 +60,14 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
         with:
           targets: wasm32-wasip1
-      - name: Build
-        run: cargo build --target wasm32-wasip1 --features nightly
+      - name: Install wasmtime
+        run: curl https://wasmtime.dev/install.sh -sSf | bash
+      - name: Test
+        env:
+          RUST_BACKTRACE: 1
+          RUSTFLAGS: ""
+          CARGO_TARGET_WASM32_WASIP1_RUNNER: "/home/runner/.wasmtime/bin/wasmtime"
+        run: cargo test --target wasm32-wasip1 --features nightly
   wasip2:
     name: WASI P2 Test Build
     runs-on: ubuntu-latest
