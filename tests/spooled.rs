@@ -4,8 +4,18 @@ use std::io::{Read, Seek, SeekFrom, Write};
 
 use tempfile::{spooled_tempfile, SpooledTempFile};
 
+/// For the wasi platforms, `std::env::temp_dir` will panic. For those targets, configure the /tmp
+/// directory instead as the base directory for temp files.
+fn configure_wasi_temp_dir() {
+    if cfg!(target_os = "wasi") {
+        let _ = tempfile::env::override_temp_dir(std::path::Path::new("/tmp"));
+    }
+}
+
 #[test]
 fn test_automatic_rollover() {
+    configure_wasi_temp_dir();
+
     let mut t = spooled_tempfile(10);
     let mut buf = Vec::new();
 
@@ -30,6 +40,8 @@ fn test_automatic_rollover() {
 
 #[test]
 fn test_explicit_rollover() {
+    configure_wasi_temp_dir();
+
     let mut t = SpooledTempFile::new(100);
     assert_eq!(t.write(b"abcdefghijklmnopqrstuvwxyz").unwrap(), 26);
     assert_eq!(t.stream_position().unwrap(), 26);
@@ -54,6 +66,8 @@ fn test_explicit_rollover() {
 // called by test_seek_{buffer, file}
 // assumes t is empty and offset is 0 to start
 fn test_seek(t: &mut SpooledTempFile) {
+    configure_wasi_temp_dir();
+
     assert_eq!(t.write(b"abcdefghijklmnopqrstuvwxyz").unwrap(), 26);
 
     assert_eq!(t.stream_position().unwrap(), 26); // tell()
@@ -83,17 +97,23 @@ fn test_seek(t: &mut SpooledTempFile) {
 
 #[test]
 fn test_seek_buffer() {
+    configure_wasi_temp_dir();
+
     let mut t = spooled_tempfile(100);
     test_seek(&mut t);
 }
 
 #[test]
 fn test_seek_file() {
+    configure_wasi_temp_dir();
+
     let mut t = SpooledTempFile::new(10);
     test_seek(&mut t);
 }
 
 fn test_seek_read(t: &mut SpooledTempFile) {
+    configure_wasi_temp_dir();
+
     assert_eq!(t.write(b"abcdefghijklmnopqrstuvwxyz").unwrap(), 26);
 
     let mut buf = Vec::new();
@@ -137,17 +157,23 @@ fn test_seek_read(t: &mut SpooledTempFile) {
 
 #[test]
 fn test_seek_read_buffer() {
+    configure_wasi_temp_dir();
+
     let mut t = spooled_tempfile(100);
     test_seek_read(&mut t);
 }
 
 #[test]
 fn test_seek_read_file() {
+    configure_wasi_temp_dir();
+
     let mut t = SpooledTempFile::new(10);
     test_seek_read(&mut t);
 }
 
 fn test_overwrite_middle(t: &mut SpooledTempFile) {
+    configure_wasi_temp_dir();
+
     assert_eq!(t.write(b"abcdefghijklmnopqrstuvwxyz").unwrap(), 26);
 
     assert_eq!(t.seek(SeekFrom::Start(10)).unwrap(), 10);
@@ -186,6 +212,8 @@ fn test_overwrite_and_extend_buffer() {
 
 #[test]
 fn test_overwrite_and_extend_rollover() {
+    configure_wasi_temp_dir();
+
     let mut t = SpooledTempFile::new(20);
     assert_eq!(t.write(b"abcdefghijklmno").unwrap(), 15);
     assert!(!t.is_rolled());
@@ -219,12 +247,16 @@ fn test_sparse_buffer() {
 
 #[test]
 fn test_sparse_file() {
+    configure_wasi_temp_dir();
+
     let mut t = SpooledTempFile::new(1);
     test_sparse(&mut t);
 }
 
 #[test]
 fn test_sparse_write_rollover() {
+    configure_wasi_temp_dir();
+
     let mut t = spooled_tempfile(10);
     assert_eq!(t.write(b"abcde").unwrap(), 5);
     assert!(!t.is_rolled());
@@ -285,6 +317,8 @@ fn test_set_len_file() {
 
 #[test]
 fn test_set_len_rollover() {
+    configure_wasi_temp_dir();
+
     let mut buf: Vec<u8> = Vec::new();
 
     let mut t = spooled_tempfile(10);
@@ -308,6 +342,8 @@ fn test_set_len_rollover() {
 
 #[test]
 fn test_write_overflow() {
+    configure_wasi_temp_dir();
+
     let mut t = spooled_tempfile(10);
     t.seek(SeekFrom::Start(u64::MAX)).unwrap();
     assert!(t.write(b"abcde").is_err());
@@ -316,6 +352,8 @@ fn test_write_overflow() {
 #[cfg(target_pointer_width = "32")]
 #[test]
 fn test_set_len_truncation() {
+    configure_wasi_temp_dir();
+
     let mut t = spooled_tempfile(100);
     assert!(t.set_len(usize::MAX as u64 + 5).is_ok());
     assert!(t.is_rolled());
