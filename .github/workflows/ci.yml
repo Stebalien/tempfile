@@ -51,7 +51,7 @@ jobs:
       - name: Test
         run: cargo test
   wasip1:
-    name: WASI P1 Test Build
+    name: WASI P1 Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -62,6 +62,8 @@ jobs:
           targets: wasm32-wasip1
       - name: Install wasmtime
         run: curl https://wasmtime.dev/install.sh -sSf | bash
+      - name: Build
+        run: cargo build --target wasm32-wasip1 --features nightly
       - name: Test
         env:
           RUST_BACKTRACE: 1
@@ -69,7 +71,7 @@ jobs:
           CARGO_TARGET_WASM32_WASIP1_RUNNER: "/home/runner/.wasmtime/bin/wasmtime --dir /tmp/"
         run: cargo test --target wasm32-wasip1 --features nightly
   wasip2:
-    name: WASI P2 Test Build
+    name: WASI P2 Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -80,6 +82,8 @@ jobs:
           targets: wasm32-wasip2
       - name: Install wasmtime
         run: curl https://wasmtime.dev/install.sh -sSf | bash
+      - name: Build
+        run: cargo build --target wasm32-wasip2 --features nightly
       - name: Test
         env:
           RUST_BACKTRACE: 1
