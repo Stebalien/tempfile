@@ -178,6 +178,7 @@ fn test_keep() {
 }
 
 #[test]
+#[cfg_attr(target_os = "wasi", ignore = "thread::spawn is not supported")]
 fn main() {
     in_tmpdir(test_tempdir);
     in_tmpdir(test_prefix);
