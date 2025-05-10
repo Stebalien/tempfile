@@ -413,6 +413,7 @@ impl TempDir {
     /// fs::remove_dir_all(tmp_path)?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
+    #[must_use]
     pub fn keep(self) -> PathBuf {
         // Prevent the Drop impl from being called.
         let mut this = mem::ManuallyDrop::new(self);
