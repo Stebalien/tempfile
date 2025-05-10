@@ -41,7 +41,6 @@ doc-comment = "0.3"
 
 [features]
 default = ["getrandom"]
-nightly = [] # DEPRECATED
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--generate-link-to-definition"]

@@ -324,45 +324,12 @@ fn test_temp_path_resolve_missing_cwd() {
     std::env::set_current_dir(&tmpdir).expect("failed to change to the temporary directory");
     tmpdir.close().unwrap();
 
-    #[allow(deprecated)]
-    let path = TempPath::from_path("foo");
-    assert_eq!(&*path, Path::new("foo"));
-
     TempPath::try_from_path("foo").expect_err("should have failed to make path absolute file");
 }
 
 #[test]
 fn test_temp_path_resolve_existing_cwd() {
     configure_wasi_temp_dir();
-    let _guard = cwd_lock();
-
-    let tmpdir = tempdir().unwrap();
-    std::env::set_current_dir(&tmpdir).expect("failed to change to directory");
-
-    // Check relative to the directory we actually ended up in, not `tmpdir`,
-    // as there may be symlinks in the path.
-    let cwd = std::env::current_dir().expect("failed to get the current directory");
-
-    // Make sure we actually ended up in the right place.
-    if let (Ok(canonical_cwd), Ok(canonical_tmpdir)) =
-        (cwd.canonicalize(), tmpdir.path().canonicalize())
-    {
-        // We canonicalize the paths because `std::env::current_dir` resolves symlinks, etc.
-        // We canonicalize BOTH paths because canonicalize returns paths UNC form on windows,
-        // but `std::env::current_dir` does not...
-        assert_eq!(canonical_cwd, canonical_tmpdir);
-    } else {
-        // Some platforms (wasi) don't support this, so we just compare the paths directly.
-        assert_eq!(cwd, tmpdir.path());
-    };
-
-    #[allow(deprecated)]
-    let path = TempPath::from_path("foo");
-    assert_eq!(&*path, cwd.join("foo"));
-
-    #[allow(deprecated)]
-    let path = TempPath::from_path("");
-    assert_eq!(&*path, Path::new(""));
 
     TempPath::try_from_path("").expect_err("empty paths should fail");
 }
