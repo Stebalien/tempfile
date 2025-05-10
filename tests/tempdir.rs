@@ -85,7 +85,7 @@ fn test_rm_tempdir() {
     let path;
     {
         let tmp = TempDir::new().unwrap();
-        path = tmp.into_path();
+        path = tmp.keep();
     }
     assert!(path.exists());
     fs::remove_dir_all(&path).unwrap();
@@ -128,7 +128,7 @@ fn test_rm_tempdir_close() {
     let path;
     {
         let tmp = TempDir::new().unwrap();
-        path = tmp.into_path();
+        path = tmp.keep();
     }
     assert!(path.exists());
     fs::remove_dir_all(&path).unwrap();
