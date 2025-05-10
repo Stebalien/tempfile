@@ -382,6 +382,13 @@ impl TempDir {
         self.path.as_ref()
     }
 
+    /// Deprecated alias for [`TempDir::keep`].
+    #[must_use]
+    #[deprecated = "use TempDir::keep()"]
+    pub fn into_path(self) -> PathBuf {
+        self.keep()
+    }
+
     /// Persist the temporary directory to disk, returning the [`PathBuf`] where it is located.
     ///
     /// This consumes the [`TempDir`] without deleting directory on the filesystem, meaning that
@@ -400,14 +407,13 @@ impl TempDir {
     ///
     /// // Persist the temporary directory to disk,
     /// // getting the path where it is.
-    /// let tmp_path = tmp_dir.into_path();
+    /// let tmp_path = tmp_dir.keep();
     ///
     /// // Delete the temporary directory ourselves.
     /// fs::remove_dir_all(tmp_path)?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    #[must_use]
-    pub fn into_path(self) -> PathBuf {
+    pub fn keep(self) -> PathBuf {
         // Prevent the Drop impl from being called.
         let mut this = mem::ManuallyDrop::new(self);
 

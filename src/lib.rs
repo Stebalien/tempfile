@@ -469,7 +469,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// [`NamedTempFile`]/[`TempDir`]. When `keep` is set to `true`, this behavior is suppressed.
     ///
     /// If you wish to keep a temporary file or directory after creating it, call
-    /// [`NamedTempFile::keep`] or [`TempDir::into_path`] respectively.
+    /// [`NamedTempFile::keep`] or [`TempDir::keep`] respectively to turn it into a regular
+    /// file/path (respectively) that won't be automatically deleted.
     ///
     /// # Examples
     ///
