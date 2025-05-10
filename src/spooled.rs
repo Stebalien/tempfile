@@ -4,7 +4,10 @@ use std::fs::File;
 use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
-/// A wrapper for the two states of a `SpooledTempFile`.
+/// A wrapper for the two states of a [`SpooledTempFile`]. Either:
+///
+/// 1. An in-memory [`Cursor`] representing the state of the file.
+/// 2. A temporary [`File`].
 #[derive(Debug)]
 pub enum SpooledData {
     InMemory(Cursor<Vec<u8>>),
