@@ -499,12 +499,6 @@ impl<'a, 'b> Builder<'a, 'b> {
         self
     }
 
-    /// Deprecated alias for [`Builder::disable_cleanup`].
-    #[deprecated = "Use Builder::disable_cleanup"]
-    pub fn keep(&mut self, keep: bool) -> &mut Self {
-        self.disable_cleanup(keep)
-    }
-
     /// Create the named temporary file.
     ///
     /// # Security
