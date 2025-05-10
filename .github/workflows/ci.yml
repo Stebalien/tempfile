@@ -41,7 +41,7 @@ jobs:
             target: x86_64-pc-windows-msvc
           - name: "MacOS"
             os: macos-latest
-            target: x86_64-apple-darwin
+            target: aarch64-apple-darwin
         include:
           - rust-version: "nightly"
             platform:
