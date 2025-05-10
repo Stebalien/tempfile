@@ -2,7 +2,7 @@
 
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use tempfile::{spooled_tempfile, SpooledTempFile};
+use tempfile::{env, spooled_tempfile, spooled_tempfile_in, SpooledTempFile};
 
 /// For the wasi platforms, `std::env::temp_dir` will panic. For those targets, configure the /tmp
 /// directory instead as the base directory for temp files.
@@ -36,6 +36,23 @@ fn test_automatic_rollover() {
 
     assert_eq!(t.stream_position().unwrap(), 15);
     assert!(t.is_rolled());
+}
+
+#[test]
+fn test_custom_dir() {
+    configure_wasi_temp_dir();
+
+    {
+        let mut t = spooled_tempfile_in(10, env::temp_dir());
+        t.roll()
+            .expect("failed to roll temp file in a specified directory");
+    }
+
+    {
+        let mut t = spooled_tempfile_in(10, "/does-not-exist/");
+        t.roll()
+            .expect_err("should fail to roll the temporary file into a nonexistent tempdir");
+    }
 }
 
 #[test]

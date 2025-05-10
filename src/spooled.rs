@@ -1,6 +1,8 @@
 use crate::file::tempfile;
+use crate::tempfile_in;
 use std::fs::File;
 use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
+use std::path::{Path, PathBuf};
 
 /// A wrapper for the two states of a `SpooledTempFile`.
 #[derive(Debug)]
@@ -16,6 +18,7 @@ pub enum SpooledData {
 #[derive(Debug)]
 pub struct SpooledTempFile {
     max_size: usize,
+    dir: Option<PathBuf>,
     inner: SpooledData,
 }
 
@@ -55,19 +58,46 @@ pub fn spooled_tempfile(max_size: usize) -> SpooledTempFile {
     SpooledTempFile::new(max_size)
 }
 
+/// Construct a new [`SpooledTempFile`], backed by a file in the specified directory. Use this when,
+/// e.g., you need the temporary file to be backed by a specific filesystem (e.g., when your default
+/// temporary directory is in-memory).
+///
+/// **NOTE:** The specified path isn't checked until the temporary file is "rolled over" into a real
+/// temporary file. If the specified directory isn't writable, writes to the temporary file will
+/// fail once the `max_size` is reached.
+#[inline]
+pub fn spooled_tempfile_in<P: AsRef<Path>>(max_size: usize, dir: P) -> SpooledTempFile {
+    SpooledTempFile::new_in(max_size, dir)
+}
+
 /// Write a cursor into a temporary file, returning the temporary file.
-fn cursor_to_tempfile(cursor: &Cursor<Vec<u8>>) -> io::Result<File> {
-    let mut file = tempfile()?;
+fn cursor_to_tempfile(cursor: &Cursor<Vec<u8>>, p: &Option<PathBuf>) -> io::Result<File> {
+    let mut file = match p {
+        Some(p) => tempfile_in(p)?,
+        None => tempfile()?,
+    };
     file.write_all(cursor.get_ref())?;
     file.seek(SeekFrom::Start(cursor.position()))?;
     Ok(file)
 }
 
 impl SpooledTempFile {
+    /// Construct a new [`SpooledTempFile`].
     #[must_use]
     pub fn new(max_size: usize) -> SpooledTempFile {
         SpooledTempFile {
             max_size,
+            dir: None,
+            inner: SpooledData::InMemory(Cursor::new(Vec::new())),
+        }
+    }
+
+    /// Construct a new [`SpooledTempFile`], backed by a file in the specified directory.
+    #[must_use]
+    pub fn new_in<P: AsRef<Path>>(max_size: usize, dir: P) -> SpooledTempFile {
+        SpooledTempFile {
+            max_size,
+            dir: Some(dir.as_ref().to_owned()),
             inner: SpooledData::InMemory(Cursor::new(Vec::new())),
         }
     }
@@ -85,7 +115,7 @@ impl SpooledTempFile {
     /// if already rolled over.
     pub fn roll(&mut self) -> io::Result<()> {
         if let SpooledData::InMemory(cursor) = &mut self.inner {
-            self.inner = SpooledData::OnDisk(cursor_to_tempfile(cursor)?);
+            self.inner = SpooledData::OnDisk(cursor_to_tempfile(cursor, &self.dir)?);
         }
         Ok(())
     }
@@ -113,7 +143,7 @@ impl SpooledTempFile {
     /// Convert into a regular unnamed temporary file, writing it to disk if necessary.
     pub fn into_file(self) -> io::Result<File> {
         match self.inner {
-            SpooledData::InMemory(cursor) => cursor_to_tempfile(&cursor),
+            SpooledData::InMemory(cursor) => cursor_to_tempfile(&cursor, &self.dir),
             SpooledData::OnDisk(file) => Ok(file),
         }
     }
