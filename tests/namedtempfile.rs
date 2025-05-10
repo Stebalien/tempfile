@@ -348,36 +348,12 @@ fn test_temp_path_resolve_missing_cwd() {
     std::env::set_current_dir(&tmpdir).expect("failed to change to the temporary directory");
     tmpdir.close().unwrap();
 
-    #[allow(deprecated)]
-    let path = TempPath::from_path("foo");
-    assert_eq!(&*path, Path::new("foo"));
-
     TempPath::try_from_path("foo").expect_err("should have failed to make path absolute file");
 }
 
 #[test]
 fn test_temp_path_resolve_existing_cwd() {
     configure_wasi_temp_dir();
-    let _guard = cwd_lock();
-
-    let tmpdir = tempdir().unwrap();
-    std::env::set_current_dir(&tmpdir).expect("failed to change to directory");
-
-    let cwd = if cfg!(target_os = "macos") {
-        // MacOS has absolute paths and ABSOLUTE paths. `cd /var/tmp/...` actually changes to
-        // /private/var/tmp...
-        std::env::current_dir().expect("failed to get the current directory")
-    } else {
-        tmpdir.path().to_owned()
-    };
-
-    #[allow(deprecated)]
-    let path = TempPath::from_path("foo");
-    assert_eq!(&*path, cwd.join("foo"));
-
-    #[allow(deprecated)]
-    let path = TempPath::from_path("");
-    assert_eq!(&*path, Path::new(""));
 
     TempPath::try_from_path("").expect_err("empty paths should fail");
 }
