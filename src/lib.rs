@@ -1,16 +1,19 @@
-//! Temporary files and directories.
+//! This is a library for creating temporary files and directories that are automatically deleted
+//! when no longer referenced (i.e., on drop).
 //!
-//! - Use the [`tempfile()`] function for temporary files
-//! - Use the [`tempdir()`] function for temporary directories.
+//! - Use [`tempfile()`] when you need a real [`std::fs::File`] but don't need to refer to it
+//!   by-path.
+//! - Use [`NamedTempFile::new()`] when you need a _named_ temporary file that can be refered to its
+//!   path.
+//! - Use [`tempdir()`] when you need a temporary directory that will be recursively deleted on drop.
+//! - Use [`spooled_tempfile()`] when you need an in-memory buffer that will ultimately be backed by
+//!   a temporary file if it gets too large.
 //!
 //! # Design
 //!
 //! This crate provides several approaches to creating temporary files and directories.
 //! [`tempfile()`] relies on the OS to remove the temporary file once the last handle is closed.
 //! [`TempDir`] and [`NamedTempFile`] both rely on Rust destructors for cleanup.
-//!
-//! When choosing between the temporary file variants, prefer `tempfile`
-//! unless you either need to know the file's path or to be able to persist it.
 //!
 //! ## Resource Leaking
 //!

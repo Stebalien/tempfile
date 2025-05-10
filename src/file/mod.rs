@@ -19,7 +19,7 @@ use crate::Builder;
 
 mod imp;
 
-/// Create a new temporary file.
+/// Create a new temporary file. Also see [`tempfile_in`].
 ///
 /// The file will be created in the location returned by [`env::temp_dir()`].
 ///
@@ -52,7 +52,7 @@ pub fn tempfile() -> io::Result<File> {
     tempfile_in(env::temp_dir())
 }
 
-/// Create a new temporary file in the specified directory.
+/// Create a new temporary file in the specified directory. Also see [`tempfile`].
 ///
 /// # Security
 ///

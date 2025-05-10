@@ -20,7 +20,7 @@ use crate::Builder;
 #[cfg(doc)]
 use crate::env;
 
-/// Create a new temporary directory.
+/// Create a new temporary directory. Also see [`tempdir_in`].
 ///
 /// The `tempdir` function creates a directory in the file system and returns a
 /// [`TempDir`]. The directory will be automatically deleted when the `TempDir`'s
@@ -67,7 +67,7 @@ pub fn tempdir() -> io::Result<TempDir> {
     TempDir::new()
 }
 
-/// Create a new temporary directory in a specific directory.
+/// Create a new temporary directory in a specific directory. Also see [`tempdir`].
 ///
 /// The `tempdir_in` function creates a directory in the specified directory
 /// and returns a [`TempDir`].

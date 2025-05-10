@@ -22,12 +22,19 @@ pub struct SpooledTempFile {
     inner: SpooledData,
 }
 
-/// Create a new spooled temporary file.
+/// Create a new [`SpooledTempFile`]. Also see [`spooled_tempfile_in`].
 ///
 /// # Security
 ///
 /// This variant is secure/reliable in the presence of a pathological temporary
 /// file cleaner.
+///
+/// # Backing Storage
+///
+/// By default, the underlying temporary file will be created in your operating system's temporary
+/// file directory which is _often_ an in-memory filesystem. You may want to consider using
+/// [`spooled_tempfile_in`] instead, passing a storage-backed filesystem (e.g., `/var/tmp` on
+/// Linux).
 ///
 /// # Resource Leaking
 ///
@@ -60,7 +67,7 @@ pub fn spooled_tempfile(max_size: usize) -> SpooledTempFile {
 
 /// Construct a new [`SpooledTempFile`], backed by a file in the specified directory. Use this when,
 /// e.g., you need the temporary file to be backed by a specific filesystem (e.g., when your default
-/// temporary directory is in-memory).
+/// temporary directory is in-memory). Also see [`spooled_tempfile`].
 ///
 /// **NOTE:** The specified path isn't checked until the temporary file is "rolled over" into a real
 /// temporary file. If the specified directory isn't writable, writes to the temporary file will
