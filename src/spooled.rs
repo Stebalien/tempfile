@@ -55,6 +55,14 @@ pub fn spooled_tempfile(max_size: usize) -> SpooledTempFile {
     SpooledTempFile::new(max_size)
 }
 
+/// Write a cursor into a temporary file, returning the temporary file.
+fn cursor_to_tempfile(cursor: &Cursor<Vec<u8>>) -> io::Result<File> {
+    let mut file = tempfile()?;
+    file.write_all(cursor.get_ref())?;
+    file.seek(SeekFrom::Start(cursor.position()))?;
+    Ok(file)
+}
+
 impl SpooledTempFile {
     #[must_use]
     pub fn new(max_size: usize) -> SpooledTempFile {
@@ -76,17 +84,13 @@ impl SpooledTempFile {
     /// Rolls over to a file on disk, regardless of current size. Does nothing
     /// if already rolled over.
     pub fn roll(&mut self) -> io::Result<()> {
-        if !self.is_rolled() {
-            let mut file = tempfile()?;
-            if let SpooledData::InMemory(cursor) = &mut self.inner {
-                file.write_all(cursor.get_ref())?;
-                file.seek(SeekFrom::Start(cursor.position()))?;
-            }
-            self.inner = SpooledData::OnDisk(file);
+        if let SpooledData::InMemory(cursor) = &mut self.inner {
+            self.inner = SpooledData::OnDisk(cursor_to_tempfile(cursor)?);
         }
         Ok(())
     }
 
+    /// Truncate the file to the specified size.
     pub fn set_len(&mut self, size: u64) -> Result<(), io::Error> {
         if size > self.max_size as u64 {
             self.roll()?; // does nothing if already rolled over
@@ -104,6 +108,14 @@ impl SpooledTempFile {
     #[must_use]
     pub fn into_inner(self) -> SpooledData {
         self.inner
+    }
+
+    /// Convert into a regular unnamed temporary file, writing it to disk if necessary.
+    pub fn into_file(self) -> io::Result<File> {
+        match self.inner {
+            SpooledData::InMemory(cursor) => cursor_to_tempfile(&cursor),
+            SpooledData::OnDisk(file) => Ok(file),
+        }
     }
 }
 
