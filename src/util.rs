@@ -62,6 +62,8 @@ pub fn create_helper<R>(
                 rng.seed(seed);
             }
         }
+        let _ = i; // avoid unused variable warning for the above.
+
         let path = base.join(tmpname(&mut rng, prefix, suffix, random_len));
         return match f(path) {
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists && num_retries > 1 => continue,
