@@ -169,12 +169,32 @@ fn pass_as_asref_path() {
     }
 }
 
-fn test_keep() {
-    let tmpdir = Builder::new().keep(true).tempdir().unwrap();
-    let path = tmpdir.path().to_owned();
-    drop(tmpdir);
-    assert!(path.exists());
-    fs::remove_dir(path).unwrap();
+fn test_disable_cleanup() {
+    // Case 0: never mark as "disable cleanup"
+    // Case 1: enable "disable cleanup" in the builder, don't touch it after.
+    // Case 2: enable "disable cleanup" in the builder, turn it off after.
+    // Case 3: don't enable disable cleanup in the builder, turn it on after.
+    for case in 0..4 {
+        let in_builder = case & 1 > 0;
+        let toggle = case & 2 > 0;
+        let mut tmpdir = Builder::new()
+            .disable_cleanup(in_builder)
+            .tempdir()
+            .unwrap();
+        if toggle {
+            tmpdir.disable_cleanup(!in_builder);
+        }
+
+        let path = tmpdir.path().to_owned();
+        drop(tmpdir);
+
+        if in_builder ^ toggle {
+            assert!(path.exists());
+            fs::remove_dir(path).unwrap();
+        } else {
+            assert!(!path.exists(), "tempdir wasn't deleted");
+        }
+    }
 }
 
 #[test]
@@ -188,5 +208,5 @@ fn main() {
     in_tmpdir(test_rm_tempdir_close);
     in_tmpdir(dont_double_panic);
     in_tmpdir(pass_as_asref_path);
-    in_tmpdir(test_keep);
+    in_tmpdir(test_disable_cleanup);
 }
