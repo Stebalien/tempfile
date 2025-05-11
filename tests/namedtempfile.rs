@@ -411,22 +411,40 @@ fn test_keep() {
 }
 
 #[test]
-fn test_builder_keep() {
+fn test_disable_cleanup() {
     configure_wasi_temp_dir();
 
-    let mut tmpfile = Builder::new().keep(true).tempfile().unwrap();
-    write!(tmpfile, "abcde").unwrap();
-    let path = tmpfile.path().to_owned();
-    drop(tmpfile);
+    // Case 0: never mark as "disable cleanup"
+    // Case 1: enable "disable cleanup" in the builder, don't touch it after.
+    // Case 2: enable "disable cleanup" in the builder, turn it off after.
+    // Case 3: don't enable disable cleanup in the builder, turn it on after.
 
-    {
-        // Try opening it again.
-        let mut f = File::open(&path).unwrap();
-        let mut buf = String::new();
-        f.read_to_string(&mut buf).unwrap();
-        assert_eq!("abcde", buf);
+    for case in 0..4 {
+        let in_builder = case & 1 > 0;
+        let toggle = case & 2 > 0;
+        let mut tmpfile = Builder::new()
+            .disable_cleanup(in_builder)
+            .tempfile()
+            .unwrap();
+        write!(tmpfile, "abcde").unwrap();
+        if toggle {
+            tmpfile.disable_cleanup(!in_builder);
+        }
+
+        let path = tmpfile.path().to_owned();
+        drop(tmpfile);
+
+        if in_builder ^ toggle {
+            // Try opening it again.
+            let mut f = File::open(&path).unwrap();
+            let mut buf = String::new();
+            f.read_to_string(&mut buf).unwrap();
+            assert_eq!("abcde", buf);
+            std::fs::remove_file(&path).unwrap();
+        } else {
+            assert!(!path.exists(), "tempfile wasn't deleted");
+        }
     }
-    std::fs::remove_file(&path).unwrap();
 }
 
 #[test]

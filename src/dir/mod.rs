@@ -182,7 +182,7 @@ pub fn tempdir_in<P: AsRef<Path>>(dir: P) -> io::Result<TempDir> {
 /// [`std::process::exit()`]: http://doc.rust-lang.org/std/process/fn.exit.html
 pub struct TempDir {
     path: Box<Path>,
-    keep: bool,
+    disable_cleanup: bool,
 }
 
 impl TempDir {
@@ -394,6 +394,9 @@ impl TempDir {
     /// This consumes the [`TempDir`] without deleting directory on the filesystem, meaning that
     /// the directory will no longer be automatically deleted.
     ///
+    /// If you want to disable automatic cleanup of the temporary directory in-place, keeping the
+    /// `TempDir` as-is, use [`TempDir::disable_cleanup`] instead.
+    ///
     /// [`TempDir`]: struct.TempDir.html
     /// [`PathBuf`]: http://doc.rust-lang.org/std/path/struct.PathBuf.html
     ///
@@ -414,13 +417,19 @@ impl TempDir {
     /// # Ok::<(), std::io::Error>(())
     /// ```
     #[must_use]
-    pub fn keep(self) -> PathBuf {
-        // Prevent the Drop impl from being called.
-        let mut this = mem::ManuallyDrop::new(self);
+    pub fn keep(mut self) -> PathBuf {
+        self.disable_cleanup(true);
+        mem::replace(&mut self.path, PathBuf::new().into_boxed_path()).into()
+    }
 
-        // replace this.path with an empty Box, since an empty Box does not
-        // allocate any heap memory.
-        mem::replace(&mut this.path, PathBuf::new().into_boxed_path()).into()
+    /// Disable cleanup of the temporary directory. If `disable_cleanup` is `true`, the temporary
+    /// directory will not be deleted when this `TempDir` is dropped. This method is equivalent to
+    /// calling [`Builder::disable_cleanup`] when creating the `TempDir`.
+    ///
+    /// **NOTE:** this method is primarily useful for testing/debugging. If you want to simply turn
+    /// a temporary directory into a non-temporary directory, prefer [`TempDir::keep`].
+    pub fn disable_cleanup(&mut self, disable_cleanup: bool) {
+        self.disable_cleanup = disable_cleanup
     }
 
     /// Closes and removes the temporary directory, returning a `Result`.
@@ -490,7 +499,7 @@ impl fmt::Debug for TempDir {
 
 impl Drop for TempDir {
     fn drop(&mut self) {
-        if !self.keep {
+        if !self.disable_cleanup {
             let _ = remove_dir_all(self.path());
         }
     }
@@ -499,9 +508,9 @@ impl Drop for TempDir {
 pub(crate) fn create(
     path: PathBuf,
     permissions: Option<&std::fs::Permissions>,
-    keep: bool,
+    disable_cleanup: bool,
 ) -> io::Result<TempDir> {
-    imp::create(path, permissions, keep)
+    imp::create(path, permissions, disable_cleanup)
 }
 
 mod imp;

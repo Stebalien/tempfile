@@ -124,11 +124,12 @@ impl error::Error for PathPersistError {
 /// This is useful when the temporary file needs to be used by a child process,
 /// for example.
 ///
-/// When dropped, the temporary file is deleted unless `keep(true)` was called
-/// on the builder that constructed this value.
+/// When dropped, the temporary file is deleted unless `disable_cleanup(true)` was called on the
+/// builder that constructed this temporary file and/or was called on either this `TempPath` or the
+/// `NamedTempFile` from which this `TempPath` was constructed.
 pub struct TempPath {
     path: Box<Path>,
-    keep: bool,
+    disable_cleanup: bool,
 }
 
 impl TempPath {
@@ -298,18 +299,30 @@ impl TempPath {
     pub fn keep(mut self) -> Result<PathBuf, PathPersistError> {
         match imp::keep(&self.path) {
             Ok(_) => {
-                // Don't drop `self`. We don't want to try deleting the old
-                // temporary file path. (It'll fail, but the failure is never
-                // seen.)
-                let path = mem::replace(&mut self.path, PathBuf::new().into_boxed_path());
-                mem::forget(self);
-                Ok(path.into())
+                self.disable_cleanup(true);
+                Ok(mem::replace(
+                    &mut self.path,
+                    // Replace with an empty boxed path buf, this doesn't allocate.
+                    PathBuf::new().into_boxed_path(),
+                )
+                .into_path_buf())
             }
             Err(e) => Err(PathPersistError {
                 error: e,
                 path: self,
             }),
         }
+    }
+
+    /// Disable cleanup of the temporary file. If `disable_cleanup` is `true`, the temporary file
+    /// will not be deleted when this `TempPath` is dropped. This method is equivalent to calling
+    /// [`Builder::disable_cleanup`] when creating the original `NamedTempFile`, which see for
+    /// relevant warnings.
+    ///
+    /// **NOTE:** this method is primarily useful for testing/debugging. If you want to simply turn
+    /// a temporary file-path into a non-temporary file-path, prefer [`TempPath::keep`].
+    pub fn disable_cleanup(&mut self, disable_cleanup: bool) {
+        self.disable_cleanup = disable_cleanup
     }
 
     /// Create a new TempPath from an existing path. This can be done even if no
@@ -321,14 +334,14 @@ impl TempPath {
     pub fn from_path(path: impl Into<PathBuf>) -> Self {
         Self {
             path: path.into().into_boxed_path(),
-            keep: false,
+            disable_cleanup: false,
         }
     }
 
-    pub(crate) fn new(path: PathBuf, keep: bool) -> Self {
+    pub(crate) fn new(path: PathBuf, disable_cleanup: bool) -> Self {
         Self {
             path: path.into_boxed_path(),
-            keep,
+            disable_cleanup,
         }
     }
 }
@@ -341,7 +354,7 @@ impl fmt::Debug for TempPath {
 
 impl Drop for TempPath {
     fn drop(&mut self) {
-        if !self.keep {
+        if !self.disable_cleanup {
             let _ = fs::remove_file(&self.path);
         }
     }
@@ -775,7 +788,6 @@ impl<F> NamedTempFile<F> {
     /// Keep the temporary file from being deleted. This function will turn the
     /// temporary file into a non-temporary file without moving it.
     ///
-    ///
     /// # Errors
     ///
     /// On some platforms (e.g., Windows), we need to mark the file as
@@ -804,6 +816,17 @@ impl<F> NamedTempFile<F> {
                 error,
             }),
         }
+    }
+
+    /// Disable cleanup of the temporary file. If `disable_cleanup` is `true`, the temporary file
+    /// will not be deleted when this `TempPath` is dropped. This method is equivalent to calling
+    /// [`Builder::disable_cleanup`] when creating the original `NamedTempFile`, which see for
+    /// relevant warnings.
+    ///
+    /// **NOTE:** this method is primarily useful for testing/debugging. If you want to simply turn
+    /// a temporary file into a non-temporary file, prefer [`NamedTempFile::keep`].
+    pub fn disable_cleanup(&mut self, disable_cleanup: bool) {
+        self.path.disable_cleanup(disable_cleanup)
     }
 
     /// Get a reference to the underlying file.
@@ -1048,7 +1071,7 @@ pub(crate) fn create_named(
         .map(|file| NamedTempFile {
             path: TempPath {
                 path: path.into_boxed_path(),
-                keep,
+                disable_cleanup: keep,
             },
             file,
         })
