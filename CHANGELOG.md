@@ -1,5 +1,27 @@
 # Changelog
 
+## 3.20.0
+
+This release mostly unifies the behavior/capabilities around "keeping" temporary files:
+
+- Rename `Builder::keep(bool)` (via deprecation) to `Builder::disable_cleanup(bool)` to make it clear that behaves differently from `NamedTempFile::keep()`. The former disables automatic cleanup while the latter _consumes_ the `NamedTempFile` object entirely and unsets the "temporary file" attribute (on Windows).
+- Rename `TempDir::into_path` (via deprecation) to `TempDir::keep` to mirror `NamedTempFile::keep`.
+- Add `TempDir::disable_cleanup`, `NamedTempFile::disable_cleanup`, and `TempPath::disable_cleanup` making it possible to disable automatic cleanup in-place _after_ creating a temporary file/directory (equivalent to calling `Builder::disable_cleanup` before creating the file/directory).
+
+Additionally, it adds a few spooled temporary file features:
+
+- Add `SpooledTempFile::into_file` for turning a `SpooledTempFile` into a regular unnamed temporary file, writing it to the backing storage ("rolling" it) if it was still stored in-memory.
+- Add `spooled_tempfile_in` and `SpooledTempFile::new_in` methods for creating spooled temporary files in a specific directory. This makes it possible to choose the backing device for your spooled temporary file which is rather important on Linux where the default temporary directory is likely backed by memory (defeating the entire point of having a spooled temporary file).
+
+Finally, this release improves documentation, especially the top-level documentation explaining which temporary file type to use.
+
+**BREAKING** for those with `deny(warnings)`:
+
+- `Builder::keep` deprecated in favor of `Builder::disable_cleanup`.
+- `TempDir::into_path` is deprecated in favor of `TempDir::keep`.
+
+**BREAKING**:
+
 ## 3.19.1
 
 - Don't unlink temporary files immediately on Windows (fixes #339). Unfortunately, this seemed to corrupt the file object (possibly a Windows kernel bug) in rare cases and isn't strictly speaking necessary.
