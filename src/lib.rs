@@ -466,8 +466,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     }
 
     /// Disable cleanup of the file/folder to even when the [`NamedTempFile`]/[`TempDir`] goes out
-    /// of scope. Prefer [`NamedTempFile::keep`] and `[`TempDir::keep`] where possible,
-    /// `disable_cleanup` is provided for testing & debugging.
+    /// of scope.
     ///
     /// By default, the file/folder is automatically cleaned up in the destructor of
     /// [`NamedTempFile`]/[`TempDir`]. When `disable_cleanup` is set to `true`, this behavior is
