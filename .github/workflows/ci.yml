@@ -46,11 +46,13 @@ jobs:
             target: aarch64-apple-darwin
         include:
           - rust-version: "nightly"
+            test-flags: --tests
             platform:
               name: "WASI P1"
               os: ubuntu-latest
               target: wasm32-wasip1
           - rust-version: "nightly"
+            test-flags: --tests
             platform:
               name: "WASI P2"
               os: ubuntu-latest
@@ -76,7 +78,7 @@ jobs:
       - name: Build
         run: cargo build --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }}
       - name: Test
-        run: cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }}
+        run: cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} ${{ matrix.test-flags }}
   wasm:
     name: WASM Test Build
     runs-on: ubuntu-latest
