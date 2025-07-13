@@ -1,4 +1,3 @@
-use std::env;
 use std::path::{Path, PathBuf};
 
 // Once rust 1.70 is wide-spread (Debian stable), we can use OnceLock from stdlib.
@@ -40,5 +39,14 @@ pub fn temp_dir() -> PathBuf {
         .get()
         .map(|p| p.to_owned())
         // Don't cache this in case the user uses std::env::set to change the temporary directory.
-        .unwrap_or_else(env::temp_dir)
+        .unwrap_or_else(|| {
+            #[cfg(target_os = "wasi")]
+            {
+                "/tmp".into()
+            }
+            #[cfg(not(target_os = "wasi"))]
+            {
+                std::env::temp_dir()
+            }
+        })
 }

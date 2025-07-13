@@ -46,13 +46,11 @@ jobs:
             target: aarch64-apple-darwin
         include:
           - rust-version: "nightly"
-            test-flags: --tests
             platform:
               name: "WASI P1"
               os: ubuntu-latest
               target: wasm32-wasip1
           - rust-version: "nightly"
-            test-flags: --tests
             platform:
               name: "WASI P2"
               os: ubuntu-latest
