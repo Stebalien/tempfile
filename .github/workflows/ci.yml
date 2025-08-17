@@ -81,9 +81,17 @@ jobs:
         run: curl https://wasmtime.dev/install.sh -sSf | bash
       - name: Setup Android NDK
         if: ${{ contains(matrix.platform.target, 'android') }}
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r25c
+        run: |
+          NDK_VERSION="r25c"
+          NDK_URL="https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
+          NDK_DIR="${HOME}/android-ndk-${NDK_VERSION}"
+          
+          # Download and extract NDK
+          wget -q "$NDK_URL" -O android-ndk.zip
+          unzip -q android-ndk.zip -d "$HOME"
+          
+          # Set ANDROID_NDK_ROOT environment variable
+          echo "ANDROID_NDK_ROOT=$NDK_DIR" >> $GITHUB_ENV
       - name: Configure Android environment
         if: ${{ contains(matrix.platform.target, 'android') }}
         run: |
