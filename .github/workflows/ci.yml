@@ -44,6 +44,10 @@ jobs:
           - name: "MacOS"
             os: macos-latest
             target: aarch64-apple-darwin
+          - name: "Android (aarch64)"
+            os: ubuntu-latest
+            target: aarch64-linux-android
+            test-flags: --no-run
         include:
           - rust-version: "nightly"
             test-flags: --tests
@@ -75,10 +79,21 @@ jobs:
       - name: Install Wasmtime
         if: ${{ startsWith(matrix.platform.target, 'wasm32-wasi') }}
         run: curl https://wasmtime.dev/install.sh -sSf | bash
+      - name: Setup Android NDK
+        if: ${{ contains(matrix.platform.target, 'android') }}
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+      - name: Configure Android environment
+        if: ${{ contains(matrix.platform.target, 'android') }}
+        run: |
+          echo "CC_aarch64_linux_android=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang" >> $GITHUB_ENV
+          echo "AR_aarch64_linux_android=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang" >> $GITHUB_ENV
       - name: Build
         run: cargo build --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }}
       - name: Test
-        run: cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} ${{ matrix.test-flags }}
+        run: cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} ${{ matrix.test-flags || matrix.platform.test-flags }}
   wasm:
     name: WASM Test Build
     runs-on: ubuntu-latest
