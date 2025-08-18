@@ -11,7 +11,7 @@ env:
   CARGO_TARGET_WASM32_WASIP2_RUNNER: "/home/runner/.wasmtime/bin/wasmtime --dir /tmp/"
   RUSTFLAGS: "-D warnings"
   RUSTDOCFLAGS: "-D warnings"
-  NDK_VERSION: "r26d"
+  NDK_VERSION: "r27d"
 
 name: CI
 jobs:
@@ -98,7 +98,7 @@ jobs:
 
           # Set ANDROID_NDK_ROOT environment variable
           echo "ANDROID_NDK_ROOT=$NDK_DIR" >> $GITHUB_ENV
-          
+
           # Configure Android environment
           echo "CC_aarch64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang" >> $GITHUB_ENV
           echo "AR_aarch64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
@@ -136,33 +136,18 @@ jobs:
           # Build all test binaries
           cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} --no-run
 
-          # Copy all test executables to a temporary directory
-          TEST_DIR="/tmp/android_tests"
-          mkdir -p "$TEST_DIR"
-          find target/aarch64-linux-android/debug/deps/ -type f -executable -exec cp {} "$TEST_DIR/" \;
-          echo "Copied test executables:"
-          ls -la "$TEST_DIR/"
-
-          # Create a temporary directory for tests on Android
-          adb -s localhost:5555 shell mkdir -p /data/local/tmp/test_temp
-
           # Push and run each test executable
-          for TEST_BINARY in "$TEST_DIR"/*; do
-            if [ -f "$TEST_BINARY" ]; then
-              BINARY_NAME=$(basename "$TEST_BINARY")
-              echo "Running test binary: $BINARY_NAME"
+          while IFS= read -r -d '' TEST_BINARY; do
+            BINARY_NAME="$(basename "$TEST_BINARY")"
+            echo "Running test binary: $BINARY_NAME"
 
-              # Push the test binary to the Android container
-              adb -s localhost:5555 push "$TEST_BINARY" "/data/local/tmp/$BINARY_NAME"
-              adb -s localhost:5555 shell chmod 755 "/data/local/tmp/$BINARY_NAME"
+            # Push the test binary to the Android container
+            adb -s localhost:5555 push "$TEST_BINARY" "/data/local/tmp/$BINARY_NAME"
+            adb -s localhost:5555 shell chmod 755 "/data/local/tmp/$BINARY_NAME"
 
-              # Run the test - exit on failure
-              if ! adb -s localhost:5555 shell "cd /data/local/tmp/test_temp && /data/local/tmp/$BINARY_NAME"; then
-                echo "Test $BINARY_NAME failed"
-                exit 1
-              fi
-            fi
-          done
+            # Run the test - exit on failure
+            adb -s localhost:5555 shell "/data/local/tmp/$BINARY_NAME"
+          done < <(find target/aarch64-linux-android/debug/deps/ -type f -executable -print0)
 
           # Cleanup
           docker stop redroid-test || true
