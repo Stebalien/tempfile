@@ -101,12 +101,11 @@ jobs:
           echo "ANDROID_NDK_ROOT=$NDK_DIR" >> $GITHUB_ENV
 
           # Setup & start redroid container with ARM64 support
-          sudo apt install -y linux-modules-extra-$(uname -r) android-tools-adb
-          sudo modprobe binder_linux devices="binder,hwbinder,vndbinder"
-          sudo modprobe ashmem_linux
+          sudo apt-get install -y linux-modules-extra-$(uname -r) android-tools-adb
+          sudo modprobe binder_linux devices=binder,hwbinder,vndbinder
 
           docker run -itd --rm --privileged \
-            --mount type=bind,src=$(pwd):dst=$(pwd)
+            --mount type=bind,src=$(pwd),dst=$(pwd) \
             --name redroid-test \
             -p 5555:5555 \
             redroid/redroid:${ANDROID_VERSION}_64only-latest
