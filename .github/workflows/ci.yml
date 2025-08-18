@@ -90,12 +90,12 @@ jobs:
           NDK_VERSION="r25c"
           NDK_URL="https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
           NDK_DIR="${HOME}/android-ndk-${NDK_VERSION}"
-          
+
           # Download and extract NDK
           echo "Downloading NDK from $NDK_URL"
           wget -q "$NDK_URL" -O android-ndk.zip
           unzip -q android-ndk.zip -d "$HOME"
-          
+
           # Set ANDROID_NDK_ROOT environment variable
           echo "ANDROID_NDK_ROOT=$NDK_DIR" >> $GITHUB_ENV
       - name: Configure Android environment
@@ -130,39 +130,28 @@ jobs:
             --name redroid-test \
             -p 5555:5555 \
             redroid/redroid:12.0.0_64only-latest
-          
-          # Wait for container to start
-          echo "Waiting for redroid to start..."
-          sleep 30
-          
-          # Kill any existing ADB server and ensure clean state
-          adb kill-server || true
-          sleep 2
-          
+
           # Start ADB server and connect to our redroid container
           adb start-server
           timeout 60 bash -c 'until adb connect localhost:5555; do sleep 2; done'
-          
-          # Ensure only our device is connected
-          adb devices
-          
+
           # Build the test binary
           cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} --no-run
-          
+
           # Find the test binary
           TEST_BINARY=$(find target/aarch64-linux-android/debug/deps/ -name 'tempfile-*' -type f -executable | head -1)
           echo "Found test binary: $TEST_BINARY"
-          
+
           # Push the test binary to the Android container (explicitly target our device)
           adb -s localhost:5555 push "$TEST_BINARY" /data/local/tmp/tempfile-test
           adb -s localhost:5555 shell chmod 755 /data/local/tmp/tempfile-test
-          
+
           # Create a temporary directory for tests
           adb -s localhost:5555 shell mkdir -p /data/local/tmp/test_temp
-          
+
           # Run the tests
           adb -s localhost:5555 shell "cd /data/local/tmp/test_temp && /data/local/tmp/tempfile-test"
-          
+
           # Cleanup
           docker stop redroid-test || true
   wasm:
