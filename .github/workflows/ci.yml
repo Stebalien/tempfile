@@ -127,7 +127,7 @@ jobs:
           docker run -itd --rm --privileged \
             --name redroid-test \
             -p 5555:5555 \
-            redroid/redroid:12.0.0_64only-latest
+            redroid/redroid:16.0.0_64only-latest
 
           # Start ADB server and connect to our redroid container
           adb start-server
