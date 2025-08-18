@@ -11,6 +11,7 @@ env:
   CARGO_TARGET_WASM32_WASIP2_RUNNER: "/home/runner/.wasmtime/bin/wasmtime --dir /tmp/"
   RUSTFLAGS: "-D warnings"
   RUSTDOCFLAGS: "-D warnings"
+  NDK_VERSION: "r26d"
 
 name: CI
 jobs:
@@ -84,10 +85,9 @@ jobs:
       - name: Install Wasmtime
         if: ${{ startsWith(matrix.platform.target, 'wasm32-wasi') }}
         run: curl https://wasmtime.dev/install.sh -sSf | bash
-      - name: Setup Android NDK
+      - name: Setup Android NDK and environment
         if: ${{ contains(matrix.platform.target, 'android') }}
         run: |
-          NDK_VERSION="r25c"
           NDK_URL="https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
           NDK_DIR="${HOME}/android-ndk-${NDK_VERSION}"
 
@@ -98,13 +98,11 @@ jobs:
 
           # Set ANDROID_NDK_ROOT environment variable
           echo "ANDROID_NDK_ROOT=$NDK_DIR" >> $GITHUB_ENV
-      - name: Configure Android environment
-        if: ${{ contains(matrix.platform.target, 'android') }}
-        run: |
-          API_LEVEL="30"
-          echo "CC_aarch64_linux_android=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${API_LEVEL}-clang" >> $GITHUB_ENV
-          echo "AR_aarch64_linux_android=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
-          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${API_LEVEL}-clang" >> $GITHUB_ENV
+          
+          # Configure Android environment
+          echo "CC_aarch64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang" >> $GITHUB_ENV
+          echo "AR_aarch64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang" >> $GITHUB_ENV
           echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS=-C link-arg=-Wl,--as-needed" >> $GITHUB_ENV
       - name: Build
         run: cargo build --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }}
@@ -138,25 +136,32 @@ jobs:
           # Build all test binaries
           cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} --no-run
 
-          # Find all test binaries
-          TEST_BINARIES=$(find target/aarch64-linux-android/debug/deps/ -type f -executable -name '*-*' | grep -E '(tempfile|env|namedtempfile|spooled|tempdir)-[0-9a-f]+$')
-          echo "Found test binaries:"
-          echo "$TEST_BINARIES"
+          # Copy all test executables to a temporary directory
+          TEST_DIR="/tmp/android_tests"
+          mkdir -p "$TEST_DIR"
+          find target/aarch64-linux-android/debug/deps/ -type f -executable -exec cp {} "$TEST_DIR/" \;
+          echo "Copied test executables:"
+          ls -la "$TEST_DIR/"
 
-          # Create a temporary directory for tests
+          # Create a temporary directory for tests on Android
           adb -s localhost:5555 shell mkdir -p /data/local/tmp/test_temp
 
-          # Push and run each test binary
-          for TEST_BINARY in $TEST_BINARIES; do
-            BINARY_NAME=$(basename "$TEST_BINARY")
-            echo "Running test binary: $BINARY_NAME"
+          # Push and run each test executable
+          for TEST_BINARY in "$TEST_DIR"/*; do
+            if [ -f "$TEST_BINARY" ]; then
+              BINARY_NAME=$(basename "$TEST_BINARY")
+              echo "Running test binary: $BINARY_NAME"
 
-            # Push the test binary to the Android container
-            adb -s localhost:5555 push "$TEST_BINARY" "/data/local/tmp/$BINARY_NAME"
-            adb -s localhost:5555 shell chmod 755 "/data/local/tmp/$BINARY_NAME"
+              # Push the test binary to the Android container
+              adb -s localhost:5555 push "$TEST_BINARY" "/data/local/tmp/$BINARY_NAME"
+              adb -s localhost:5555 shell chmod 755 "/data/local/tmp/$BINARY_NAME"
 
-            # Run the test
-            adb -s localhost:5555 shell "cd /data/local/tmp/test_temp && /data/local/tmp/$BINARY_NAME" || echo "Test $BINARY_NAME failed"
+              # Run the test - exit on failure
+              if ! adb -s localhost:5555 shell "cd /data/local/tmp/test_temp && /data/local/tmp/$BINARY_NAME"; then
+                echo "Test $BINARY_NAME failed"
+                exit 1
+              fi
+            fi
           done
 
           # Cleanup
