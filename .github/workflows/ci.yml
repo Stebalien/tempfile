@@ -53,7 +53,6 @@ jobs:
               name: "Android (aarch64)"
               os: ubuntu-latest
               target: aarch64-linux-android
-              test-flags: --no-run
         include:
           - rust-version: "nightly"
             test-flags: --tests
@@ -112,59 +111,52 @@ jobs:
       - name: Test
         if: ${{ !contains(matrix.platform.target, 'android') }}
         run: cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} ${{ matrix.test-flags || matrix.platform.test-flags }}
-      - name: Enable KVM group perms
+      - name: Setup required kernel modules for redroid
         if: ${{ contains(matrix.platform.target, 'android') }}
         run: |
-            echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-            sudo udevadm control --reload-rules
-            sudo udevadm trigger --name-match=kvm
-      - name: AVD cache
+          sudo apt install -y linux-modules-extra-$(uname -r) || true
+          sudo modprobe binder_linux devices="binder,hwbinder,vndbinder" || true
+          sudo modprobe ashmem_linux || true
+      - name: Install ADB
         if: ${{ contains(matrix.platform.target, 'android') }}
-        uses: actions/cache@v4
-        id: avd-cache
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-30
-      - name: Create AVD and generate snapshot for caching
-        if: ${{ contains(matrix.platform.target, 'android') && steps.avd-cache.outputs.cache-hit != 'true' }}
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          target: google_apis
-          arch: arm64-v8a
-          force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: false
-          script: echo "Generated AVD snapshot for caching."
-      - name: Test on Android Emulator
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y android-tools-adb
+      - name: Test on Android (redroid container)
         if: ${{ contains(matrix.platform.target, 'android') }}
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          target: google_apis
-          arch: arm64-v8a
-          force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
-          script: |
-            # Build the test binary
-            cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} --no-run
-            
-            # Find the test binary
-            TEST_BINARY=$(find target/aarch64-linux-android/debug/deps/ -name 'tempfile-*' -type f -executable | head -1)
-            echo "Found test binary: $TEST_BINARY"
-            
-            # Push the test binary to the Android device
-            adb push "$TEST_BINARY" /data/local/tmp/tempfile-test
-            adb shell chmod 755 /data/local/tmp/tempfile-test
-            
-            # Create a temporary directory for tests
-            adb shell mkdir -p /data/local/tmp/test_temp
-            
-            # Run the tests
-            adb shell "cd /data/local/tmp/test_temp && /data/local/tmp/tempfile-test"
+        run: |
+          # Start redroid container with ARM64 support
+          docker run -itd --rm --privileged \
+            --name redroid-test \
+            -p 5555:5555 \
+            redroid/redroid:12.0.0_64only-latest
+          
+          # Wait for container to start
+          echo "Waiting for redroid to start..."
+          sleep 30
+          
+          # Wait for ADB to be ready
+          timeout 60 bash -c 'until adb connect localhost:5555; do sleep 2; done'
+          
+          # Build the test binary
+          cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} --no-run
+          
+          # Find the test binary
+          TEST_BINARY=$(find target/aarch64-linux-android/debug/deps/ -name 'tempfile-*' -type f -executable | head -1)
+          echo "Found test binary: $TEST_BINARY"
+          
+          # Push the test binary to the Android container
+          adb push "$TEST_BINARY" /data/local/tmp/tempfile-test
+          adb shell chmod 755 /data/local/tmp/tempfile-test
+          
+          # Create a temporary directory for tests
+          adb shell mkdir -p /data/local/tmp/test_temp
+          
+          # Run the tests
+          adb shell "cd /data/local/tmp/test_temp && /data/local/tmp/tempfile-test"
+          
+          # Cleanup
+          docker stop redroid-test || true
   wasm:
     name: WASM Test Build
     runs-on: ubuntu-latest
