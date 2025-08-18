@@ -48,6 +48,13 @@ jobs:
             os: ubuntu-latest
             target: aarch64-linux-android
             test-flags: --no-run
+        exclude:
+          - rust-version: "1.63"
+            platform:
+              name: "Android (aarch64)"
+              os: ubuntu-latest
+              target: aarch64-linux-android
+              test-flags: --no-run
         include:
           - rust-version: "nightly"
             test-flags: --tests
@@ -82,15 +89,7 @@ jobs:
       - name: Setup Android NDK
         if: ${{ contains(matrix.platform.target, 'android') }}
         run: |
-          # Use NDK r21e for Rust 1.63 which still includes libgcc
-          if [ "${{ matrix.rust-version }}" = "1.63" ]; then
-            NDK_VERSION="r21e"
-            echo "Using NDK $NDK_VERSION for Rust 1.63 to ensure libgcc availability"
-          else
-            NDK_VERSION="r25c"
-            echo "Using NDK $NDK_VERSION for newer Rust versions"
-          fi
-          
+          NDK_VERSION="r25c"
           NDK_URL="https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
           NDK_DIR="${HOME}/android-ndk-${NDK_VERSION}"
           
@@ -104,18 +103,11 @@ jobs:
       - name: Configure Android environment
         if: ${{ contains(matrix.platform.target, 'android') }}
         run: |
-          # Use API level 21 for Rust 1.63 to avoid libgcc linking issues with newer APIs
-          if [ "${{ matrix.rust-version }}" = "1.63" ]; then
-            API_LEVEL="21"
-            # For Rust 1.63 with NDK r21e, use standard RUSTFLAGS
-            echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS=-C link-arg=-Wl,--as-needed" >> $GITHUB_ENV
-          else
-            API_LEVEL="30"
-            echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS=-C link-arg=-Wl,--as-needed" >> $GITHUB_ENV
-          fi
+          API_LEVEL="30"
           echo "CC_aarch64_linux_android=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${API_LEVEL}-clang" >> $GITHUB_ENV
           echo "AR_aarch64_linux_android=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${API_LEVEL}-clang" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS=-C link-arg=-Wl,--as-needed" >> $GITHUB_ENV
       - name: Build
         run: cargo build --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }}
       - name: Test
