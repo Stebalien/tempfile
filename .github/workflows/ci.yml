@@ -136,6 +136,8 @@ jobs:
           # Build all test binaries
           cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} --no-run
 
+          ls "target/aarch64-linux-android/debug/deps/"
+
           # Push and run each test executable
           while IFS= read -r -d '' TEST_BINARY; do
             BINARY_NAME="$(basename "$TEST_BINARY")"
