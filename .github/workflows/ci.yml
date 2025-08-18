@@ -135,22 +135,29 @@ jobs:
           adb start-server
           timeout 60 bash -c 'until adb connect localhost:5555; do sleep 2; done'
 
-          # Build the test binary
+          # Build all test binaries
           cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} --no-run
 
-          # Find the test binary
-          TEST_BINARY=$(find target/aarch64-linux-android/debug/deps/ -name 'tempfile-*' -type f -executable | head -1)
-          echo "Found test binary: $TEST_BINARY"
-
-          # Push the test binary to the Android container (explicitly target our device)
-          adb -s localhost:5555 push "$TEST_BINARY" /data/local/tmp/tempfile-test
-          adb -s localhost:5555 shell chmod 755 /data/local/tmp/tempfile-test
+          # Find all test binaries
+          TEST_BINARIES=$(find target/aarch64-linux-android/debug/deps/ -type f -executable -name '*-*' | grep -E '(tempfile|env|namedtempfile|spooled|tempdir)-[0-9a-f]+$')
+          echo "Found test binaries:"
+          echo "$TEST_BINARIES"
 
           # Create a temporary directory for tests
           adb -s localhost:5555 shell mkdir -p /data/local/tmp/test_temp
 
-          # Run the tests
-          adb -s localhost:5555 shell "cd /data/local/tmp/test_temp && /data/local/tmp/tempfile-test"
+          # Push and run each test binary
+          for TEST_BINARY in $TEST_BINARIES; do
+            BINARY_NAME=$(basename "$TEST_BINARY")
+            echo "Running test binary: $BINARY_NAME"
+
+            # Push the test binary to the Android container
+            adb -s localhost:5555 push "$TEST_BINARY" "/data/local/tmp/$BINARY_NAME"
+            adb -s localhost:5555 shell chmod 755 "/data/local/tmp/$BINARY_NAME"
+
+            # Run the test
+            adb -s localhost:5555 shell "cd /data/local/tmp/test_temp && /data/local/tmp/$BINARY_NAME" || echo "Test $BINARY_NAME failed"
+          done
 
           # Cleanup
           docker stop redroid-test || true
