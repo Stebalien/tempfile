@@ -12,6 +12,7 @@ env:
   RUSTFLAGS: "-D warnings"
   RUSTDOCFLAGS: "-D warnings"
   NDK_VERSION: "r27d"
+  ANDROID_VERSION: "16.0.0"
 
 name: CI
 jobs:
@@ -85,7 +86,7 @@ jobs:
       - name: Install Wasmtime
         if: ${{ startsWith(matrix.platform.target, 'wasm32-wasi') }}
         run: curl https://wasmtime.dev/install.sh -sSf | bash
-      - name: Setup Android NDK and environment
+      - name: Setup Android Environment
         if: ${{ contains(matrix.platform.target, 'android') }}
         run: |
           NDK_URL="https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
@@ -99,7 +100,23 @@ jobs:
           # Set ANDROID_NDK_ROOT environment variable
           echo "ANDROID_NDK_ROOT=$NDK_DIR" >> $GITHUB_ENV
 
+          # Setup & start redroid container with ARM64 support
+          sudo apt install -y linux-modules-extra-$(uname -r) android-tools-adb
+          sudo modprobe binder_linux devices="binder,hwbinder,vndbinder"
+          sudo modprobe ashmem_linux
+
+          docker run -itd --rm --privileged \
+            --mount type=bind,src=$(pwd):dst=$(pwd)
+            --name redroid-test \
+            -p 5555:5555 \
+            redroid/redroid:${ANDROID_VERSION}_64only-latest
+
+          # Start ADB server and connect to our redroid container
+          adb start-server
+          timeout 60 bash -c 'until adb connect localhost:5555; do sleep 2; done'
+
           # Configure Android environment
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_RUNNER=adb -s localhost:5555 shell" >> $GITHUB_ENV
           echo "CC_aarch64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang" >> $GITHUB_ENV
           echo "AR_aarch64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang" >> $GITHUB_ENV
@@ -107,51 +124,10 @@ jobs:
       - name: Build
         run: cargo build --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }}
       - name: Test
-        if: ${{ !contains(matrix.platform.target, 'android') }}
-        run: cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} ${{ matrix.test-flags || matrix.platform.test-flags }}
-      - name: Setup required kernel modules for redroid
+        run: cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} ${{ matrix.test-flags }}
+      - name: Stop the redroid container
         if: ${{ contains(matrix.platform.target, 'android') }}
         run: |
-          sudo apt install -y linux-modules-extra-$(uname -r) || true
-          sudo modprobe binder_linux devices="binder,hwbinder,vndbinder" || true
-          sudo modprobe ashmem_linux || true
-      - name: Install ADB
-        if: ${{ contains(matrix.platform.target, 'android') }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y android-tools-adb
-      - name: Test on Android (redroid container)
-        if: ${{ contains(matrix.platform.target, 'android') }}
-        run: |
-          # Start redroid container with ARM64 support
-          docker run -itd --rm --privileged \
-            --name redroid-test \
-            -p 5555:5555 \
-            redroid/redroid:16.0.0_64only-latest
-
-          # Start ADB server and connect to our redroid container
-          adb start-server
-          timeout 60 bash -c 'until adb connect localhost:5555; do sleep 2; done'
-
-          # Build all test binaries
-          cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} --no-run
-
-          ls "target/aarch64-linux-android/debug/deps/"
-
-          # Push and run each test executable
-          while IFS= read -r -d '' TEST_BINARY; do
-            BINARY_NAME="$(basename "$TEST_BINARY")"
-            echo "Running test binary: $BINARY_NAME"
-
-            # Push the test binary to the Android container
-            adb -s localhost:5555 push "$TEST_BINARY" "/data/local/tmp/$BINARY_NAME"
-            adb -s localhost:5555 shell chmod 755 "/data/local/tmp/$BINARY_NAME"
-
-            # Run the test - exit on failure
-            adb -s localhost:5555 shell "/data/local/tmp/$BINARY_NAME"
-          done < <(find target/aarch64-linux-android/debug/deps/ -type f -executable -print0)
-
-          # Cleanup
           docker stop redroid-test || true
   wasm:
     name: WASM Test Build
