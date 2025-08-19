@@ -11,8 +11,8 @@ env:
   CARGO_TARGET_WASM32_WASIP2_RUNNER: "/home/runner/.wasmtime/bin/wasmtime --dir /tmp/"
   RUSTFLAGS: "-D warnings"
   RUSTDOCFLAGS: "-D warnings"
-  NDK_VERSION: "r27d"
-  ANDROID_VERSION: "16.0.0"
+  NDK_VERSION: "r26d"
+  ANDROID_VERSION: "12.0.0"
 
 name: CI
 jobs:
