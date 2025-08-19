@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.21.0
+
+- Updated `windows-sys` requirement to allow version 0.60.x
+
 ## 3.20.0
 
 This release mostly unifies the behavior/capabilities around "keeping" temporary files:
