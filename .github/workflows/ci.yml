@@ -115,7 +115,7 @@ jobs:
           timeout 60 bash -c 'until adb connect localhost:5555; do sleep 2; done'
 
           # Configure Android environment
-          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_RUNNER=adb -s localhost:5555 shell" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_RUNNER=adb -s localhost:5555 shell -e none sh -c 'cp \$1 /tmp/exe && chmod 755 /tmp/exe && /tmp/exe'" >> $GITHUB_ENV
           echo "CC_aarch64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang" >> $GITHUB_ENV
           echo "AR_aarch64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang" >> $GITHUB_ENV
