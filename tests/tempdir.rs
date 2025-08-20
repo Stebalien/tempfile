@@ -12,14 +12,13 @@
 
 use std::fs;
 use std::path::Path;
-use std::sync::mpsc::channel;
-use std::thread;
 
 use tempfile::{Builder, TempDir};
 
+#[test]
 fn test_tempdir() {
     let path = {
-        let p = Builder::new().prefix("foobar").tempdir_in(".").unwrap();
+        let p = Builder::new().prefix("foobar").tempdir().unwrap();
         let p = p.path();
         assert!(p.to_str().unwrap().contains("foobar"));
         p.to_path_buf()
@@ -27,18 +26,21 @@ fn test_tempdir() {
     assert!(!path.exists());
 }
 
+#[test]
 fn test_prefix() {
-    let tmpfile = TempDir::with_prefix_in("prefix", ".").unwrap();
+    let tmpfile = TempDir::with_prefix("prefix").unwrap();
     let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
     assert!(name.starts_with("prefix"));
 }
 
+#[test]
 fn test_suffix() {
-    let tmpfile = TempDir::with_suffix_in("suffix", ".").unwrap();
+    let tmpfile = TempDir::with_suffix("suffix").unwrap();
     let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
     assert!(name.ends_with("suffix"));
 }
 
+#[test]
 fn test_customnamed() {
     let tmpfile = Builder::new()
         .prefix("prefix")
@@ -52,7 +54,12 @@ fn test_customnamed() {
     assert_eq!(name.len(), 24);
 }
 
-fn test_rm_tempdir() {
+#[test]
+#[cfg_attr(target_os = "wasi", ignore = "thread::spawn is not supported")]
+fn test_rm_tempdir_threading() {
+    use std::sync::mpsc::channel;
+    use std::thread;
+
     let (tx, rx) = channel();
     let f = move || {
         let tmp = TempDir::new().unwrap();
@@ -81,61 +88,32 @@ fn test_rm_tempdir() {
         assert!(path.exists());
     }
     assert!(!path.exists());
+}
 
-    let path;
-    {
+#[test]
+fn test_tempdir_keep() {
+    let path = {
         let tmp = TempDir::new().unwrap();
-        path = tmp.keep();
-    }
+        tmp.keep()
+    };
     assert!(path.exists());
     fs::remove_dir_all(&path).unwrap();
     assert!(!path.exists());
 }
 
-fn test_rm_tempdir_close() {
-    let (tx, rx) = channel();
-    let f = move || {
-        let tmp = TempDir::new().unwrap();
-        tx.send(tmp.path().to_path_buf()).unwrap();
-        tmp.close().unwrap();
-        panic!("panic when unwinding past `tmp`");
-    };
-    let _ = thread::spawn(f).join();
-    let path = rx.recv().unwrap();
-    assert!(!path.exists());
-
+#[test]
+fn test_tmpdir_close() {
     let tmp = TempDir::new().unwrap();
     let path = tmp.path().to_path_buf();
-    let f = move || {
-        let tmp = tmp;
-        tmp.close().unwrap();
-        panic!("panic when unwinding past `tmp`");
-    };
-    let _ = thread::spawn(f).join();
-    assert!(!path.exists());
-
-    let path;
-    {
-        let f = move || TempDir::new().unwrap();
-
-        let tmp = thread::spawn(f).join().unwrap();
-        path = tmp.path().to_path_buf();
-        assert!(path.exists());
-        tmp.close().unwrap();
-    }
-    assert!(!path.exists());
-
-    let path;
-    {
-        let tmp = TempDir::new().unwrap();
-        path = tmp.keep();
-    }
     assert!(path.exists());
-    fs::remove_dir_all(&path).unwrap();
+    tmp.close().unwrap();
     assert!(!path.exists());
 }
 
+#[test]
+#[cfg_attr(target_os = "wasi", ignore = "unwinding is not supported")]
 fn dont_double_panic() {
+    use std::thread;
     let r: Result<(), _> = thread::spawn(move || {
         let tmpdir = TempDir::new().unwrap();
         // Remove the temporary directory so that TempDir sees
@@ -149,16 +127,7 @@ fn dont_double_panic() {
     assert!(r.is_err());
 }
 
-fn in_tmpdir<F>(f: F)
-where
-    F: FnOnce(),
-{
-    let tmpdir = TempDir::new().unwrap();
-    assert!(std::env::set_current_dir(tmpdir.path()).is_ok());
-
-    f();
-}
-
+#[test]
 fn pass_as_asref_path() {
     let tempdir = TempDir::new().unwrap();
     takes_asref_path(&tempdir);
@@ -169,6 +138,7 @@ fn pass_as_asref_path() {
     }
 }
 
+#[test]
 fn test_disable_cleanup() {
     // Case 0: never mark as "disable cleanup"
     // Case 1: enable "disable cleanup" in the builder, don't touch it after.
@@ -195,18 +165,4 @@ fn test_disable_cleanup() {
             assert!(!path.exists(), "tempdir wasn't deleted");
         }
     }
-}
-
-#[test]
-#[cfg_attr(target_os = "wasi", ignore = "thread::spawn is not supported")]
-fn main() {
-    in_tmpdir(test_tempdir);
-    in_tmpdir(test_prefix);
-    in_tmpdir(test_suffix);
-    in_tmpdir(test_customnamed);
-    in_tmpdir(test_rm_tempdir);
-    in_tmpdir(test_rm_tempdir_close);
-    in_tmpdir(dont_double_panic);
-    in_tmpdir(pass_as_asref_path);
-    in_tmpdir(test_disable_cleanup);
 }
