@@ -15,8 +15,18 @@ use std::path::Path;
 
 use tempfile::{Builder, TempDir};
 
+/// For the wasi platforms, `std::env::temp_dir` will panic. For those targets, configure the /tmp
+/// directory instead as the base directory for temp files.
+fn configure_wasi_temp_dir() {
+    if cfg!(target_os = "wasi") {
+        let _ = tempfile::env::override_temp_dir(std::path::Path::new("/tmp"));
+    }
+}
+
 #[test]
 fn test_tempdir() {
+    configure_wasi_temp_dir();
+
     let path = {
         let p = Builder::new().prefix("foobar").tempdir().unwrap();
         let p = p.path();
@@ -28,6 +38,8 @@ fn test_tempdir() {
 
 #[test]
 fn test_prefix() {
+    configure_wasi_temp_dir();
+
     let tmpfile = TempDir::with_prefix("prefix").unwrap();
     let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
     assert!(name.starts_with("prefix"));
@@ -35,6 +47,8 @@ fn test_prefix() {
 
 #[test]
 fn test_suffix() {
+    configure_wasi_temp_dir();
+
     let tmpfile = TempDir::with_suffix("suffix").unwrap();
     let name = tmpfile.path().file_name().unwrap().to_str().unwrap();
     assert!(name.ends_with("suffix"));
@@ -42,6 +56,8 @@ fn test_suffix() {
 
 #[test]
 fn test_customnamed() {
+    configure_wasi_temp_dir();
+
     let tmpfile = Builder::new()
         .prefix("prefix")
         .suffix("suffix")
@@ -57,6 +73,8 @@ fn test_customnamed() {
 #[test]
 #[cfg_attr(target_os = "wasi", ignore = "thread::spawn is not supported")]
 fn test_rm_tempdir_threading() {
+    configure_wasi_temp_dir();
+
     use std::sync::mpsc::channel;
     use std::thread;
 
@@ -92,6 +110,8 @@ fn test_rm_tempdir_threading() {
 
 #[test]
 fn test_tempdir_keep() {
+    configure_wasi_temp_dir();
+
     let path = {
         let tmp = TempDir::new().unwrap();
         tmp.keep()
@@ -103,6 +123,8 @@ fn test_tempdir_keep() {
 
 #[test]
 fn test_tmpdir_close() {
+    configure_wasi_temp_dir();
+
     let tmp = TempDir::new().unwrap();
     let path = tmp.path().to_path_buf();
     assert!(path.exists());
@@ -113,6 +135,8 @@ fn test_tmpdir_close() {
 #[test]
 #[cfg_attr(target_os = "wasi", ignore = "unwinding is not supported")]
 fn dont_double_panic() {
+    configure_wasi_temp_dir();
+
     use std::thread;
     let r: Result<(), _> = thread::spawn(move || {
         let tmpdir = TempDir::new().unwrap();
@@ -129,6 +153,8 @@ fn dont_double_panic() {
 
 #[test]
 fn pass_as_asref_path() {
+    configure_wasi_temp_dir();
+
     let tempdir = TempDir::new().unwrap();
     takes_asref_path(&tempdir);
 
@@ -140,6 +166,8 @@ fn pass_as_asref_path() {
 
 #[test]
 fn test_disable_cleanup() {
+    configure_wasi_temp_dir();
+
     // Case 0: never mark as "disable cleanup"
     // Case 1: enable "disable cleanup" in the builder, don't touch it after.
     // Case 2: enable "disable cleanup" in the builder, turn it off after.
