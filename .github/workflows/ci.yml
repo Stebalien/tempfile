@@ -105,7 +105,8 @@ jobs:
           sudo modprobe binder_linux devices=binder,hwbinder,vndbinder
 
           docker run -itd --rm --privileged \
-            --mount "type=bind,src=/,dst=/data/host,ro,bind-propagation=rslave" \
+            --mount "type=bind,src=$(pwd),dst=/data/host$(pwd),ro" \
+            --mount "type=bind,src=/tmp,dst=/data/host/tmp,ro" \
             --mount "type=bind,src=$(pwd)/.github/workflows/run-on-host.sh,dst=/system/xbin/run-on-host,ro" \
             --name redroid-test \
             -p 5555:5555 \
