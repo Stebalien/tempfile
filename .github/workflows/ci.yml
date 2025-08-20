@@ -105,6 +105,7 @@ jobs:
           sudo modprobe binder_linux devices=binder,hwbinder,vndbinder
 
           docker run -itd --rm --privileged \
+            --volume "$(pwd):$(pwd)" \
             --name redroid-test \
             -p 5555:5555 \
             redroid/redroid:${ANDROID_VERSION}_64only-latest
@@ -114,7 +115,7 @@ jobs:
           timeout 60 bash -c 'until adb connect localhost:5555; do sleep 2; done'
 
           # Configure Android environment
-          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_RUNNER=./.github/workflows/run-on-android.sh" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_RUNNER=adb -s localhost:5555 shell" >> $GITHUB_ENV
           echo "CC_aarch64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang" >> $GITHUB_ENV
           echo "AR_aarch64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang" >> $GITHUB_ENV
