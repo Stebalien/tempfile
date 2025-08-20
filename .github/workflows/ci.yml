@@ -105,7 +105,8 @@ jobs:
           sudo modprobe binder_linux devices=binder,hwbinder,vndbinder
 
           docker run -itd --rm --privileged \
-            --volume "$(pwd):$(pwd)" \
+            --mount "type=bind,src=/,dst=/data/host,ro,bind-propagation=rslave" \
+            --mount "type=bind,src=$(pwd)/.github/workflows/run-on-host.sh,dst=/system/xbin/run-on-host,ro" \
             --name redroid-test \
             -p 5555:5555 \
             redroid/redroid:${ANDROID_VERSION}_64only-latest
@@ -115,11 +116,11 @@ jobs:
           timeout 60 bash -c 'until adb connect localhost:5555; do sleep 2; done'
 
           # Configure Android environment
-          echo "CARGO_TARGET_X86_64_LINUX_ANDROID_RUNNER=adb -s localhost:5555 shell" >> $GITHUB_ENV
+          echo "CARGO_TARGET_X86_64_LINUX_ANDROID_RUNNER=adb -s localhost:5555 shell run-on-host" >> $GITHUB_ENV
           echo "CC_X86_64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android34-clang" >> $GITHUB_ENV
           echo "AR_x86_64_linux_android=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android34-clang" >> $GITHUB_ENV
-          echo "CARGO_TARGET_X86_64_LINUX_ANDROID_RUSTFLAGS=-C link-arg=-Wl,--as-needed" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS=-C link-arg=-Wl,--as-needed" >> $GITHUB_ENV
       - name: Build
         run: cargo build --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }}
       - name: Test
