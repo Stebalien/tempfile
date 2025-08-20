@@ -1,4 +1,3 @@
-use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::fs::OpenOptionsExt;
@@ -42,8 +41,8 @@ pub fn create_named(
 pub fn create(dir: &Path) -> io::Result<File> {
     util::create_helper(
         dir,
-        OsStr::new(".tmp"),
-        OsStr::new(""),
+        crate::env::default_prefix(),
+        "",
         crate::NUM_RAND_CHARS,
         |path| {
             let f = OpenOptions::new()

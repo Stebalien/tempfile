@@ -81,35 +81,6 @@
 //!    create temporary a file (when the `getrandom` feature is enabled as it is by default on all
 //!    major platforms).
 //!
-//! ## Early drop pitfall
-//!
-//! Because `TempDir` and `NamedTempFile` rely on their destructors for cleanup, this can lead
-//! to an unexpected early removal of the directory/file, usually when working with APIs which are
-//! generic over `AsRef<Path>`. Consider the following example:
-//!
-//! ```no_run
-//! use tempfile::tempdir;
-//! use std::process::Command;
-//!
-//! // Create a directory inside of `env::temp_dir()`.
-//! let temp_dir = tempdir()?;
-//!
-//! // Spawn the `touch` command inside the temporary directory and collect the exit status
-//! // Note that `temp_dir` is **not** moved into `current_dir`, but passed as a reference
-//! let exit_status = Command::new("touch").arg("tmp").current_dir(&temp_dir).status()?;
-//! assert!(exit_status.success());
-//!
-//! # Ok::<(), std::io::Error>(())
-//! ```
-//!
-//! This works because a reference to `temp_dir` is passed to `current_dir`, resulting in the
-//! destructor of `temp_dir` being run after the `Command` has finished execution. Moving the
-//! `TempDir` into the `current_dir` call would result in the `TempDir` being converted into
-//! an internal representation, with the original value being dropped and the directory thus
-//! being deleted, before the command can be executed.
-//!
-//! The `touch` command would fail with an `No such file or directory` error.
-//!
 //! ## Examples
 //!
 //! Create a temporary file and write some data into it:
@@ -200,10 +171,11 @@ doc_comment::doctest!("../README.md");
 
 const NUM_RETRIES: u32 = 65536;
 const NUM_RAND_CHARS: usize = 6;
+const DEFAULT_SUFFIX: &str = "";
 
-use std::ffi::OsStr;
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, Permissions};
 use std::io;
+use std::ops::Deref;
 use std::path::Path;
 
 mod dir;
@@ -222,29 +194,22 @@ pub use crate::spooled::{spooled_tempfile, spooled_tempfile_in, SpooledData, Spo
 
 /// Create a new temporary file or directory with custom options.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Builder<'a, 'b> {
+pub struct Builder<'a> {
     random_len: usize,
-    prefix: &'a OsStr,
-    suffix: &'b OsStr,
+    prefix: Option<&'a str>,
+    suffix: Option<&'a str>,
     append: bool,
-    permissions: Option<std::fs::Permissions>,
+    permissions: Option<Permissions>,
     disable_cleanup: bool,
 }
 
-impl Default for Builder<'_, '_> {
+impl Default for Builder<'_> {
     fn default() -> Self {
-        Builder {
-            random_len: crate::NUM_RAND_CHARS,
-            prefix: OsStr::new(".tmp"),
-            suffix: OsStr::new(""),
-            append: false,
-            permissions: None,
-            disable_cleanup: false,
-        }
+        Builder::new()
     }
 }
 
-impl<'a, 'b> Builder<'a, 'b> {
+impl<'a> Builder<'a> {
     /// Create a new `Builder`.
     ///
     /// # Examples
@@ -311,14 +276,21 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # Ok::<(), std::io::Error>(())
     /// ```
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
+    pub const fn new() -> Self {
+        Builder {
+            random_len: crate::NUM_RAND_CHARS,
+            prefix: None,
+            suffix: None,
+            append: false,
+            permissions: None,
+            disable_cleanup: false,
+        }
     }
 
     /// Set a custom filename prefix.
     ///
-    /// Path separators are legal but not advisable.
-    /// Default: `.tmp`.
+    /// Path separators are not allowed.
+    /// Default: `tmp`.
     ///
     /// # Examples
     ///
@@ -330,14 +302,14 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn prefix<S: AsRef<OsStr> + ?Sized>(&mut self, prefix: &'a S) -> &mut Self {
-        self.prefix = prefix.as_ref();
+    pub const fn prefix(&mut self, prefix: &'a str) -> &mut Self {
+        self.prefix = Some(prefix);
         self
     }
 
     /// Set a custom filename suffix.
     ///
-    /// Path separators are legal but not advisable.
+    /// Path separators are not allowed.
     /// Default: empty.
     ///
     /// # Examples
@@ -350,8 +322,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn suffix<S: AsRef<OsStr> + ?Sized>(&mut self, suffix: &'b S) -> &mut Self {
-        self.suffix = suffix.as_ref();
+    pub const fn suffix(&mut self, suffix: &'a str) -> &mut Self {
+        self.suffix = Some(suffix);
         self
     }
 
@@ -369,7 +341,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn rand_bytes(&mut self, rand: usize) -> &mut Self {
+    pub const fn rand_bytes(&mut self, rand: usize) -> &mut Self {
         self.random_len = rand;
         self
     }
@@ -388,7 +360,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn append(&mut self, append: bool) -> &mut Self {
+    pub const fn append(&mut self, append: bool) -> &mut Self {
         self.append = append;
         self
     }
@@ -410,9 +382,9 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// applied by the underlying syscall. The actual permission bits are calculated via
     /// `permissions & !umask`.
     ///
-    /// Permissions default to `0o600` for tempfiles and `0o777` for tempdirs. Note, this doesn't
-    /// include effects of the current `umask`. For example, combined with the standard umask
-    /// `0o022`, the defaults yield `0o600` for tempfiles and `0o755` for tempdirs.
+    /// Permissions default to `0o600` for temporary files and `0o700` for temporary directories.
+    /// Note, this doesn't include effects of the current `umask`. For example, combined with the
+    /// standard umask `0o022`, the defaults yield `0o600` for files and `0o700` for directories.
     ///
     /// ## Windows and others
     ///
@@ -460,7 +432,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn permissions(&mut self, permissions: std::fs::Permissions) -> &mut Self {
+    pub const fn permissions(&mut self, permissions: Permissions) -> &mut Self {
         self.permissions = Some(permissions);
         self
     }
@@ -490,15 +462,9 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     .tempfile()?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn disable_cleanup(&mut self, disable_cleanup: bool) -> &mut Self {
+    pub const fn disable_cleanup(&mut self, disable_cleanup: bool) -> &mut Self {
         self.disable_cleanup = disable_cleanup;
         self
-    }
-
-    /// Deprecated alias for [`Builder::disable_cleanup`].
-    #[deprecated = "Use Builder::disable_cleanup"]
-    pub fn keep(&mut self, keep: bool) -> &mut Self {
-        self.disable_cleanup(keep)
     }
 
     /// Create the named temporary file.
@@ -558,8 +524,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     pub fn tempfile_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
         util::create_helper(
             dir.as_ref(),
-            self.prefix,
-            self.suffix,
+            self.prefix.unwrap_or(env::default_prefix()),
+            self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
             self.random_len,
             |path| {
                 file::create_named(
@@ -624,19 +590,21 @@ impl<'a, 'b> Builder<'a, 'b> {
     pub fn tempdir_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<TempDir> {
         util::create_helper(
             dir.as_ref(),
-            self.prefix,
-            self.suffix,
+            self.prefix.unwrap_or(env::default_prefix()),
+            self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
             self.random_len,
             |path| dir::create(path, self.permissions.as_ref(), self.disable_cleanup),
         )
     }
 
     /// Attempts to create a temporary file (or file-like object) using the
-    /// provided closure. The closure is passed a temporary file path and
-    /// returns an [`std::io::Result`]. The path provided to the closure will be
-    /// inside of [`env::temp_dir()`]. Use [`Builder::make_in`] to provide
-    /// a custom temporary directory. If the closure returns one of the
-    /// following errors, then another randomized file path is tried:
+    /// provided closure. The closure is passed a [`MakeParams`], which
+    /// dereferences into the path at which the temporary file should be
+    /// created, and returns an [`std::io::Result`]. The path provided to the
+    /// closure will be inside of [`env::temp_dir()`]. Use [`Builder::make_in`]
+    /// to provide a custom temporary directory. If the closure returns one of
+    /// the following errors, then another randomized file path is tried:
+    ///
     ///  - [`std::io::ErrorKind::AlreadyExists`]
     ///  - [`std::io::ErrorKind::AddrInUse`]
     ///
@@ -644,8 +612,6 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// leaving the temporary file path construction up to the library. This
     /// also enables creating a temporary UNIX domain socket, since it is not
     /// possible to bind to a socket that already exists.
-    ///
-    /// Note that [`Builder::append`] is ignored when using [`Builder::make`].
     ///
     /// # Security
     ///
@@ -662,8 +628,8 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// use tempfile::Builder;
     ///
     /// // This is NOT secure!
-    /// let tempfile = Builder::new().make(|path| {
-    ///     if path.is_file() {
+    /// let tempfile = Builder::new().make(|params| {
+    ///     if params.is_file() {
     ///         return Err(std::io::ErrorKind::AlreadyExists.into());
     ///     }
     ///
@@ -671,7 +637,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///     // have replaced `path` with another file, which would get truncated
     ///     // by `File::create`.
     ///
-    ///     File::create(path)
+    ///     File::create(params)
     /// })?;
     /// # Ok::<(), std::io::Error>(())
     /// ```
@@ -708,7 +674,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// use std::os::unix::net::UnixListener;
     /// use tempfile::Builder;
     ///
-    /// let tempsock = Builder::new().make(|path| UnixListener::bind(path))?;
+    /// let tempsock = Builder::new().make(|params| UnixListener::bind(params))?;
     /// # }
     /// # Ok::<(), std::io::Error>(())
     /// ```
@@ -718,7 +684,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// [resource-leaking]: struct.NamedTempFile.html#resource-leaking
     pub fn make<F, R>(&self, f: F) -> io::Result<NamedTempFile<R>>
     where
-        F: FnMut(&Path) -> io::Result<R>,
+        F: FnMut(&MakeParams<'_>) -> io::Result<R>,
     {
         self.make_in(env::temp_dir(), f)
     }
@@ -735,26 +701,60 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// use tempfile::Builder;
     /// use std::os::unix::net::UnixListener;
     ///
-    /// let tempsock = Builder::new().make_in("./", |path| UnixListener::bind(path))?;
+    /// let tempsock = Builder::new().make_in("./", |params| UnixListener::bind(params))?;
     /// # }
     /// # Ok::<(), std::io::Error>(())
     /// ```
     pub fn make_in<F, R, P>(&self, dir: P, mut f: F) -> io::Result<NamedTempFile<R>>
     where
-        F: FnMut(&Path) -> io::Result<R>,
+        F: FnMut(&MakeParams<'_>) -> io::Result<R>,
         P: AsRef<Path>,
     {
         util::create_helper(
             dir.as_ref(),
-            self.prefix,
-            self.suffix,
+            self.prefix.unwrap_or(env::default_prefix()),
+            self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
             self.random_len,
             move |path| {
                 Ok(NamedTempFile::from_parts(
-                    f(&path)?,
+                    f(&MakeParams {
+                        path: &path,
+                        permissions: self.permissions.as_ref(),
+                        append_only: self.append,
+                    })?,
                     TempPath::new(path, self.disable_cleanup),
                 ))
             },
         )
+    }
+}
+
+/// Parameters passed to the callback in [`Builder::make`] and [`Builder::make_in`].
+#[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+pub struct MakeParams<'a> {
+    /// The path that should be used for the new temporary file.
+    pub path: &'a Path,
+    /// The permissions that should be used when creating the temporary file, if
+    /// specified by the user.
+    pub permissions: Option<&'a Permissions>,
+    /// Whether or not the new file should be opened in append-only mode.
+    pub append_only: bool,
+}
+
+impl Deref for MakeParams<'_> {
+    type Target = Path;
+
+    fn deref(&self) -> &Self::Target {
+        self.path
+    }
+}
+
+impl<T: ?Sized> AsRef<T> for MakeParams<'_>
+where
+    Path: AsRef<T>,
+{
+    fn as_ref(&self) -> &T {
+        self.path.as_ref()
     }
 }

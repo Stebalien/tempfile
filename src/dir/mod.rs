@@ -8,7 +8,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::ffi::OsStr;
 use std::fs::remove_dir_all;
 use std::mem;
 use std::path::{self, Path, PathBuf};
@@ -268,8 +267,8 @@ impl TempDir {
     /// assert!(tmp_name.starts_with("foo-"));
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn with_prefix<S: AsRef<OsStr>>(prefix: S) -> io::Result<TempDir> {
-        Builder::new().prefix(&prefix).tempdir()
+    pub fn with_prefix(prefix: &str) -> io::Result<TempDir> {
+        Builder::new().prefix(prefix).tempdir()
     }
 
     /// Attempts to make a temporary directory with the specified suffix inside of
@@ -293,8 +292,8 @@ impl TempDir {
     /// assert!(tmp_name.ends_with("-foo"));
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn with_suffix<S: AsRef<OsStr>>(suffix: S) -> io::Result<TempDir> {
-        Builder::new().suffix(&suffix).tempdir()
+    pub fn with_suffix(suffix: &str) -> io::Result<TempDir> {
+        Builder::new().suffix(suffix).tempdir()
     }
     /// Attempts to make a temporary directory with the specified prefix inside
     /// the specified directory. The directory and everything inside it will be
@@ -317,11 +316,8 @@ impl TempDir {
     /// assert!(tmp_name.ends_with("-foo"));
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn with_suffix_in<S: AsRef<OsStr>, P: AsRef<Path>>(
-        suffix: S,
-        dir: P,
-    ) -> io::Result<TempDir> {
-        Builder::new().suffix(&suffix).tempdir_in(dir)
+    pub fn with_suffix_in<P: AsRef<Path>>(suffix: &str, dir: P) -> io::Result<TempDir> {
+        Builder::new().suffix(suffix).tempdir_in(dir)
     }
 
     /// Attempts to make a temporary directory with the specified prefix inside
@@ -345,11 +341,8 @@ impl TempDir {
     /// assert!(tmp_name.starts_with("foo-"));
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn with_prefix_in<S: AsRef<OsStr>, P: AsRef<Path>>(
-        prefix: S,
-        dir: P,
-    ) -> io::Result<TempDir> {
-        Builder::new().prefix(&prefix).tempdir_in(dir)
+    pub fn with_prefix_in<P: AsRef<Path>>(prefix: &str, dir: P) -> io::Result<TempDir> {
+        Builder::new().prefix(prefix).tempdir_in(dir)
     }
 
     /// Accesses the [`Path`] to the temporary directory.
@@ -380,13 +373,6 @@ impl TempDir {
     #[must_use]
     pub fn path(&self) -> &path::Path {
         self.path.as_ref()
-    }
-
-    /// Deprecated alias for [`TempDir::keep`].
-    #[must_use]
-    #[deprecated = "use TempDir::keep()"]
-    pub fn into_path(self) -> PathBuf {
-        self.keep()
     }
 
     /// Persist the temporary directory to disk, returning the [`PathBuf`] where it is located.
@@ -483,7 +469,10 @@ impl TempDir {
     }
 }
 
-impl AsRef<Path> for TempDir {
+// NOTE: This is implemented on &TempDir, not TempDir, to prevent accidentally moving the TempDir
+// into a function that calls `as_ref()` before immediately dropping it (deleting the underlying
+// temporary directory).
+impl AsRef<Path> for &TempDir {
     fn as_ref(&self) -> &Path {
         self.path()
     }

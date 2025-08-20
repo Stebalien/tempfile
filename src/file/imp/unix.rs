@@ -1,4 +1,3 @@
-use std::ffi::OsStr;
 use std::fs::{self, File, OpenOptions};
 use std::io;
 
@@ -72,8 +71,8 @@ pub fn create(dir: &Path) -> io::Result<File> {
 fn create_unix(dir: &Path) -> io::Result<File> {
     util::create_helper(
         dir,
-        OsStr::new(".tmp"),
-        OsStr::new(""),
+        crate::env::default_prefix(),
+        "",
         crate::NUM_RAND_CHARS,
         |path| create_unlinked(&path),
     )
