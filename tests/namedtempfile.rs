@@ -42,6 +42,7 @@ fn test_basic() {
     configure_wasi_temp_dir();
 
     let mut tmpfile = NamedTempFile::new().unwrap();
+    eprintln!("CREATED: {:?}", tmpfile.path());
     write!(tmpfile, "abcde").unwrap();
     tmpfile.seek(SeekFrom::Start(0)).unwrap();
     let mut buf = String::new();
