@@ -56,7 +56,7 @@ fn test_persist() {
 
     let mut tmpfile = NamedTempFile::new().unwrap();
     let old_path = tmpfile.path().to_path_buf();
-    let persist_path = env::temp_dir().join("persisted_temporary_file");
+    let persist_path = env::temp_dir().unwrap().join("persisted_temporary_file");
     write!(tmpfile, "abcde").unwrap();
     {
         assert!(old_path.exists());
@@ -204,7 +204,7 @@ fn test_temppath_persist() {
     let tmppath = tmpfile.into_temp_path();
 
     let old_path = tmppath.to_path_buf();
-    let persist_path = env::temp_dir().join("persisted_temppath_file");
+    let persist_path = env::temp_dir().unwrap().join("persisted_temppath_file");
 
     {
         assert!(old_path.exists());
