@@ -329,6 +329,12 @@ fn test_change_dir() {
     }));
     configure_wasi_temp_dir();
 
+    eprintln!(
+        "TEMPDIR: {} {}",
+        env::temp_dir().display(),
+        env::temp_dir().exists()
+    );
+
     std::env::set_current_dir(env::temp_dir()).expect("failed to change dir to tempdir");
     let tmpfile = NamedTempFile::new_in(".").expect("failed to create temp file");
     let path = std::env::current_dir()
