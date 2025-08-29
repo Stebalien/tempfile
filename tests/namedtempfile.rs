@@ -15,6 +15,7 @@ fn exists<P: AsRef<Path>>(path: P) -> bool {
 fn configure_wasi_temp_dir() {
     if cfg!(target_os = "wasi") {
         let _ = tempfile::env::override_temp_dir(Path::new("/tmp"));
+        let _ = std::fs::create_dir("/tmp");
     }
 }
 
