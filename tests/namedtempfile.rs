@@ -322,19 +322,15 @@ fn test_write_after_close() {
 
 #[test]
 fn test_change_dir() {
-    std::panic::set_hook(Box::new(|info| {
-        eprintln!("PANIC!: {info}");
-        std::process::exit(1)
-    }));
     configure_wasi_temp_dir();
 
-    let dir = tempdir().unwrap();
-    std::env::set_current_dir(&dir).expect("failed to change dir to tempdir");
-    let tmpfile = NamedTempFile::new_in(".").expect("failed to create temp file");
-    let path = std::env::current_dir()
-        .expect("failed to get current dir")
-        .join(tmpfile.path());
-    std::env::set_current_dir("/").expect("failed to change to root");
+    let dir_a = tempdir().unwrap();
+    let dir_b = tempdir().unwrap();
+
+    std::env::set_current_dir(&dir_a).expect("failed to change to directory ~");
+    let tmpfile = NamedTempFile::new_in(".").unwrap();
+    let path = std::env::current_dir().unwrap().join(tmpfile.path());
+    std::env::set_current_dir(&dir_b).expect("failed to change to directory B");
     drop(tmpfile);
     assert!(!exists(path))
 }
@@ -343,10 +339,13 @@ fn test_change_dir() {
 fn test_change_dir_make() {
     configure_wasi_temp_dir();
 
-    std::env::set_current_dir(env::temp_dir()).unwrap();
+    let dir_a = tempdir().unwrap();
+    let dir_b = tempdir().unwrap();
+
+    std::env::set_current_dir(&dir_a).expect("failed to change to directory A");
     let tmpfile = Builder::new().make_in(".", |p| File::create(p)).unwrap();
     let path = std::env::current_dir().unwrap().join(tmpfile.path());
-    std::env::set_current_dir("/").unwrap();
+    std::env::set_current_dir(&dir_b).expect("failed to change to directory B");
     drop(tmpfile);
     assert!(!exists(path))
 }
