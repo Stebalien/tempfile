@@ -321,23 +321,31 @@ fn test_write_after_close() {
 }
 
 #[test]
-#[cfg_attr(target_os = "wasi", ignore = "env::temp_dir is not supported")]
 fn test_change_dir() {
-    std::env::set_current_dir(env::temp_dir()).unwrap();
+    configure_wasi_temp_dir();
+
+    let dir_a = tempdir().unwrap();
+    let dir_b = tempdir().unwrap();
+
+    std::env::set_current_dir(&dir_a).expect("failed to change to directory ~");
     let tmpfile = NamedTempFile::new_in(".").unwrap();
     let path = std::env::current_dir().unwrap().join(tmpfile.path());
-    std::env::set_current_dir("/").unwrap();
+    std::env::set_current_dir(&dir_b).expect("failed to change to directory B");
     drop(tmpfile);
     assert!(!exists(path))
 }
 
 #[test]
-#[cfg_attr(target_os = "wasi", ignore = "env::temp_dir is not supported")]
 fn test_change_dir_make() {
-    std::env::set_current_dir(env::temp_dir()).unwrap();
+    configure_wasi_temp_dir();
+
+    let dir_a = tempdir().unwrap();
+    let dir_b = tempdir().unwrap();
+
+    std::env::set_current_dir(&dir_a).expect("failed to change to directory A");
     let tmpfile = Builder::new().make_in(".", |p| File::create(p)).unwrap();
     let path = std::env::current_dir().unwrap().join(tmpfile.path());
-    std::env::set_current_dir("/").unwrap();
+    std::env::set_current_dir(&dir_b).expect("failed to change to directory B");
     drop(tmpfile);
     assert!(!exists(path))
 }
