@@ -15,7 +15,6 @@ fn exists<P: AsRef<Path>>(path: P) -> bool {
 fn configure_wasi_temp_dir() {
     if cfg!(target_os = "wasi") {
         let _ = tempfile::env::override_temp_dir(Path::new("/tmp"));
-        let _ = std::fs::create_dir("/tmp");
     }
 }
 
@@ -42,7 +41,6 @@ fn test_basic() {
     configure_wasi_temp_dir();
 
     let mut tmpfile = NamedTempFile::new().unwrap();
-    eprintln!("CREATED: {:?}", tmpfile.path());
     write!(tmpfile, "abcde").unwrap();
     tmpfile.seek(SeekFrom::Start(0)).unwrap();
     let mut buf = String::new();
@@ -330,15 +328,8 @@ fn test_change_dir() {
     }));
     configure_wasi_temp_dir();
 
-    std::fs::create_dir(env::temp_dir()).unwrap();
-
-    eprintln!(
-        "TEMPDIR: {} {}",
-        env::temp_dir().display(),
-        env::temp_dir().exists()
-    );
-
-    std::env::set_current_dir(env::temp_dir()).expect("failed to change dir to tempdir");
+    let dir = tempdir().unwrap();
+    std::env::set_current_dir(&dir).expect("failed to change dir to tempdir");
     let tmpfile = NamedTempFile::new_in(".").expect("failed to create temp file");
     let path = std::env::current_dir()
         .expect("failed to get current dir")
