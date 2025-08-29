@@ -49,7 +49,7 @@ mod imp;
 /// # Ok::<(), std::io::Error>(())
 /// ```
 pub fn tempfile() -> io::Result<File> {
-    tempfile_in(env::temp_dir())
+    tempfile_in(env::temp_dir()?)
 }
 
 /// Create a new temporary file in the specified directory. Also see [`tempfile`].
