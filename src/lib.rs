@@ -202,7 +202,7 @@ const NUM_RETRIES: u32 = 65536;
 const NUM_RAND_CHARS: usize = 6;
 
 use std::ffi::OsStr;
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, Permissions};
 use std::io;
 use std::path::Path;
 
@@ -227,7 +227,7 @@ pub struct Builder<'a, 'b> {
     prefix: &'a OsStr,
     suffix: &'b OsStr,
     append: bool,
-    permissions: Option<std::fs::Permissions>,
+    permissions: Option<Permissions>,
     disable_cleanup: bool,
 }
 
@@ -374,7 +374,7 @@ impl<'a, 'b> Builder<'a, 'b> {
         self
     }
 
-    /// Set the file to be opened in append mode.
+    /// Configure the file to be opened in append-only mode.
     ///
     /// Default: `false`.
     ///
@@ -393,31 +393,32 @@ impl<'a, 'b> Builder<'a, 'b> {
         self
     }
 
-    /// The permissions to create the tempfile or [tempdir](Self::tempdir) with.
-    ///
-    /// # Security
-    ///
-    /// By default, the permissions of tempfiles on Unix are set for it to be
-    /// readable and writable by the owner only, yielding the greatest amount
-    /// of security.
-    /// As this method allows to widen the permissions, security would be
-    /// reduced in such cases.
+    /// Set the permissions for the new temporary file/directory.
     ///
     /// # Platform Notes
+    ///
+    /// ## Windows
+    ///
+    /// This setting is only fully-supported on unix-like platforms. On Windows, if this method is
+    /// called with a [`Permissions`] object where `permissions.readonly` returns true, creating
+    /// temporary files and directories will fail with an error.
+    ///
     /// ## Unix
     ///
-    /// The actual permission bits set on the tempfile or tempdir will be affected by the `umask`
-    /// applied by the underlying syscall. The actual permission bits are calculated via
-    /// `permissions & !umask`.
+    /// On unix-like systems, the actual permission bits set on the tempfile or tempdir will be
+    /// affected by the `umask` applied by the underlying syscall. The actual permission bits are
+    /// calculated via `permissions & !umask`. In other words, depending on your umask, the
+    /// permissions of the created file may be more restrictive (but never more permissive) than the
+    /// ones you specified.
     ///
     /// Permissions default to `0o600` for tempfiles and `0o777` for tempdirs. Note, this doesn't
     /// include effects of the current `umask`. For example, combined with the standard umask
     /// `0o022`, the defaults yield `0o600` for tempfiles and `0o755` for tempdirs.
     ///
-    /// ## Windows and others
+    /// ## WASI
     ///
-    /// This setting is unsupported and trying to set a file or directory read-only
-    /// will return an error.
+    /// While custom permissions are allowed on WASI, they will be ignored as the platform has no
+    /// concept of permissions or file modes (or multiple users for that matter).
     ///
     /// # Examples
     ///
@@ -431,12 +432,15 @@ impl<'a, 'b> Builder<'a, 'b> {
     ///
     /// let all_read_write = std::fs::Permissions::from_mode(0o666);
     /// let tempfile = Builder::new().permissions(all_read_write).tempfile()?;
+    ///
+    /// // Check that this worked and that the file is world-readable.
+    /// //
+    /// // NOTE: the file likely won't actually be created with 0o666 permissions because it's
+    /// // restricted by the user's umask.
+    /// //
+    /// // NOTE: This test will fail if the user's umask is, e.g., 0o066.
     /// let actual_permissions = tempfile.path().metadata()?.permissions();
-    /// assert_ne!(
-    ///     actual_permissions.mode() & !0o170000,
-    ///     0o600,
-    ///     "we get broader permissions than the default despite umask"
-    /// );
+    /// assert_eq!(actual_permissions.mode() & 0o044, 0o044);
     /// # }
     /// # Ok::<(), std::io::Error>(())
     /// ```
@@ -460,7 +464,7 @@ impl<'a, 'b> Builder<'a, 'b> {
     /// # }
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn permissions(&mut self, permissions: std::fs::Permissions) -> &mut Self {
+    pub fn permissions(&mut self, permissions: Permissions) -> &mut Self {
         self.permissions = Some(permissions);
         self
     }
