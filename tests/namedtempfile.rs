@@ -321,8 +321,9 @@ fn test_write_after_close() {
 }
 
 #[test]
-#[cfg_attr(target_os = "wasi", ignore = "env::temp_dir is not supported")]
 fn test_change_dir() {
+    configure_wasi_temp_dir();
+
     std::env::set_current_dir(env::temp_dir()).unwrap();
     let tmpfile = NamedTempFile::new_in(".").unwrap();
     let path = std::env::current_dir().unwrap().join(tmpfile.path());
@@ -332,8 +333,9 @@ fn test_change_dir() {
 }
 
 #[test]
-#[cfg_attr(target_os = "wasi", ignore = "env::temp_dir is not supported")]
 fn test_change_dir_make() {
+    configure_wasi_temp_dir();
+
     std::env::set_current_dir(env::temp_dir()).unwrap();
     let tmpfile = Builder::new().make_in(".", |p| File::create(p)).unwrap();
     let path = std::env::current_dir().unwrap().join(tmpfile.path());
