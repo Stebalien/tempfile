@@ -332,7 +332,10 @@ fn test_change_dir() {
     let path = std::env::current_dir().unwrap().join(tmpfile.path());
     std::env::set_current_dir(&dir_b).expect("failed to change to directory B");
     drop(tmpfile);
-    assert!(!exists(path))
+    assert!(!exists(path));
+
+    drop(dir_a);
+    drop(dir_b);
 }
 
 #[test]
@@ -347,7 +350,10 @@ fn test_change_dir_make() {
     let path = std::env::current_dir().unwrap().join(tmpfile.path());
     std::env::set_current_dir(&dir_b).expect("failed to change to directory B");
     drop(tmpfile);
-    assert!(!exists(path))
+    assert!(!exists(path));
+
+    drop(dir_a);
+    drop(dir_b);
 }
 
 #[test]
