@@ -126,7 +126,7 @@ jobs:
       - name: Build
         run: cargo build --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }}
       - name: Test
-        run: cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} ${{ matrix.test-flags }}
+        run: cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} ${{ matrix.test-flags }} -- --nocapture
       - name: Stop the redroid container
         if: ${{ contains(matrix.platform.target, 'android') }}
         run: |
