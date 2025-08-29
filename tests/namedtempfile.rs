@@ -324,7 +324,7 @@ fn test_write_after_close() {
 fn test_change_dir() {
     std::panic::set_hook(Box::new(|info| {
         eprintln!("PANIC!: {info}");
-        std::process::exit(-1)
+        std::process::exit(1)
     }));
     configure_wasi_temp_dir();
 
