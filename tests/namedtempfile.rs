@@ -324,10 +324,12 @@ fn test_write_after_close() {
 fn test_change_dir() {
     configure_wasi_temp_dir();
 
-    std::env::set_current_dir(env::temp_dir()).unwrap();
-    let tmpfile = NamedTempFile::new_in(".").unwrap();
-    let path = std::env::current_dir().unwrap().join(tmpfile.path());
-    std::env::set_current_dir("/").unwrap();
+    std::env::set_current_dir(env::temp_dir()).expect("failed to change dir to tempdir");
+    let tmpfile = NamedTempFile::new_in(".").expect("failed to create temp file");
+    let path = std::env::current_dir()
+        .expect("failed to get current dir")
+        .join(tmpfile.path());
+    std::env::set_current_dir("/").expect("failed to change to root");
     drop(tmpfile);
     assert!(!exists(path))
 }
