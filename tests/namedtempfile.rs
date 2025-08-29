@@ -329,6 +329,8 @@ fn test_change_dir() {
     }));
     configure_wasi_temp_dir();
 
+    std::fs::create_dir(env::temp_dir()).unwrap();
+
     eprintln!(
         "TEMPDIR: {} {}",
         env::temp_dir().display(),
