@@ -322,6 +322,10 @@ fn test_write_after_close() {
 
 #[test]
 fn test_change_dir() {
+    std::panic::set_hook(Box::new(|info| {
+        eprintln!("PANIC!: {info}");
+        std::process::exit(-1)
+    }));
     configure_wasi_temp_dir();
 
     std::env::set_current_dir(env::temp_dir()).expect("failed to change dir to tempdir");
