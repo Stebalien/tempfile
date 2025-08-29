@@ -1,12 +1,18 @@
-use std::env;
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, OnceLock};
+use std::{env, io};
 
 #[cfg(doc)]
 use crate::{tempdir_in, tempfile_in, Builder};
 
-static ENV_TEMPDIR: LazyLock<PathBuf> = LazyLock::new(env::temp_dir);
+static ENV_TEMPDIR: LazyLock<Option<PathBuf>> =
+    // Only call env::temp_dir() on platforms known to not panic.
+    LazyLock::new(if cfg!(any(unix, windows, target_os = "hermit")) {
+            || Some(env::temp_dir())
+        } else {
+            || None
+        });
 static DEFAULT_TEMPDIR: OnceLock<PathBuf> = OnceLock::new();
 static DEFAULT_PREFIX: OnceLock<OsString> = OnceLock::new();
 
@@ -36,16 +42,22 @@ pub fn override_temp_dir(path: impl Into<PathBuf>) -> Result<&'static Path, &'st
 /// Returns the default temporary directory, used for both temporary directories and files if no
 /// directory is explicitly specified.
 ///
-/// This function simply delegates to [`std::env::temp_dir`] unless the default temporary directory
-/// has been override by a call to [`override_temp_dir`].
+/// Unless the default temporary directory has been overridden by a call to [`override_temp_dir`],
+/// this function delegates to [`std::env::temp_dir`] (when supported by the platform). It returns
+/// an error on platforms with no default temporary directory (e.g., WASI/WASM) unless
+/// [`override_temp_dir`] has already been called to set the temporary directory.
 ///
 /// **NOTE:**
 ///
 /// 1. This function does not check if the returned directory exists and/or is writable.
 /// 2. This function caches the result of [`std::env::temp_dir`]. Any future changes to, e.g., the
 ///    `TMPDIR` environment variable won't have any effect.
-pub fn temp_dir() -> &'static Path {
-    DEFAULT_TEMPDIR.get().unwrap_or_else(|| &ENV_TEMPDIR)
+pub fn temp_dir() -> io::Result<&'static Path> {
+    DEFAULT_TEMPDIR
+        .get()
+        .or_else(|| ENV_TEMPDIR.as_ref())
+        .map(|a| &**a)
+        .ok_or_else(|| io::Error::other("no temporary directory configured"))
 }
 
 /// Override the default prefix for new temporary files (defaults to "tmp"). This function changes
