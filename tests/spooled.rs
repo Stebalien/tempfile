@@ -43,7 +43,7 @@ fn test_custom_dir() {
     configure_wasi_temp_dir();
 
     {
-        let mut t = spooled_tempfile_in(10, env::temp_dir());
+        let mut t = spooled_tempfile_in(10, env::temp_dir().unwrap());
         t.roll()
             .expect("failed to roll temp file in a specified directory");
     }
