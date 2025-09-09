@@ -40,8 +40,6 @@ doc-comment = "0.3"
 [features]
 default = ["getrandom"]
 nightly = []
-# DEPRECATED unstable feature, will be removed in the near future.
-unstable-windows-keep-open-tempfile = []
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--generate-link-to-definition"]
