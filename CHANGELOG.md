@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.22.0
+
+- Updated `windows-sys` requirement to allow version 0.61.x
+- Remove `unstable-windows-keep-open-tempfile` feature.
+
 ## 3.21.0
 
 - Updated `windows-sys` requirement to allow version 0.60.x
