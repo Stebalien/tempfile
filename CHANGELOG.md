@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.23.0
+
+- Remove need for the "nightly" feature to compile with "wasip2".
+
 ## 3.22.0
 
 - Updated `windows-sys` requirement to allow version 0.61.x
@@ -28,8 +32,6 @@ Finally, this release improves documentation, especially the top-level documenta
 
 - `Builder::keep` deprecated in favor of `Builder::disable_cleanup`.
 - `TempDir::into_path` is deprecated in favor of `TempDir::keep`.
-
-**BREAKING**:
 
 ## 3.19.1
 
