@@ -148,6 +148,10 @@ fn test_append() {
 }
 
 #[test]
+#[cfg_attr(
+    all(target_os = "wasi", not(feature = "nightly")),
+    ignore = "reopen on wasi requires the 'nightly' feature"
+)]
 fn test_reopen() {
     configure_wasi_temp_dir();
 
