@@ -50,25 +50,32 @@ jobs:
           - name: "Android"
             os: ubuntu-latest
             target: x86_64-linux-android
+          - name: "WASI P1"
+            os: ubuntu-latest
+            target: wasm32-wasip1
+            test-flags: --tests
+          - name: "WASI P2"
+            os: ubuntu-latest
+            target: wasm32-wasip2
+            test-flags: --tests
         exclude:
           - rust-version: "1.63"
             platform:
               name: "Android"
               os: ubuntu-latest
               target: x86_64-linux-android
-        include:
-          - rust-version: "nightly"
-            test-flags: --tests
+          - rust-version: "1.63"
             platform:
               name: "WASI P1"
               os: ubuntu-latest
               target: wasm32-wasip1
-          - rust-version: "nightly"
-            test-flags: --tests
+              test-flags: --tests
+          - rust-version: "1.63"
             platform:
               name: "WASI P2"
               os: ubuntu-latest
               target: wasm32-wasip2
+              test-flags: --tests
     name: Platform Test (${{ matrix.platform.name }} / ${{ matrix.rust-version }})
     runs-on: ${{ matrix.platform.os }}
     steps:
@@ -129,7 +136,7 @@ jobs:
       - name: Build
         run: cargo build --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }}
       - name: Test
-        run: cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} ${{ matrix.test-flags }} -- --nocapture
+        run: cargo test --target ${{ matrix.platform.target }} ${{ matrix.rust-version == 'nightly' && '--features nightly' || '' }} ${{ matrix.platform.test-flags }} -- --nocapture
       - name: Stop the redroid container
         if: ${{ contains(matrix.platform.target, 'android') }}
         run: |
