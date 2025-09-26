@@ -64,7 +64,7 @@ pub struct SpooledTempFile {
 /// # Ok::<(), std::io::Error>(())
 /// ```
 #[inline]
-pub fn spooled_tempfile(max_size: usize) -> SpooledTempFile {
+pub const fn spooled_tempfile(max_size: usize) -> SpooledTempFile {
     SpooledTempFile::new(max_size)
 }
 
@@ -94,7 +94,7 @@ fn cursor_to_tempfile(cursor: &Cursor<Vec<u8>>, p: &Option<PathBuf>) -> io::Resu
 impl SpooledTempFile {
     /// Construct a new [`SpooledTempFile`].
     #[must_use]
-    pub fn new(max_size: usize) -> SpooledTempFile {
+    pub const fn new(max_size: usize) -> SpooledTempFile {
         SpooledTempFile {
             max_size,
             dir: None,
@@ -245,5 +245,20 @@ impl Seek for SpooledTempFile {
             SpooledData::InMemory(cursor) => cursor.seek(pos),
             SpooledData::OnDisk(file) => file.seek(pos),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::SpooledTempFile;
+    use std::io::Write;
+    use std::sync::Mutex;
+
+    // This is fine because `tempfile` doesn't rely on drop.
+    static TEMPFILE: Mutex<SpooledTempFile> = Mutex::new(SpooledTempFile::new(1024));
+
+    #[test]
+    fn test_tempfile() {
+        TEMPFILE.lock().unwrap().write(b"foo").unwrap();
     }
 }

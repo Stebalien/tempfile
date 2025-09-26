@@ -65,7 +65,7 @@ fn test_persist() {
 
     let mut tmpfile = NamedTempFile::new().unwrap();
     let old_path = tmpfile.path().to_path_buf();
-    let persist_path = env::temp_dir().join("persisted_temporary_file");
+    let persist_path = env::temp_dir().unwrap().join("persisted_temporary_file");
     write!(tmpfile, "abcde").unwrap();
     {
         assert!(exists(&old_path));
@@ -213,7 +213,7 @@ fn test_temppath_persist() {
     let tmppath = tmpfile.into_temp_path();
 
     let old_path = tmppath.to_path_buf();
-    let persist_path = env::temp_dir().join("persisted_temppath_file");
+    let persist_path = env::temp_dir().unwrap().join("persisted_temppath_file");
 
     {
         assert!(exists(&old_path));
@@ -317,7 +317,13 @@ fn test_write_after_close() {
     configure_wasi_temp_dir();
 
     let path = NamedTempFile::new().unwrap().into_temp_path();
-    File::create(path).unwrap().write_all(b"test").unwrap();
+    let mut f = File::options()
+        .read(true)
+        .write(true)
+        .create(false)
+        .open(&path)
+        .unwrap();
+    f.write_all(b"test").unwrap();
 }
 
 #[test]

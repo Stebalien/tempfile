@@ -1,13 +1,20 @@
-use std::env;
+use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
+use std::sync::{LazyLock, OnceLock};
+use std::{env, io};
 
 #[cfg(doc)]
 use crate::{tempdir_in, tempfile_in, Builder};
 
-// Once rust 1.70 is wide-spread (Debian stable), we can use OnceLock from stdlib.
-use once_cell::sync::OnceCell as OnceLock;
-
+static ENV_TEMPDIR: LazyLock<Option<PathBuf>> =
+    // Only call env::temp_dir() on platforms known to not panic.
+    LazyLock::new(if cfg!(any(unix, windows, target_os = "hermit")) {
+            || Some(env::temp_dir())
+        } else {
+            || None
+        });
 static DEFAULT_TEMPDIR: OnceLock<PathBuf> = OnceLock::new();
+static DEFAULT_PREFIX: OnceLock<OsString> = OnceLock::new();
 
 /// Override the default temporary directory (defaults to [`std::env::temp_dir`]). This function
 /// changes the _global_ default temporary directory for the entire program and should not be called
@@ -18,34 +25,63 @@ static DEFAULT_TEMPDIR: OnceLock<PathBuf> = OnceLock::new();
 /// should instead use the `_in` variants of the various temporary file/directory constructors
 /// ([`tempdir_in`], [`tempfile_in`], the so-named functions on [`Builder`], etc.).
 ///
-/// Only the first call to this function will succeed. All further calls will fail with `Err(path)`
-/// where `path` is previously set default temporary directory override.
+/// Only the **first** call to this function will succeed and return `Ok(path)` where `path` is a
+/// static reference to the temporary directory. All further calls will fail with `Err(path)` where
+/// `path` is the previously set default temporary directory override.
 ///
 /// **NOTE:** This function does not check if the specified directory exists and/or is writable.
-pub fn override_temp_dir(path: &Path) -> Result<(), PathBuf> {
-    let mut we_set = false;
-    let val = DEFAULT_TEMPDIR.get_or_init(|| {
-        we_set = true;
-        path.to_path_buf()
-    });
-    if we_set {
-        Ok(())
-    } else {
-        Err(val.to_owned())
+pub fn override_temp_dir(path: impl Into<PathBuf>) -> Result<&'static Path, &'static Path> {
+    let mut path = Some(path.into());
+    let val = DEFAULT_TEMPDIR.get_or_init(|| path.take().unwrap());
+    match path {
+        Some(_) => Err(val),
+        None => Ok(val),
     }
 }
 
 /// Returns the default temporary directory, used for both temporary directories and files if no
 /// directory is explicitly specified.
 ///
-/// This function simply delegates to [`std::env::temp_dir`] unless the default temporary directory
-/// has been override by a call to [`override_temp_dir`].
+/// Unless the default temporary directory has been overridden by a call to [`override_temp_dir`],
+/// this function delegates to [`std::env::temp_dir`] (when supported by the platform). It returns
+/// an error on platforms with no default temporary directory (e.g., WASI/WASM) unless
+/// [`override_temp_dir`] has already been called to set the temporary directory.
 ///
-/// **NOTE:** This function does not check if the returned directory exists and/or is writable.
-pub fn temp_dir() -> PathBuf {
+/// **NOTE:**
+///
+/// 1. This function does not check if the returned directory exists and/or is writable.
+/// 2. This function caches the result of [`std::env::temp_dir`]. Any future changes to, e.g., the
+///    `TMPDIR` environment variable won't have any effect.
+pub fn temp_dir() -> io::Result<&'static Path> {
     DEFAULT_TEMPDIR
         .get()
-        .map(|p| p.to_owned())
-        // Don't cache this in case the user uses std::env::set to change the temporary directory.
-        .unwrap_or_else(env::temp_dir)
+        .or_else(|| ENV_TEMPDIR.as_ref())
+        .map(|a| &**a)
+        .ok_or_else(|| io::Error::other("no temporary directory configured"))
+}
+
+/// Override the default prefix for new temporary files (defaults to "tmp"). This function changes
+/// the _global_ default prefix used by the entire program and should only be used by the top-level
+/// application. It's recommended that the top-level application call this function to specify an
+/// application-specific prefix to make it easier to identify temporary files belonging to the
+/// application.
+///
+/// Only the **first** call to this function will succeed and return `Ok(prefix)` where `prefix` is
+/// a static reference to the default temporary file prefix. All further calls will fail with
+/// `Err(prefix)` where `prefix` is the previously set default temporary file prefix.
+pub fn override_default_prefix(
+    prefix: impl Into<OsString>,
+) -> Result<&'static OsStr, &'static OsStr> {
+    let mut prefix = Some(prefix.into());
+    let val = DEFAULT_PREFIX.get_or_init(|| prefix.take().unwrap());
+    match prefix {
+        Some(_) => Err(val),
+        None => Ok(val),
+    }
+}
+
+/// Returns the default prefix used for new temporary files if no prefix is explicitly specified via
+/// [`Builder::prefix`].
+pub fn default_prefix() -> &'static OsStr {
+    DEFAULT_PREFIX.get().map(|p| &**p).unwrap_or("tmp".as_ref())
 }
