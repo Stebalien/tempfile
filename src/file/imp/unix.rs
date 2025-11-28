@@ -72,7 +72,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
 fn create_unix(dir: &Path) -> io::Result<File> {
     util::create_helper(
         dir,
-        OsStr::new(".tmp"),
+        crate::env::default_prefix(),
         OsStr::new(""),
         crate::NUM_RAND_CHARS,
         |path| create_unlinked(&path),
