@@ -16,6 +16,8 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/Stebalien/tempfile"
 description = "A library for managing temporary files and directories."
 
+include = ["CHANGELOG.md", "Cargo.toml", "LICENSE-*", "README.md", "src/**/*.rs", "tests/**/*.rs"]
+
 [dependencies]
 fastrand = "2.1.1"
 # Not available in stdlib until 1.70, but we support 1.63 to support Debian stable.
