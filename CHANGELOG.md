@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.24.0 [UNRELEASED]
+
+- Actually support WASIp2 without the nightly feature. This library is now feature complete on WASIp2 without any additional feature flags.
+
 ## 3.23.0
 
 - Remove need for the "nightly" feature to compile with "wasip2".
