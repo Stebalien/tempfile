@@ -12,11 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install OpenSSH
-  run: |
-    pkg update -f
-    pkg install -y openssh
-
       - name: Run FreeBSD VM
         uses: vmactions/freebsd-vm@v1
         with:
