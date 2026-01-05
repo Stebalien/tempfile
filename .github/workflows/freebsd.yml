@@ -18,9 +18,6 @@ jobs:
           usesh: true
           prepare: |
             pkg install -y curl git
-            curl https://sh.rustup.rs -sSf | sh -s -- -y
-          run: |
-            . $HOME/.cargo/env
-            rustup default stable
+            pkg install -y rust
             cargo build
             cargo test
