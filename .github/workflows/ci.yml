@@ -96,6 +96,9 @@ jobs:
       - name: Downgrading windows-sys
         if: matrix.rust-version == 1.63
         run: cargo update -p windows-sys --precise 0.60.2
+      - name: Downgrading getrandom
+        if: matrix.rust-version == 1.63
+        run: cargo update -p getrandom --precise 0.3.4
       - name: Install Wasmtime
         if: ${{ startsWith(matrix.platform.target, 'wasm32-wasi') }}
         run: curl https://wasmtime.dev/install.sh -sSf | bash
