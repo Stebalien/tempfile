@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.25.0
+
+- Allow `getrandom` 0.4.x while retaining support for `getrandom` 0.3.x.
+
 ## 3.24.0
 
 - Actually support WASIp2 without the nightly feature. This library is now feature complete on WASIp2 without any additional feature flags.
