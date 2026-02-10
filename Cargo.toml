@@ -9,7 +9,7 @@ authors = [
 ]
 documentation = "https://docs.rs/tempfile"
 edition = "2021"
-rust-version = "1.63"
+rust-version = "1.84"
 homepage = "https://stebalien.com/projects/tempfile-rs/"
 keywords = ["tempfile", "tmpfile", "filesystem"]
 license = "MIT OR Apache-2.0"
@@ -20,8 +20,6 @@ include = ["CHANGELOG.md", "Cargo.toml", "LICENSE-*", "README.md", "src/**/*.rs"
 
 [dependencies]
 fastrand = "2.1.1"
-# Not available in stdlib until 1.70, but we support 1.63 to support Debian stable.
-once_cell = { version = "1.19.0", default-features = false, features = ["std"] }
 
 [target.'cfg(any(unix, windows, target_os = "wasi"))'.dependencies]
 getrandom = { version = ">=0.3.0, <0.5", default-features = false, optional = true }
