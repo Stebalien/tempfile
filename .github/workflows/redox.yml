@@ -1,0 +1,21 @@
+name: Redox CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+permissions: {}
+
+jobs:
+  redox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build
+        run: docker run --rm -v "$(pwd):/src" -w /src redoxos/redoxer redoxer build
+      - name: Test
+        run: docker run --rm -v "$(pwd):/src" -w /src redoxos/redoxer redoxer test
