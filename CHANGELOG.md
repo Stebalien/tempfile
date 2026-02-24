@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.26.0
+
+- Support `NamedTempFile::persist` on RedoxOS (#393) (thanks to @Andy-Python-Programmer).
+
 ## 3.25.0
 
 - Allow `getrandom` 0.4.x while retaining support for `getrandom` 0.3.x.
