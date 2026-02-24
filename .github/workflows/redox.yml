@@ -16,9 +16,10 @@ jobs:
     container: redoxos/redoxer
     steps:
       - name: Install Toolchain
-        run: cp -a /root/.redoxer ~/
+        run: |
+          ln -sT /root/.redoxer ~/.redoxer
       - uses: actions/checkout@v6
       - name: Build
         run: redoxer build
       - name: Test
-        run: redoxer test
+        run: redoxer test --tests # doc tests aren't supported
