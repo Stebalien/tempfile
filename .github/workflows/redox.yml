@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     container: redoxos/redoxer
     steps:
+      - name: Install Toolchain
+        run: cp -a /root/.redoxer ~/
       - uses: actions/checkout@v6
       - name: Build
         run: redoxer build
