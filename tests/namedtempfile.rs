@@ -6,6 +6,26 @@ use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use tempfile::{env, tempdir, Builder, NamedTempFile, TempPath};
 
+struct CWDGuard {
+    #[allow(unused)]
+    guard: std::sync::MutexGuard<'static, ()>,
+    old_cwd: PathBuf,
+}
+
+impl Drop for CWDGuard {
+    fn drop(&mut self) {
+        let _ = std::env::set_current_dir(&self.old_cwd);
+    }
+}
+
+static CWD_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn cwd_lock() -> CWDGuard {
+    let guard = CWD_LOCK.lock().unwrap();
+    let old_cwd = std::env::current_dir().unwrap();
+    CWDGuard { guard, old_cwd }
+}
+
 fn exists<P: AsRef<Path>>(path: P) -> bool {
     std::fs::metadata(path.as_ref()).is_ok()
 }
@@ -318,27 +338,25 @@ fn temp_path_from_argument_types() {
 #[cfg(not(any(target_os = "redox", target_os = "wasi", windows)))]
 fn test_temp_path_resolve_missing_cwd() {
     configure_wasi_temp_dir();
-    use std::time::Duration;
+    let _guard = cwd_lock();
 
     // Intentionally delete the current working directory
     let tmpdir = tempdir().unwrap();
     std::env::set_current_dir(&tmpdir).expect("failed to change to the temporary directory");
     tmpdir.close().unwrap();
-    // It can sometimes take a bit for the OS to realize the CWD is removed. I'm not sure why, but
-    // this test fails occasionally without this.
-    while std::env::current_dir().is_ok() {
-        std::thread::sleep(Duration::from_millis(1));
-    }
 
     #[allow(deprecated)]
     let path = TempPath::from_path("foo");
-    assert_eq!(&*path, "foo");
+    assert_eq!(&*path, Path::new("foo"));
 
     TempPath::try_from_path("foo").expect_err("should have failed to make path absolute file");
 }
 
 #[test]
 fn test_temp_path_resolve_existing_cwd() {
+    configure_wasi_temp_dir();
+    let _guard = cwd_lock();
+
     let tmpdir = tempdir().unwrap();
     std::env::set_current_dir(&tmpdir).expect("failed to change to directory");
 
@@ -356,7 +374,7 @@ fn test_temp_path_resolve_existing_cwd() {
 
     #[allow(deprecated)]
     let path = TempPath::from_path("");
-    assert_eq!(&*path, "");
+    assert_eq!(&*path, Path::new(""));
 
     TempPath::try_from_path("").expect_err("empty paths should fail");
 }
@@ -372,6 +390,7 @@ fn test_write_after_close() {
 #[test]
 fn test_change_dir() {
     configure_wasi_temp_dir();
+    let _guard = cwd_lock();
 
     let dir_a = tempdir().unwrap();
     let dir_b = tempdir().unwrap();
@@ -390,6 +409,7 @@ fn test_change_dir() {
 #[test]
 fn test_change_dir_make() {
     configure_wasi_temp_dir();
+    let _guard = cwd_lock();
 
     let dir_a = tempdir().unwrap();
     let dir_b = tempdir().unwrap();
