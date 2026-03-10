@@ -280,7 +280,7 @@ fn temp_path_from_existing() {
     File::create(&tmp_file_path_2).unwrap();
     assert!(tmp_file_path_2.exists(), "Test file 2 hasn't been created");
 
-    let tmp_path = TempPath::from_path(&tmp_file_path_1);
+    let tmp_path = TempPath::try_from_path(&tmp_file_path_1).unwrap();
     assert!(
         tmp_file_path_1.exists(),
         "Test file has been deleted before dropping TempPath"
@@ -303,13 +303,62 @@ fn temp_path_from_argument_types() {
     // This just has to compile
     return;
 
-    TempPath::from_path("");
-    TempPath::from_path(String::new());
-    TempPath::from_path(OsStr::new(""));
-    TempPath::from_path(OsString::new());
-    TempPath::from_path(Path::new(""));
-    TempPath::from_path(PathBuf::new());
-    TempPath::from_path(PathBuf::new().into_boxed_path());
+    TempPath::try_from_path("").unwrap();
+    TempPath::try_from_path(String::new()).unwrap();
+    TempPath::try_from_path(OsStr::new("")).unwrap();
+    TempPath::try_from_path(OsString::new()).unwrap();
+    TempPath::try_from_path(Path::new("")).unwrap();
+    TempPath::try_from_path(PathBuf::new()).unwrap();
+    TempPath::try_from_path(PathBuf::new().into_boxed_path()).unwrap();
+}
+
+// This test only works on platforms where we can safely delete the current
+// working directory.
+#[test]
+#[cfg(not(any(target_os = "redox", target_os = "wasi", windows)))]
+fn test_temp_path_resolve_missing_cwd() {
+    configure_wasi_temp_dir();
+    use std::time::Duration;
+
+    // Intentionally delete the current working directory
+    let tmpdir = tempdir().unwrap();
+    std::env::set_current_dir(&tmpdir).expect("failed to change to the temporary directory");
+    tmpdir.close().unwrap();
+    // It can sometimes take a bit for the OS to realize the CWD is removed. I'm not sure why, but
+    // this test fails occasionally without this.
+    while std::env::current_dir().is_ok() {
+        std::thread::sleep(Duration::from_millis(1));
+    }
+
+    #[allow(deprecated)]
+    let path = TempPath::from_path("foo");
+    assert_eq!(&*path, "foo");
+
+    TempPath::try_from_path("foo").expect_err("should have failed to make path absolute file");
+}
+
+#[test]
+fn test_temp_path_resolve_existing_cwd() {
+    let tmpdir = tempdir().unwrap();
+    std::env::set_current_dir(&tmpdir).expect("failed to change to directory");
+
+    let cwd = if cfg!(target_os = "macos") {
+        // MacOS has absolute paths and ABSOLUTE paths. `cd /var/tmp/...` actually changes to
+        // /private/var/tmp...
+        std::env::current_dir().expect("failed to get the current directory")
+    } else {
+        tmpdir.path().to_owned()
+    };
+
+    #[allow(deprecated)]
+    let path = TempPath::from_path("foo");
+    assert_eq!(&*path, cwd.join("foo"));
+
+    #[allow(deprecated)]
+    let path = TempPath::from_path("");
+    assert_eq!(&*path, "");
+
+    TempPath::try_from_path("").expect_err("empty paths should fail");
 }
 
 #[test]
@@ -327,7 +376,7 @@ fn test_change_dir() {
     let dir_a = tempdir().unwrap();
     let dir_b = tempdir().unwrap();
 
-    std::env::set_current_dir(&dir_a).expect("failed to change to directory ~");
+    std::env::set_current_dir(&dir_a).expect("failed to change to directory A");
     let tmpfile = NamedTempFile::new_in(".").unwrap();
     let path = std::env::current_dir().unwrap().join(tmpfile.path());
     std::env::set_current_dir(&dir_b).expect("failed to change to directory B");
@@ -574,7 +623,10 @@ fn test_reseed() {
             .open(path)
             .unwrap();
 
-        files.push(NamedTempFile::from_parts(f, TempPath::from_path(path)));
+        files.push(NamedTempFile::from_parts(
+            f,
+            TempPath::try_from_path(path).unwrap(),
+        ));
         Err(io::Error::new(io::ErrorKind::AlreadyExists, "fake!"))
     });
 
