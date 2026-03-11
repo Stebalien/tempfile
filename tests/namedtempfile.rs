@@ -332,8 +332,11 @@ fn temp_path_from_argument_types() {
     TempPath::try_from_path(PathBuf::new().into_boxed_path()).unwrap();
 }
 
-// This test only works on platforms where we can safely delete the current
-// working directory.
+// This test only works on platforms where:
+// 1. We can delete the current working directory without any errors.
+// 2. env::current_dir returns an error if the current directory doesn't exist.
+//
+// This excludes wasi and redox (2) and windows (1).
 #[test]
 #[cfg(not(any(target_os = "redox", target_os = "wasi", windows)))]
 fn test_temp_path_resolve_missing_cwd() {
