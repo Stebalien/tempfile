@@ -10,6 +10,9 @@ on:
 
 permissions: {}
 
+env:
+  REDOXER_QEMU_ARGS: "-smp 1"
+
 jobs:
   redox:
     runs-on: ubuntu-latest
