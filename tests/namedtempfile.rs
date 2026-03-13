@@ -637,7 +637,7 @@ fn test_reseed() {
     let mut files: Vec<_> = Vec::new();
     let _ = Builder::new().make(|path| -> io::Result<File> {
         if attempts == 5 {
-            return Err(io::Error::new(io::ErrorKind::Other, "stop!"));
+            return Err(io::Error::other("stop!"));
         }
         attempts += 1;
         let f = File::options()
