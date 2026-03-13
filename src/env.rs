@@ -2,7 +2,7 @@ use std::env;
 use std::path::{Path, PathBuf};
 
 #[cfg(doc)]
-use crate::{tempdir_in, tempfile_in, Builder};
+use crate::{Builder, tempdir_in, tempfile_in};
 
 // Once rust 1.70 is wide-spread (Debian stable), we can use OnceLock from stdlib.
 use once_cell::sync::OnceCell as OnceLock;
@@ -28,11 +28,7 @@ pub fn override_temp_dir(path: &Path) -> Result<(), PathBuf> {
         we_set = true;
         path.to_path_buf()
     });
-    if we_set {
-        Ok(())
-    } else {
-        Err(val.to_owned())
-    }
+    if we_set { Ok(()) } else { Err(val.to_owned()) }
 }
 
 /// Returns the default temporary directory, used for both temporary directories and files if no

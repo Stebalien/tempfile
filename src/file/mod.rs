@@ -13,9 +13,9 @@ use std::os::unix::io::{AsFd, AsRawFd, BorrowedFd, RawFd};
 use std::os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, RawHandle};
 use std::path::{Path, PathBuf};
 
+use crate::Builder;
 use crate::env;
 use crate::error::IoResultExt;
-use crate::Builder;
 
 mod imp;
 

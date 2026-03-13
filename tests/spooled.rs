@@ -2,7 +2,7 @@
 
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use tempfile::{env, spooled_tempfile, spooled_tempfile_in, SpooledTempFile};
+use tempfile::{SpooledTempFile, env, spooled_tempfile, spooled_tempfile_in};
 
 mod common;
 use common::*;
