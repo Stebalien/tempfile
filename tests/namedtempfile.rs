@@ -588,8 +588,7 @@ fn test_make_uds() {
     assert!(temp_sock.path().exists());
 }
 
-// This works(ish) on redox, but it's really slow.
-#[cfg(all(unix, not(target_os = "redox")))]
+#[cfg(unix)]
 #[test]
 fn test_make_uds_conflict() {
     use std::io::ErrorKind;
