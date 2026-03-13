@@ -1,5 +1,5 @@
-use crate::error::IoResultExt;
 use crate::TempDir;
+use crate::error::IoResultExt;
 use std::io;
 use std::path::PathBuf;
 

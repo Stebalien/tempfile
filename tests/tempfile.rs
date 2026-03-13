@@ -4,7 +4,7 @@ use std::fs;
 use std::io::{Read, Seek, SeekFrom, Write};
 #[cfg(target_os = "linux")]
 use std::{
-    sync::mpsc::{sync_channel, TryRecvError},
+    sync::mpsc::{TryRecvError, sync_channel},
     thread,
 };
 

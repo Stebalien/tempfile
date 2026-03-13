@@ -2,7 +2,7 @@
 
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use tempfile::{env, spooled_tempfile, spooled_tempfile_in, SpooledTempFile};
+use tempfile::{SpooledTempFile, env, spooled_tempfile, spooled_tempfile_in};
 
 /// For the wasi platforms, `std::env::temp_dir` will panic. For those targets, configure the /tmp
 /// directory instead as the base directory for temp files.

@@ -207,11 +207,11 @@ mod util;
 
 pub mod env;
 
-pub use crate::dir::{tempdir, tempdir_in, TempDir};
+pub use crate::dir::{TempDir, tempdir, tempdir_in};
 pub use crate::file::{
-    tempfile, tempfile_in, NamedTempFile, PathPersistError, PersistError, TempPath,
+    NamedTempFile, PathPersistError, PersistError, TempPath, tempfile, tempfile_in,
 };
-pub use crate::spooled::{spooled_tempfile, spooled_tempfile_in, SpooledData, SpooledTempFile};
+pub use crate::spooled::{SpooledData, SpooledTempFile, spooled_tempfile, spooled_tempfile_in};
 
 /// Create a new temporary file or directory with custom options.
 #[derive(Debug, Clone, Eq, PartialEq)]

@@ -12,8 +12,8 @@ use std::mem;
 use std::path::{self, Path, PathBuf};
 use std::{fmt, io};
 
-use crate::error::IoResultExt;
 use crate::Builder;
+use crate::error::IoResultExt;
 
 #[cfg(doc)]
 use crate::env;
