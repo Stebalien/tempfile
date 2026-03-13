@@ -15,6 +15,11 @@ env:
   ANDROID_VERSION: "12.0.0"
   WASMTIME_BACKTRACE_DETAILS: 1
 
+# Because Windows on GitHub CI
+defaults:
+  run:
+    shell: bash
+
 permissions: {}
 
 name: CI
@@ -31,14 +36,30 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@v2
     timeout-minutes: 10
 
+  determine_msrv:
+    name: Determining MSRV
+    runs-on: ubuntu-latest
+    outputs:
+      msrv: ${{ steps.msrv.outputs.MSRV }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Determine MSRV
+        id: msrv
+        run: |
+          cargo metadata --no-deps --format-version 1 \
+            | jq -r '.packages[] | select(.name == "tempfile") | "MSRV=\(.rust_version)"' \
+            >> "$GITHUB_OUTPUT"
+
   build_and_test:
+    needs: determine_msrv
     strategy:
       fail-fast: false
       matrix:
         rust-version:
           - nightly
           - stable
-          - "1.85"
+          - "${{ needs.determine_msrv.outputs.msrv }}"
         platform:
           - name: "Linux"
             os: ubuntu-latest
@@ -60,24 +81,6 @@ jobs:
             os: ubuntu-latest
             target: wasm32-wasip2
             test-flags: --tests
-        exclude:
-          - rust-version: "1.63"
-            platform:
-              name: "Android"
-              os: ubuntu-latest
-              target: x86_64-linux-android
-          - rust-version: "1.63"
-            platform:
-              name: "WASI P1"
-              os: ubuntu-latest
-              target: wasm32-wasip1
-              test-flags: --tests
-          - rust-version: "1.63"
-            platform:
-              name: "WASI P2"
-              os: ubuntu-latest
-              target: wasm32-wasip2
-              test-flags: --tests
     name: Platform Test (${{ matrix.platform.name }} / ${{ matrix.rust-version }})
     runs-on: ${{ matrix.platform.os }}
     steps:
@@ -88,17 +91,13 @@ jobs:
         with:
           toolchain: ${{ matrix.rust-version }}
           targets: ${{ matrix.platform.target }}
-      - name: Generating the Cargo.lock
-        run: cargo generate-lockfile
-      - name: Downgrading once_cell
-        if: matrix.rust-version == 1.63
-        run: cargo update -p once_cell --precise 1.20.3
-      - name: Downgrading windows-sys
-        if: matrix.rust-version == 1.63
-        run: cargo update -p windows-sys --precise 0.60.2
-      - name: Downgrading getrandom
-        if: matrix.rust-version == 1.63
-        run: cargo update -p getrandom --precise 0.3.4
+      - name: Selecting dependency versions
+        env:
+          CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS: 'fallback'
+        run: |
+          RUSTC_VERSION="$(rustc --version | sed 's/^rustc \([^ -]*\).*/\1/')"
+          sed -i -e 's/^rust-version = .*/rust-version = "'"$RUSTC_VERSION"'"/' Cargo.toml
+          cargo generate-lockfile
       - name: Install Wasmtime
         if: ${{ startsWith(matrix.platform.target, 'wasm32-wasi') }}
         run: curl https://wasmtime.dev/install.sh -sSf | bash
