@@ -71,7 +71,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
 fn create_unix(dir: &Path) -> io::Result<File> {
     util::create_helper(
         dir,
-        OsStr::new(".tmp"),
+        crate::env::default_prefix(),
         OsStr::new(""),
         crate::NUM_RAND_CHARS,
         |path| create_unlinked(&path),
@@ -108,7 +108,7 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
             target_os = "redox",
         ))]
         {
-            use rustix::fs::{renameat_with, RenameFlags, CWD};
+            use rustix::fs::{CWD, RenameFlags, renameat_with};
             use rustix::io::Errno;
             use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 

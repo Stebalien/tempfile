@@ -8,9 +8,9 @@ use std::{io, iter};
 
 use windows_sys::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::Storage::FileSystem::{
-    MoveFileExW, ReOpenFile, SetFileAttributesW, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY,
-    FILE_FLAG_DELETE_ON_CLOSE, FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_DELETE,
-    FILE_SHARE_READ, FILE_SHARE_WRITE, MOVEFILE_REPLACE_EXISTING,
+    FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY, FILE_FLAG_DELETE_ON_CLOSE, FILE_GENERIC_READ,
+    FILE_GENERIC_WRITE, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+    MOVEFILE_REPLACE_EXISTING, MoveFileExW, ReOpenFile, SetFileAttributesW,
 };
 
 use crate::util;
@@ -42,7 +42,7 @@ pub fn create_named(
 pub fn create(dir: &Path) -> io::Result<File> {
     util::create_helper(
         dir,
-        OsStr::new(".tmp"),
+        crate::env::default_prefix(),
         OsStr::new(""),
         crate::NUM_RAND_CHARS,
         |path| {

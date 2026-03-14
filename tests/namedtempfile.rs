@@ -4,7 +4,7 @@ use std::ffi::{OsStr, OsString};
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-use tempfile::{env, tempdir, Builder, NamedTempFile, TempPath};
+use tempfile::{Builder, NamedTempFile, TempPath, env, tempdir};
 
 struct CWDGuard {
     #[allow(unused)]
@@ -85,7 +85,7 @@ fn test_persist() {
 
     let mut tmpfile = NamedTempFile::new().unwrap();
     let old_path = tmpfile.path().to_path_buf();
-    let persist_path = env::temp_dir().join("persisted_temporary_file");
+    let persist_path = env::temp_dir().unwrap().join("persisted_temporary_file");
     write!(tmpfile, "abcde").unwrap();
     {
         assert!(exists(&old_path));
@@ -233,7 +233,7 @@ fn test_temppath_persist() {
     let tmppath = tmpfile.into_temp_path();
 
     let old_path = tmppath.to_path_buf();
-    let persist_path = env::temp_dir().join("persisted_temppath_file");
+    let persist_path = env::temp_dir().unwrap().join("persisted_temppath_file");
 
     {
         assert!(exists(&old_path));
@@ -348,36 +348,12 @@ fn test_temp_path_resolve_missing_cwd() {
     std::env::set_current_dir(&tmpdir).expect("failed to change to the temporary directory");
     tmpdir.close().unwrap();
 
-    #[allow(deprecated)]
-    let path = TempPath::from_path("foo");
-    assert_eq!(&*path, Path::new("foo"));
-
     TempPath::try_from_path("foo").expect_err("should have failed to make path absolute file");
 }
 
 #[test]
 fn test_temp_path_resolve_existing_cwd() {
     configure_wasi_temp_dir();
-    let _guard = cwd_lock();
-
-    let tmpdir = tempdir().unwrap();
-    std::env::set_current_dir(&tmpdir).expect("failed to change to directory");
-
-    let cwd = if cfg!(target_os = "macos") {
-        // MacOS has absolute paths and ABSOLUTE paths. `cd /var/tmp/...` actually changes to
-        // /private/var/tmp...
-        std::env::current_dir().expect("failed to get the current directory")
-    } else {
-        tmpdir.path().to_owned()
-    };
-
-    #[allow(deprecated)]
-    let path = TempPath::from_path("foo");
-    assert_eq!(&*path, cwd.join("foo"));
-
-    #[allow(deprecated)]
-    let path = TempPath::from_path("");
-    assert_eq!(&*path, Path::new(""));
 
     TempPath::try_from_path("").expect_err("empty paths should fail");
 }
@@ -387,7 +363,13 @@ fn test_write_after_close() {
     configure_wasi_temp_dir();
 
     let path = NamedTempFile::new().unwrap().into_temp_path();
-    File::create(path).unwrap().write_all(b"test").unwrap();
+    let mut f = File::options()
+        .read(true)
+        .write(true)
+        .create(false)
+        .open(&path)
+        .unwrap();
+    f.write_all(b"test").unwrap();
 }
 
 #[test]
@@ -637,7 +619,7 @@ fn test_reseed() {
     let mut files: Vec<_> = Vec::new();
     let _ = Builder::new().make(|path| -> io::Result<File> {
         if attempts == 5 {
-            return Err(io::Error::new(io::ErrorKind::Other, "stop!"));
+            return Err(io::Error::other("stop!"));
         }
         attempts += 1;
         let f = File::options()
