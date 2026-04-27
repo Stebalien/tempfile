@@ -6,12 +6,37 @@ use std::os::windows::io::{AsRawHandle, FromRawHandle, RawHandle};
 use std::path::Path;
 use std::{io, iter};
 
-use windows_sys::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
-use windows_sys::Win32::Storage::FileSystem::{
-    MoveFileExW, ReOpenFile, SetFileAttributesW, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY,
-    FILE_FLAG_DELETE_ON_CLOSE, FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_DELETE,
-    FILE_SHARE_READ, FILE_SHARE_WRITE, MOVEFILE_REPLACE_EXISTING,
-};
+#[allow(clippy::upper_case_acronyms)]
+type HANDLE = *mut core::ffi::c_void;
+const INVALID_HANDLE_VALUE: HANDLE = -1 as _;
+
+const FILE_SHARE_READ: u32 = 1;
+const FILE_SHARE_WRITE: u32 = 2;
+const FILE_SHARE_DELETE: u32 = 4;
+
+const FILE_GENERIC_WRITE: u32 = 0x40000000;
+const FILE_GENERIC_READ: u32 = 0x80000000;
+
+const FILE_ATTRIBUTE_NORMAL: u32 = 0x00000080;
+const FILE_ATTRIBUTE_TEMPORARY: u32 = 0x00000100;
+const FILE_FLAG_DELETE_ON_CLOSE: u32 = 0x04000000;
+
+const MOVEFILE_REPLACE_EXISTING: u32 = 1;
+
+#[link(name = "kernel32")]
+extern "system" {
+    /// <https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-movefileexw>
+    fn MoveFileExW(existing_filename: *const u16, new_filename: *const u16, flags: u32) -> i32;
+    /// <https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-reopenfile>
+    fn ReOpenFile(
+        original: HANDLE,
+        desired_access: u32,
+        share_mode: u32,
+        flags_and_attributes: u32,
+    ) -> HANDLE;
+    /// <https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfileattributesw>
+    fn SetFileAttributesW(filename: *const u16, file_attributes: u32) -> i32;
+}
 
 use crate::util;
 
