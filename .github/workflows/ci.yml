@@ -103,6 +103,9 @@ jobs:
       - name: Downgrading getrandom
         if: matrix.rust-version == 1.63
         run: cargo update -p getrandom --precise 0.3.4
+      - name: Downgrading libc
+        if: matrix.rust-version == 1.63
+        run: cargo update -p libc --precise 0.2.183
       - name: Install Wasmtime
         if: ${{ startsWith(matrix.platform.target, 'wasm32-wasi') }}
         run: curl https://wasmtime.dev/install.sh -sSf | bash
