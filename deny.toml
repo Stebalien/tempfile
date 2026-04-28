@@ -14,9 +14,15 @@ confidence-threshold = 1.0
 allow = []
 deny = []
 multiple-versions = "deny"
-skip = []
 skip-tree = []
 wildcards = "deny"
+
+[[bans.skip]]
+  crate = "wit-bindgen"
+  deny-multiple-versions = false
+  reason = "wasip2 v wasip3, this won't make a difference at runtime anyways"
+
+
 
 [sources]
 allow-git = []
