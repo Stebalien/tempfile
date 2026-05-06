@@ -363,13 +363,10 @@ fn test_temp_path_resolve_existing_cwd() {
     let tmpdir = tempdir().unwrap();
     std::env::set_current_dir(&tmpdir).expect("failed to change to directory");
 
-    let cwd = if cfg!(target_os = "macos") {
-        // MacOS has absolute paths and ABSOLUTE paths. `cd /var/tmp/...` actually changes to
-        // /private/var/tmp...
-        std::env::current_dir().expect("failed to get the current directory")
-    } else {
-        tmpdir.path().to_owned()
-    };
+    let cwd = tmpdir
+        .path()
+        .canonicalize()
+        .unwrap_or_else(|_| tmpdir.path().to_owned());
 
     #[allow(deprecated)]
     let path = TempPath::from_path("foo");
