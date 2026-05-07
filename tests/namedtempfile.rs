@@ -363,12 +363,21 @@ fn test_temp_path_resolve_existing_cwd() {
     let tmpdir = tempdir().unwrap();
     std::env::set_current_dir(&tmpdir).expect("failed to change to directory");
 
-    let cwd = if cfg!(target_os = "macos") {
-        // MacOS has absolute paths and ABSOLUTE paths. `cd /var/tmp/...` actually changes to
-        // /private/var/tmp...
-        std::env::current_dir().expect("failed to get the current directory")
+    // Check relative to the directory we actually ended up in, not `tmpdir`,
+    // as there may be symlinks in the path.
+    let cwd = std::env::current_dir().expect("failed to get the current directory");
+
+    // Make sure we actually ended up in the right place.
+    if let (Ok(canonical_cwd), Ok(canonical_tmpdir)) =
+        (cwd.canonicalize(), tmpdir.path().canonicalize())
+    {
+        // We canonicalize the paths because `std::env::current_dir` resolves symlinks, etc.
+        // We canonicalize BOTH paths because canonicalize returns paths UNC form on windows,
+        // but `std::env::current_dir` does not...
+        assert_eq!(canonical_cwd, canonical_tmpdir);
     } else {
-        tmpdir.path().to_owned()
+        // Some platforms (wasi) don't support this, so we just compare the paths directly.
+        assert_eq!(cwd, tmpdir.path());
     };
 
     #[allow(deprecated)]
