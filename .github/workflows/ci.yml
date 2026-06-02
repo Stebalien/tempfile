@@ -7,8 +7,8 @@ on:
       - master
 
 env:
-  CARGO_TARGET_WASM32_WASIP1_RUNNER: "/home/runner/.wasmtime/bin/wasmtime --dir /tmp/"
-  CARGO_TARGET_WASM32_WASIP2_RUNNER: "/home/runner/.wasmtime/bin/wasmtime --dir /tmp/"
+  CARGO_TARGET_WASM32_WASIP1_RUNNER: "wasmtime --dir /tmp"
+  CARGO_TARGET_WASM32_WASIP2_RUNNER: "wasmtime --dir /tmp"
   RUSTFLAGS: "-D warnings"
   RUSTDOCFLAGS: "-D warnings"
   NDK_VERSION: "r26d"
@@ -108,7 +108,7 @@ jobs:
         run: cargo update -p libc --precise 0.2.183
       - name: Install Wasmtime
         if: ${{ startsWith(matrix.platform.target, 'wasm32-wasi') }}
-        run: curl https://wasmtime.dev/install.sh -sSf | bash
+        uses: bytecodealliance/actions/wasmtime/setup@9152e710e9f7182e4c29ad218e4f335a7b203613 # v1.1.3
       - name: Setup Android Environment
         if: ${{ contains(matrix.platform.target, 'android') }}
         run: |
