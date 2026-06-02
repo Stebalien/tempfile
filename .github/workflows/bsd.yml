@@ -40,3 +40,18 @@ jobs:
             pkg_add rust
             cargo build
             cargo test
+  netbsd:
+    name: NetBSD
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+      - name: Run FreeBSD VM
+        uses: vmactions/netbsd-vm@ad31081832386a0ba569aee243e6edf9524f3f80 # v1.4.2
+        with:
+          usesh: true
+          prepare: |
+            pkg_add rust
+            cargo build
+            cargo test
