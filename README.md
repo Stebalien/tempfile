@@ -29,7 +29,9 @@ This crate supports all major operating systems:
 - Android
 - MacOS
 - Windows
-- FreeBSD (likely other BSDs but we don't have CI for them)
+- FreeBSD
+- OpenBSD
+- NetBSD
 - RedoxOS
 - Wasm (build and link only, Wasm doesn't have a filesystem)
 - WASI P1 & P2.

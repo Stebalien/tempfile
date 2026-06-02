@@ -48,7 +48,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run FreeBSD VM
-        uses: vmactions/netbsd-vm@ad31081832386a0ba569aee243e6edf9524f3f80 # v1.4.2
+        uses: vmactions/netbsd-vm@ad31081832386a0ba569aee243e6edf9524f3f80 # v1.3.9
         with:
           usesh: true
           prepare: |
