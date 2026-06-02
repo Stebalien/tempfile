@@ -17,7 +17,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run FreeBSD VM
-        uses: vmactions/freebsd-vm@d1e65811565151536c0c894fff74f06351ed26e6 # v1
+        uses: vmactions/freebsd-vm@d1e65811565151536c0c894fff74f06351ed26e6 # v1.4.5
         with:
           usesh: true
           prepare: |
