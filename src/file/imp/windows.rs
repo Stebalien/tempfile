@@ -13,6 +13,7 @@ use windows_sys::Win32::Storage::FileSystem::{
     MOVEFILE_REPLACE_EXISTING, MoveFileExW, ReOpenFile, SetFileAttributesW,
 };
 
+use crate::error::IoResultExt;
 use crate::util;
 
 fn to_utf16(s: &Path) -> Vec<u16> {
@@ -41,11 +42,11 @@ pub fn create_named(
 
 pub fn create(dir: &Path) -> io::Result<File> {
     util::create_helper(
-        dir,
         crate::env::default_prefix(),
         OsStr::new(""),
         crate::NUM_RAND_CHARS,
-        |path| {
+        |fname| {
+            let path = dir.join(fname);
             let f = OpenOptions::new()
                 .create_new(true)
                 .read(true)
@@ -59,6 +60,7 @@ pub fn create(dir: &Path) -> io::Result<File> {
             Ok(f)
         },
     )
+    .with_err_path(|| dir)
 }
 
 pub fn reopen(file: &File, _path: &Path) -> io::Result<File> {

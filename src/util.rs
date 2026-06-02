@@ -27,7 +27,12 @@ fn tmpname(
     Ok(buf)
 }
 
-pub fn create_helper<R>(
+/// This function is like [`create_helper`] except that it takes a base directory in which
+/// to create the temporary file/directory, makes that path absolute, and expands the provided
+/// names suggested to that directory.
+///
+/// This is used for creating named temporary files, directories, sockets, etc.
+pub fn create_absolute_helper<R>(
     base: &Path,
     prefix: &OsStr,
     suffix: &OsStr,
@@ -42,7 +47,19 @@ pub fn create_helper<R>(
         base_path_storage = std::path::absolute(base)?;
         base = &base_path_storage;
     }
+    create_helper(prefix, suffix, random_len, |path| (f)(base.join(path))).with_err_path(|| base)
+}
 
+/// This function wraps a temporary file creation operation, suggesting temporary file names and
+/// deciding whether or not to try again based on the returned error and the number of attempts.
+///
+/// This is used for creating unnamed temporary files.
+pub fn create_helper<R>(
+    prefix: &OsStr,
+    suffix: &OsStr,
+    random_len: usize,
+    mut f: impl FnMut(OsString) -> io::Result<R>,
+) -> io::Result<R> {
     let num_retries = if random_len != 0 {
         crate::NUM_RETRIES
     } else {
@@ -71,8 +88,7 @@ pub fn create_helper<R>(
         }
         let _ = i; // avoid unused variable warning for the above.
 
-        let path = base.join(tmpname(&mut rng, prefix, suffix, random_len)?);
-        return match f(path) {
+        return match f(tmpname(&mut rng, prefix, suffix, random_len)?) {
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists && num_retries > 1 => continue,
             // AddrInUse can happen if we're creating a UNIX domain socket and
             // the path already exists.
@@ -85,7 +101,6 @@ pub fn create_helper<R>(
         io::ErrorKind::AlreadyExists,
         "too many temporary files exist",
     ))
-    .with_err_path(|| base)
 }
 
 /// Check that the passed path is a valid file-name (no directories, no nulls, etc.).

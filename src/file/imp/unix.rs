@@ -1,9 +1,10 @@
 use std::ffi::OsStr;
-use std::fs::{self, File, OpenOptions};
+use std::fs::{File, OpenOptions};
 use std::io;
-
-use crate::util;
 use std::path::Path;
+
+use crate::error::IoResultExt;
+use crate::util;
 
 use {
     rustix::fs::{rename, unlink},
@@ -24,23 +25,6 @@ pub fn create_named(
     }
 
     open_options.open(path)
-}
-
-fn create_unlinked(path: &Path) -> io::Result<File> {
-    let tmp;
-    // shadow this to decrease the lifetime. It can't live longer than `tmp`.
-    let mut path = path;
-    if !path.is_absolute() {
-        let cur_dir = std::env::current_dir()?;
-        tmp = cur_dir.join(path);
-        path = &tmp;
-    }
-
-    let f = create_named(path, &mut OpenOptions::new(), None)?;
-    // don't care whether the path has already been unlinked,
-    // but perhaps there are some IO error conditions we should send up?
-    let _ = fs::remove_file(path);
-    Ok(f)
 }
 
 #[cfg(target_os = "linux")]
@@ -68,14 +52,66 @@ pub fn create(dir: &Path) -> io::Result<File> {
     create_unix(dir)
 }
 
-fn create_unix(dir: &Path) -> io::Result<File> {
+fn create_unix(mut dir: &Path) -> io::Result<File> {
+    use rustix::fs::{Mode, OFlags};
+
+    // We can't just use O_RDONLY on platforms without O_PATH
+    // because we might not have read-access to the directory containing
+    // the temporary file.
+    #[allow(unused)]
+    const O_SEARCH: OFlags = if cfg!(target_os = "wasi") {
+        OFlags::from_bits_retain(0x8000000)
+    } else if cfg!(target_vendor = "apple") {
+        OFlags::from_bits_retain(0x40000000)
+    } else {
+        OFlags::empty()
+    };
+
+    const DIR_OFLAGS: OFlags = OFlags::DIRECTORY.union(OFlags::CLOEXEC).union({
+        #[cfg(any(
+            target_os = "android",
+            target_os = "freebsd",
+            target_os = "linux",
+            target_os = "redox",
+        ))]
+        {
+            OFlags::PATH
+        }
+        #[cfg(not(any(
+            target_os = "android",
+            target_os = "freebsd",
+            target_os = "linux",
+            target_os = "redox",
+        )))]
+        {
+            O_SEARCH
+        }
+    });
+
+    const FILE_OFLAGS: OFlags = OFlags::RDWR
+        .union(OFlags::CREATE)
+        .union(OFlags::EXCL)
+        .union(OFlags::CLOEXEC);
+    const FILE_MODE: Mode = Mode::RUSR.union(Mode::WUSR);
+
+    if dir == Path::new("") {
+        dir = Path::new(".")
+    }
+
+    let dirfd = rustix::fs::open(dir, DIR_OFLAGS, Mode::empty())
+        .map_err(|e| e.into())
+        .with_err_path(|| dir)?;
     util::create_helper(
-        dir,
         crate::env::default_prefix(),
         OsStr::new(""),
         crate::NUM_RAND_CHARS,
-        |path| create_unlinked(&path),
+        move |fname| {
+            let f = rustix::fs::openat(&dirfd, &fname, FILE_OFLAGS, FILE_MODE)?;
+            let _ = rustix::fs::unlinkat(&dirfd, fname, rustix::fs::AtFlags::empty());
+            Ok(f.into())
+        },
     )
+    .with_err_path(|| dir)
 }
 
 pub fn reopen(file: &File, path: &Path) -> io::Result<File> {

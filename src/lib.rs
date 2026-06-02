@@ -520,7 +520,7 @@ impl<'a> Builder<'a> {
     /// [security]: struct.NamedTempFile.html#security
     /// [resource-leaking]: struct.NamedTempFile.html#resource-leaking
     pub fn tempfile_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<NamedTempFile> {
-        util::create_helper(
+        util::create_absolute_helper(
             dir.as_ref(),
             self.prefix.unwrap_or(env::default_prefix()),
             self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
@@ -586,7 +586,7 @@ impl<'a> Builder<'a> {
     ///
     /// [resource-leaking]: struct.TempDir.html#resource-leaking
     pub fn tempdir_in<P: AsRef<Path>>(&self, dir: P) -> io::Result<TempDir> {
-        util::create_helper(
+        util::create_absolute_helper(
             dir.as_ref(),
             self.prefix.unwrap_or(env::default_prefix()),
             self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
@@ -708,7 +708,7 @@ impl<'a> Builder<'a> {
         F: FnMut(&MakeParams<'_>) -> io::Result<R>,
         P: AsRef<Path>,
     {
-        util::create_helper(
+        util::create_absolute_helper(
             dir.as_ref(),
             self.prefix.unwrap_or(env::default_prefix()),
             self.suffix.unwrap_or(DEFAULT_SUFFIX.as_ref()),
