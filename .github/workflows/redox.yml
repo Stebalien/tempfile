@@ -16,7 +16,7 @@ env:
 jobs:
   redox:
     runs-on: ubuntu-latest
-    container: redoxos/redoxer:e3054735e7d9e0fb411c82d09a677512d300bf26ec6d4c4b1d6bfe6efbb17e32
+    container: redoxos/redoxer@sha256:e3054735e7d9e0fb411c82d09a677512d300bf26ec6d4c4b1d6bfe6efbb17e32
     steps:
       - name: Install Toolchain
         run: |
