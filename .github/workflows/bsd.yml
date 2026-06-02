@@ -1,4 +1,4 @@
-name: FreeBSD CI
+name: BSD CI
 
 on:
   push:
@@ -11,6 +11,7 @@ on:
 permissions: {}
 jobs:
   freebsd:
+    name: FreeBSD
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -22,5 +23,20 @@ jobs:
           usesh: true
           prepare: |
             pkg install -y rust
+            cargo build
+            cargo test
+  openbsd:
+    name: OpenBSD
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+      - name: Run FreeBSD VM
+        uses: vmactions/openbsd-vm@6fac4962055fe9952d29930942445739e509fecd # v1.4.2
+        with:
+          usesh: true
+          prepare: |
+            pkg_add rust
             cargo build
             cargo test
