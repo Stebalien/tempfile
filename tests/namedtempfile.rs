@@ -338,7 +338,12 @@ fn temp_path_from_argument_types() {
 //
 // This excludes wasi and redox (2) and windows (1).
 #[test]
-#[cfg(not(any(target_os = "redox", target_os = "wasi", windows)))]
+#[cfg(not(any(
+    target_os = "illumos",
+    target_os = "redox",
+    target_os = "wasi",
+    windows,
+)))]
 fn test_temp_path_resolve_missing_cwd() {
     configure_wasi_temp_dir();
     let _guard = cwd_lock();
