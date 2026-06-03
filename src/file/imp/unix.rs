@@ -100,12 +100,8 @@ pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<
         #[cfg(any(
             target_os = "android",
             target_os = "linux",
-            target_os = "macos",
-            target_os = "ios",
-            target_os = "tvos",
-            target_os = "visionos",
-            target_os = "watchos",
             target_os = "redox",
+            target_vendor = "apple",
         ))]
         {
             use rustix::fs::{renameat_with, RenameFlags, CWD};

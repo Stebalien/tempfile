@@ -637,11 +637,11 @@ fn test_make_uds_conflict() {
     .unwrap();
 
     // Number of sockets we can create. Depends on whether or not the filesystem is case sensitive.
-
-    #[cfg(target_os = "macos")]
-    const NUM_FILES: usize = 36;
-    #[cfg(not(target_os = "macos"))]
-    const NUM_FILES: usize = 62;
+    const NUM_FILES: usize = if cfg!(target_vendor = "apple") {
+        36
+    } else {
+        62
+    };
 
     assert_eq!(sockets.len(), NUM_FILES);
 
