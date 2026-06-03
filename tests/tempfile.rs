@@ -39,6 +39,27 @@ fn test_cleanup() {
     assert!(num_files == 0);
 }
 
+#[test]
+#[cfg(unix)]
+fn test_write_only() {
+    use std::os::unix::fs::PermissionsExt;
+
+    // For the wasi platforms, `std::env::temp_dir` will panic. For those targets, configure the /tmp
+    // directory instead as the base directory for temp files.
+    #[cfg(target_os = "wasi")]
+    let _ = tempfile::env::override_temp_dir(std::path::Path::new("/tmp"));
+
+    // We should be able to create temporary files in "write only" directories.
+    let tmpdir = tempfile::Builder::new()
+        .permissions(std::fs::Permissions::from_mode(0o300))
+        .tempdir()
+        .unwrap();
+    {
+        let mut tmpfile = tempfile::tempfile_in(&tmpdir).unwrap();
+        write!(tmpfile, "abcde").unwrap();
+    }
+}
+
 // Only run this test on Linux. MacOS doesn't like us creating so many files, apparently.
 #[cfg(target_os = "linux")]
 #[test]
