@@ -1,0 +1,42 @@
+name: Illumos CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+permissions: {}
+jobs:
+  omnios:
+    name: OmniOS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Run Tests
+        uses: vmactions/omnios-vm@493aabc6b4f4dd6dcb81e748548b5f4bf56dd2b1 # v1.3.1
+        with:
+          usesh: true
+          prepare: pkg install rust
+          run: |
+            cargo build
+            cargo test
+  openindiana:
+    name: OpenIndiana
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Run Tests
+        uses: vmactions/openindiana-vm@5ecd04945b8ac6c9b82248324912326a4d065094 # v1.1.2
+        with:
+          usesh: true
+          prepare: pkg install developer/lang/rustc developer/gcc-14
+          run: |
+            cargo build
+            cargo test
