@@ -17,12 +17,12 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - name: Run FreeBSD VM
+      - name: Run Tests
         uses: vmactions/freebsd-vm@d1e65811565151536c0c894fff74f06351ed26e6 # v1.4.5
         with:
           usesh: true
-          prepare: |
-            pkg install -y rust
+          prepare: pkg install -y rust
+          run: |
             cargo build
             cargo test
   openbsd:
@@ -32,12 +32,12 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - name: Run FreeBSD VM
+      - name: Run Tests
         uses: vmactions/openbsd-vm@6fac4962055fe9952d29930942445739e509fecd # v1.4.2
         with:
           usesh: true
-          prepare: |
-            pkg_add rust
+          prepare:  pkg_add rust
+          run: |
             cargo build
             cargo test
   netbsd:
@@ -47,11 +47,41 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - name: Run FreeBSD VM
+      - name: Run Tests
         uses: vmactions/netbsd-vm@ad31081832386a0ba569aee243e6edf9524f3f80 # v1.3.9
         with:
           usesh: true
-          prepare: |
-            pkg_add rust
+          prepare: pkg_add rust
+          run: |
+            cargo build
+            cargo test
+  dragonfly:
+    name: DragonFly BSD
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Run Tests
+        uses: vmactions/dragonflybsd-vm@b4468429bb9ab60b14600c6eeeb6464427f29391 # v1.2.9
+        with:
+          usesh: true
+          prepare: pkg install -y rust
+          run: |
+            cargo build
+            cargo test
+  midnight:
+    name: MidnightBSD
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Run Tests
+        uses: vmactions/midnightbsd-vm@bcb8f9f26cc75da3afb3610e3bb2a95018cdb199 # v1.0.2
+        with:
+          usesh: true
+          prepare: mport --quiet install rust >/dev/null || true
+          run: |
             cargo build
             cargo test

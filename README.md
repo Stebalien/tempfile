@@ -25,16 +25,18 @@ tempfile = "3"
 
 This crate supports all major operating systems:
 
-- Linux
 - Android
-- MacOS
-- Windows
+- DragonFly BSD
 - FreeBSD
-- OpenBSD
+- Linux
+- MacOS
+- MidnightBSD
 - NetBSD
+- OpenBSD
 - RedoxOS
-- Wasm (build and link only, Wasm doesn't have a filesystem)
 - WASI P1 & P2.
+- Wasm (build and link only, Wasm doesn't have a filesystem)
+- Windows
 
 However:
 
