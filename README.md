@@ -25,17 +25,23 @@ tempfile = "3"
 
 This crate supports all major operating systems:
 
-- Android
-- DragonFly BSD
-- FreeBSD
 - Linux
-- MacOS
-- MidnightBSD
-- NetBSD
-- OpenBSD
+    - Android
+    - Linux
+- BSDs
+    - DragonFly BSD
+    - FreeBSD
+    - MidnightBSD
+    - NetBSD
+    - OpenBSD
+- Illumos
+    - OpenIndiana
+    - OmniOS
+- MacOS (ios, watchos, visionos, etc.)
 - RedoxOS
-- WASI P1 & P2.
-- Wasm (build and link only, Wasm doesn't have a filesystem)
+- Wasm
+    - WASI P1 & P2.
+    - Wasm (build and link only, Wasm doesn't have a filesystem)
 - Windows
 
 However:
@@ -44,6 +50,7 @@ However:
 - WASI P1/P2 does not define a default temporary directory. You'll need to explicitly call `tempfile::env::override_temp_dir` with a valid directory or temporary file creation will panic on this platform.
 - WASI P1/P2 does not have file permissions.
 - You _may_ need to override the temporary directory in Android as well to point at your application's per-app cache directory.
+- None of the BSD/Illumostargets are tested for compatibility with older rust compilers.
 
 ## Example
 
