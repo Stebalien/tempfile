@@ -475,6 +475,24 @@ fn test_from_parts() {
 }
 
 #[test]
+#[cfg(unix)]
+fn test_write_only() {
+    use std::os::unix::fs::PermissionsExt;
+
+    configure_wasi_temp_dir();
+
+    // We should be able to create temporary files in "write only" directories.
+    let tmpdir = tempfile::Builder::new()
+        .permissions(std::fs::Permissions::from_mode(0o300))
+        .tempdir()
+        .unwrap();
+    {
+        let mut tmpfile = NamedTempFile::new_in(&tmpdir).unwrap();
+        write!(tmpfile, "abcde").unwrap();
+    }
+}
+
+#[test]
 fn test_keep() {
     configure_wasi_temp_dir();
 
