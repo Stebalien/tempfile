@@ -6,37 +6,8 @@ use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use tempfile::{env, tempdir, Builder, NamedTempFile, TempPath};
 
-struct CWDGuard {
-    #[allow(unused)]
-    guard: std::sync::MutexGuard<'static, ()>,
-    old_cwd: PathBuf,
-}
-
-impl Drop for CWDGuard {
-    fn drop(&mut self) {
-        let _ = std::env::set_current_dir(&self.old_cwd);
-    }
-}
-
-static CWD_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
-fn cwd_lock() -> CWDGuard {
-    let guard = CWD_LOCK.lock().unwrap();
-    let old_cwd = std::env::current_dir().unwrap();
-    CWDGuard { guard, old_cwd }
-}
-
-fn exists<P: AsRef<Path>>(path: P) -> bool {
-    std::fs::metadata(path.as_ref()).is_ok()
-}
-
-/// For the wasi platforms, `std::env::temp_dir` will panic. For those targets, configure the /tmp
-/// directory instead as the base directory for temp files.
-fn configure_wasi_temp_dir() {
-    if cfg!(target_os = "wasi") {
-        let _ = tempfile::env::override_temp_dir(Path::new("/tmp"));
-    }
-}
+mod common;
+use common::*;
 
 #[test]
 fn test_prefix() {
@@ -74,9 +45,9 @@ fn test_deleted() {
 
     let tmpfile = NamedTempFile::new().unwrap();
     let path = tmpfile.path().to_path_buf();
-    assert!(exists(&path));
+    assert!(path.exists());
     drop(tmpfile);
-    assert!(!exists(&path));
+    assert!(!path.exists());
 }
 
 #[test]
@@ -88,9 +59,9 @@ fn test_persist() {
     let persist_path = env::temp_dir().join("persisted_temporary_file");
     write!(tmpfile, "abcde").unwrap();
     {
-        assert!(exists(&old_path));
+        assert!(old_path.exists());
         let mut f = tmpfile.persist(&persist_path).unwrap();
-        assert!(!exists(&old_path));
+        assert!(!old_path.exists());
 
         // Check original file
         f.seek(SeekFrom::Start(0)).unwrap();
@@ -119,10 +90,10 @@ fn test_persist_noclobber() {
     let persist_target = NamedTempFile::new().unwrap();
     let persist_path = persist_target.path().to_path_buf();
     write!(tmpfile, "abcde").unwrap();
-    assert!(exists(&old_path));
+    assert!(old_path.exists());
     {
         tmpfile = tmpfile.persist_noclobber(&persist_path).unwrap_err().into();
-        assert!(exists(&old_path));
+        assert!(old_path.exists());
         std::fs::remove_file(&persist_path).unwrap();
         drop(persist_target);
     }
@@ -236,9 +207,9 @@ fn test_temppath_persist() {
     let persist_path = env::temp_dir().join("persisted_temppath_file");
 
     {
-        assert!(exists(&old_path));
+        assert!(old_path.exists());
         tmppath.persist(&persist_path).unwrap();
-        assert!(!exists(&old_path));
+        assert!(!old_path.exists());
     }
 
     {
@@ -266,11 +237,11 @@ fn test_temppath_persist_noclobber() {
     let persist_target = NamedTempFile::new().unwrap();
     let persist_path = persist_target.path().to_path_buf();
 
-    assert!(exists(&old_path));
+    assert!(old_path.exists());
 
     {
         tmppath = tmppath.persist_noclobber(&persist_path).unwrap_err().into();
-        assert!(exists(&old_path));
+        assert!(old_path.exists());
         std::fs::remove_file(&persist_path).unwrap();
         drop(persist_target);
     }
@@ -417,7 +388,7 @@ fn test_change_dir() {
     let path = std::env::current_dir().unwrap().join(tmpfile.path());
     std::env::set_current_dir(&dir_b).expect("failed to change to directory B");
     drop(tmpfile);
-    assert!(!exists(path));
+    assert!(!path.exists());
 
     drop(dir_a);
     drop(dir_b);
@@ -436,7 +407,7 @@ fn test_change_dir_make() {
     let path = std::env::current_dir().unwrap().join(tmpfile.path());
     std::env::set_current_dir(&dir_b).expect("failed to change to directory B");
     drop(tmpfile);
-    assert!(!exists(path));
+    assert!(!path.exists());
 
     drop(dir_a);
     drop(dir_b);
@@ -506,9 +477,9 @@ fn test_keep() {
     let (mut f, temp_path) = tmpfile.into_parts();
     let path;
     {
-        assert!(exists(&temp_path));
+        assert!(temp_path.exists());
         path = temp_path.keep().unwrap();
-        assert!(exists(&path));
+        assert!(path.exists());
 
         // Check original file
         f.seek(SeekFrom::Start(0)).unwrap();

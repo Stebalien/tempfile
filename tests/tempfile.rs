@@ -8,12 +8,12 @@ use std::{
     thread,
 };
 
+mod common;
+use common::*;
+
 #[test]
 fn test_basic() {
-    // For the wasi platforms, `std::env::temp_dir` will panic. For those targets, configure the /tmp
-    // directory instead as the base directory for temp files.
-    #[cfg(target_os = "wasi")]
-    let _ = tempfile::env::override_temp_dir(std::path::Path::new("/tmp"));
+    configure_wasi_temp_dir();
 
     let mut tmpfile = tempfile::tempfile().unwrap();
     write!(tmpfile, "abcde").unwrap();
@@ -25,10 +25,7 @@ fn test_basic() {
 
 #[test]
 fn test_cleanup() {
-    // For the wasi platforms, `std::env::temp_dir` will panic. For those targets, configure the /tmp
-    // directory instead as the base directory for temp files.
-    #[cfg(target_os = "wasi")]
-    let _ = tempfile::env::override_temp_dir(std::path::Path::new("/tmp"));
+    configure_wasi_temp_dir();
 
     let tmpdir = tempfile::tempdir().unwrap();
     {
@@ -44,10 +41,7 @@ fn test_cleanup() {
 fn test_write_only() {
     use std::os::unix::fs::PermissionsExt;
 
-    // For the wasi platforms, `std::env::temp_dir` will panic. For those targets, configure the /tmp
-    // directory instead as the base directory for temp files.
-    #[cfg(target_os = "wasi")]
-    let _ = tempfile::env::override_temp_dir(std::path::Path::new("/tmp"));
+    configure_wasi_temp_dir();
 
     // We should be able to create temporary files in "write only" directories.
     let tmpdir = tempfile::Builder::new()

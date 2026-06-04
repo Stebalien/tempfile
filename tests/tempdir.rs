@@ -15,13 +15,8 @@ use std::path::Path;
 
 use tempfile::{Builder, TempDir};
 
-/// For the wasi platforms, `std::env::temp_dir` will panic. For those targets, configure the /tmp
-/// directory instead as the base directory for temp files.
-fn configure_wasi_temp_dir() {
-    if cfg!(target_os = "wasi") {
-        let _ = tempfile::env::override_temp_dir(std::path::Path::new("/tmp"));
-    }
-}
+mod common;
+use common::*;
 
 #[test]
 fn test_tempdir() {
