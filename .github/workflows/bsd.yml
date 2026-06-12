@@ -78,7 +78,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/midnightbsd-vm@bcb8f9f26cc75da3afb3610e3bb2a95018cdb199 # v1.0.2
+        uses: vmactions/midnightbsd-vm@b000e438e1a4c7986a8f0b8b7b3805d4a41945db # v1.0.3
         with:
           usesh: true
           prepare: mport --quiet install rust >/dev/null || true
