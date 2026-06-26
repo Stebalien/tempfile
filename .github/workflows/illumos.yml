@@ -18,7 +18,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/omnios-vm@d42d894b41dd58cf7e31c194709a1c0fe3d04ace # v1.3.2
+        uses: vmactions/omnios-vm@7f2be0b927aad1a78498c8aeeac4c4ce1fabd322 # v1.3.3
         with:
           usesh: true
           prepare: pkg install rust
