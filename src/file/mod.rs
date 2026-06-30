@@ -7,8 +7,8 @@ use std::mem;
 use std::ops::Deref;
 #[cfg(target_os = "wasi")]
 use std::os::fd::{AsFd, AsRawFd, BorrowedFd, RawFd};
-#[cfg(unix)] // we don't use std::os::fd because that's not available on rust 1.63.
-use std::os::unix::io::{AsFd, AsRawFd, BorrowedFd, RawFd};
+#[cfg(unix)]
+use std::os::fd::{AsFd, AsRawFd, BorrowedFd, RawFd};
 #[cfg(windows)]
 use std::os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, RawHandle};
 use std::path::{Path, PathBuf};

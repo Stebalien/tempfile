@@ -1,11 +1,9 @@
 use std::env;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 #[cfg(doc)]
 use crate::{tempdir_in, tempfile_in, Builder};
-
-// Once rust 1.70 is wide-spread (Debian stable), we can use OnceLock from stdlib.
-use once_cell::sync::OnceCell as OnceLock;
 
 static DEFAULT_TEMPDIR: OnceLock<PathBuf> = OnceLock::new();
 

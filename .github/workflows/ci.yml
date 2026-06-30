@@ -40,7 +40,7 @@ jobs:
         rust-version:
           - nightly
           - stable
-          - "1.63"
+          - "1.70"
         platform:
           - name: "Linux"
             os: ubuntu-latest
@@ -63,18 +63,18 @@ jobs:
             target: wasm32-wasip2
             test-flags: --tests
         exclude:
-          - rust-version: "1.63"
+          - rust-version: "1.70"
             platform:
               name: "Android"
               os: ubuntu-latest
               target: x86_64-linux-android
-          - rust-version: "1.63"
+          - rust-version: "1.70"
             platform:
               name: "WASI P1"
               os: ubuntu-latest
               target: wasm32-wasip1
               test-flags: --tests
-          - rust-version: "1.63"
+          - rust-version: "1.70"
             platform:
               name: "WASI P2"
               os: ubuntu-latest
@@ -95,16 +95,16 @@ jobs:
       - name: Generating the Cargo.lock
         run: cargo generate-lockfile
       - name: Downgrading once_cell
-        if: matrix.rust-version == 1.63
+        if: matrix.rust-version == 1.70
         run: cargo update -p once_cell --precise 1.20.3
       - name: Downgrading windows-sys
-        if: matrix.rust-version == 1.63
+        if: matrix.rust-version == 1.70
         run: cargo update -p windows-sys --precise 0.60.2
       - name: Downgrading getrandom
-        if: matrix.rust-version == 1.63
+        if: matrix.rust-version == 1.70
         run: cargo update -p getrandom --precise 0.3.4
       - name: Downgrading libc
-        if: matrix.rust-version == 1.63
+        if: matrix.rust-version == 1.70
         run: cargo update -p libc --precise 0.2.183
       - name: Install Wasmtime
         if: ${{ startsWith(matrix.platform.target, 'wasm32-wasi') }}
