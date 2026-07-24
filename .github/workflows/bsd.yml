@@ -18,7 +18,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/freebsd-vm@5a72679103d223925653750faa878a143340fbd0 # v1.5.0
+        uses: vmactions/freebsd-vm@a46f291854f624412f94e37b2e6ba64bdb52b5dd # v1.5.1
         with:
           usesh: true
           prepare: pkg install -y rust
@@ -33,7 +33,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/openbsd-vm@18edb32f4e48dae5865d7b8b3a9587bc01218a20 # v1.4.4
+        uses: vmactions/openbsd-vm@c941015845c0f0c429676840963dc63b226d4f69 # v1.4.5
         with:
           usesh: true
           prepare:  pkg_add rust
@@ -48,7 +48,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/netbsd-vm@0c26a4c4a5e234038862a4a53a00c905b8a107c9 # v1.4.2
+        uses: vmactions/netbsd-vm@fac0a63f3e5244c600cb9ca532d27ee774ecdb4b # v1.4.3
         with:
           usesh: true
           prepare: pkg_add rust
@@ -63,7 +63,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/dragonflybsd-vm@4ba8127bd95c94b66fc4b885e37c99955ba308ea # v1.3.0
+        uses: vmactions/dragonflybsd-vm@bc8ccbaa091ce3624c93f2dc328ae48129b07580 # v1.3.1
         with:
           usesh: true
           prepare: pkg install -y rust
@@ -78,7 +78,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/midnightbsd-vm@b000e438e1a4c7986a8f0b8b7b3805d4a41945db # v1.0.3
+        uses: vmactions/midnightbsd-vm@1629088a95a63a7273cf57603b13e5e247417549 # v1.0.4
         with:
           usesh: true
           prepare: mport --quiet install rust >/dev/null || true
