@@ -18,7 +18,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/omnios-vm@7f2be0b927aad1a78498c8aeeac4c4ce1fabd322 # v1.3.3
+        uses: vmactions/omnios-vm@027e3ec08fed6fb740ab5f300c2605f9de02997a # v1.3.4
         with:
           usesh: true
           prepare: pkg install rust
@@ -33,7 +33,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/openindiana-vm@3248e8c61485588528c034a4285242f77efd8b97 # v1.1.3
+        uses: vmactions/openindiana-vm@3af32bfaa450c7c53b35b1da080564c85cac4ae8 # v1.1.4
         with:
           usesh: true
           prepare: pkg install developer/lang/rustc developer/gcc-14
