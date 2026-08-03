@@ -4,7 +4,7 @@ use std::ffi::{OsStr, OsString};
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-use tempfile::{env, tempdir, Builder, NamedTempFile, TempPath};
+use tempfile::{Builder, NamedTempFile, TempPath, env, tempdir};
 
 mod common;
 use common::*;
@@ -56,7 +56,7 @@ fn test_persist() {
 
     let mut tmpfile = NamedTempFile::new().unwrap();
     let old_path = tmpfile.path().to_path_buf();
-    let persist_path = env::temp_dir().join("persisted_temporary_file");
+    let persist_path = env::temp_dir().unwrap().join("persisted_temporary_file");
     write!(tmpfile, "abcde").unwrap();
     {
         assert!(old_path.exists());
@@ -204,7 +204,7 @@ fn test_temppath_persist() {
     let tmppath = tmpfile.into_temp_path();
 
     let old_path = tmppath.to_path_buf();
-    let persist_path = env::temp_dir().join("persisted_temppath_file");
+    let persist_path = env::temp_dir().unwrap().join("persisted_temppath_file");
 
     {
         assert!(old_path.exists());
@@ -324,45 +324,12 @@ fn test_temp_path_resolve_missing_cwd() {
     std::env::set_current_dir(&tmpdir).expect("failed to change to the temporary directory");
     tmpdir.close().unwrap();
 
-    #[allow(deprecated)]
-    let path = TempPath::from_path("foo");
-    assert_eq!(&*path, Path::new("foo"));
-
     TempPath::try_from_path("foo").expect_err("should have failed to make path absolute file");
 }
 
 #[test]
 fn test_temp_path_resolve_existing_cwd() {
     configure_wasi_temp_dir();
-    let _guard = cwd_lock();
-
-    let tmpdir = tempdir().unwrap();
-    std::env::set_current_dir(&tmpdir).expect("failed to change to directory");
-
-    // Check relative to the directory we actually ended up in, not `tmpdir`,
-    // as there may be symlinks in the path.
-    let cwd = std::env::current_dir().expect("failed to get the current directory");
-
-    // Make sure we actually ended up in the right place.
-    if let (Ok(canonical_cwd), Ok(canonical_tmpdir)) =
-        (cwd.canonicalize(), tmpdir.path().canonicalize())
-    {
-        // We canonicalize the paths because `std::env::current_dir` resolves symlinks, etc.
-        // We canonicalize BOTH paths because canonicalize returns paths UNC form on windows,
-        // but `std::env::current_dir` does not...
-        assert_eq!(canonical_cwd, canonical_tmpdir);
-    } else {
-        // Some platforms (wasi) don't support this, so we just compare the paths directly.
-        assert_eq!(cwd, tmpdir.path());
-    };
-
-    #[allow(deprecated)]
-    let path = TempPath::from_path("foo");
-    assert_eq!(&*path, cwd.join("foo"));
-
-    #[allow(deprecated)]
-    let path = TempPath::from_path("");
-    assert_eq!(&*path, Path::new(""));
 
     TempPath::try_from_path("").expect_err("empty paths should fail");
 }
@@ -372,7 +339,13 @@ fn test_write_after_close() {
     configure_wasi_temp_dir();
 
     let path = NamedTempFile::new().unwrap().into_temp_path();
-    File::create(path).unwrap().write_all(b"test").unwrap();
+    let mut f = File::options()
+        .read(true)
+        .write(true)
+        .create(false)
+        .open(&path)
+        .unwrap();
+    f.write_all(b"test").unwrap();
 }
 
 #[test]
@@ -640,7 +613,7 @@ fn test_reseed() {
     let mut files: Vec<_> = Vec::new();
     let _ = Builder::new().make(|path| -> io::Result<File> {
         if attempts == 5 {
-            return Err(io::Error::new(io::ErrorKind::Other, "stop!"));
+            return Err(io::Error::other("stop!"));
         }
         attempts += 1;
         let f = File::options()
