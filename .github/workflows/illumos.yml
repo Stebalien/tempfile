@@ -33,7 +33,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/openindiana-vm@3af32bfaa450c7c53b35b1da080564c85cac4ae8 # v1.1.4
+        uses: vmactions/openindiana-vm@52f16d4534fe3edd9d9621621c238398d4d2a698 # v1.1.5
         with:
           usesh: true
           prepare: pkg install developer/lang/rustc developer/gcc-14
