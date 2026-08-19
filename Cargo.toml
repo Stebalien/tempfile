@@ -42,6 +42,9 @@ doc-comment = "0.3"
 [features]
 default = ["getrandom"]
 nightly = [] # DEPRECATED
+# Retry `persist`/`persist_noclobber` on transient failures (e.g. antivirus file
+# locks on Windows) with a short, bounded backoff. Off by default.
+persist-retry = []
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--generate-link-to-definition"]
