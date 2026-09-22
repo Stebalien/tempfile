@@ -109,7 +109,7 @@ impl From<PathPersistError> for TempPath {
 
 impl fmt::Display for PathPersistError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to persist temporary file path: {}", self.error)
+        f.write_str("failed to persist temporary file path")
     }
 }
 
@@ -542,7 +542,7 @@ impl<F> From<PersistError<F>> for NamedTempFile<F> {
 
 impl<F> fmt::Display for PersistError<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to persist temporary file: {}", self.error)
+        f.write_str("failed to persist temporary file")
     }
 }
 
