@@ -18,7 +18,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/freebsd-vm@f0552d3b69211736abd97f02ff3d4674c56b73b1 # v1.5.5
+        uses: vmactions/freebsd-vm@a2f9a41fa97f6848b8c3b791087dfcdaa5b473ff # v1.5.8
         with:
           usesh: true
           prepare: pkg install -y rust
@@ -48,7 +48,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/netbsd-vm@6334c835de4c04a59fe59f0f8f071e02a2f0bab3 # v1.4.7
+        uses: vmactions/netbsd-vm@20ee93a005c9fc78743e6e05269f4cb023b87413 # v1.5.0
         with:
           usesh: true
           prepare: pkg_add rust
@@ -78,7 +78,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Tests
-        uses: vmactions/midnightbsd-vm@f637e4fb35db7336e8ac44281e736a0b3b279141 # v1.0.6
+        uses: vmactions/midnightbsd-vm@1b41ef487f945c6bd79a3fcb60c91f316cbdea45 # v1.0.7
         with:
           usesh: true
           prepare: mport --quiet install rust >/dev/null || true
