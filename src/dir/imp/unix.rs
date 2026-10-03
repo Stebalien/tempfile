@@ -1,5 +1,5 @@
-use crate::error::IoResultExt;
 use crate::TempDir;
+use crate::error::IoResultExt;
 use std::io;
 use std::path::PathBuf;
 
@@ -12,9 +12,7 @@ pub fn create(
     #[cfg(not(target_os = "wasi"))]
     {
         use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
-        if let Some(p) = permissions {
-            dir_options.mode(p.mode());
-        }
+        dir_options.mode(permissions.map(|p| p.mode()).unwrap_or(0o700));
     }
     dir_options
         .create(&path)

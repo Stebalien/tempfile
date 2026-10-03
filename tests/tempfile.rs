@@ -4,7 +4,7 @@ use std::fs;
 use std::io::{Read, Seek, SeekFrom, Write};
 #[cfg(target_os = "linux")]
 use std::{
-    sync::mpsc::{sync_channel, TryRecvError},
+    sync::mpsc::{TryRecvError, sync_channel},
     thread,
 };
 
@@ -39,17 +39,43 @@ fn test_cleanup() {
 #[test]
 #[cfg(unix)]
 fn test_write_only() {
+    use std::fs::Permissions;
     use std::os::unix::fs::PermissionsExt;
 
     configure_wasi_temp_dir();
 
     // We should be able to create temporary files in "write only" directories.
     let tmpdir = tempfile::Builder::new()
-        .permissions(std::fs::Permissions::from_mode(0o300))
+        .permissions(Permissions::from_mode(0o300))
         .tempdir()
         .unwrap();
     {
         let mut tmpfile = tempfile::tempfile_in(&tmpdir).unwrap();
+        write!(tmpfile, "abcde").unwrap();
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn test_inaccessible_cwd() {
+    use std::fs::Permissions;
+    use std::os::unix::fs::PermissionsExt;
+
+    configure_wasi_temp_dir();
+
+    let _guard = cwd_lock();
+
+    // We should be able to create temporary files in "write only" directories.
+    let tmpdir_outer = tempfile::tempdir().unwrap();
+    let tmpdir_inner = tempfile::tempdir_in(&tmpdir_outer).unwrap();
+
+    std::env::set_current_dir(&tmpdir_inner).expect("failed to change to the temporary directory");
+
+    fs::set_permissions(&tmpdir_outer, Permissions::from_mode(0o000))
+        .expect("failed to set the outer directory permissions to 0");
+
+    {
+        let mut tmpfile = tempfile::tempfile_in(".").expect("failed to create temporary file");
         write!(tmpfile, "abcde").unwrap();
     }
 }

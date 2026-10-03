@@ -13,9 +13,9 @@ use std::os::unix::io::{AsFd, AsRawFd, BorrowedFd, RawFd};
 use std::os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, RawHandle};
 use std::path::{Path, PathBuf};
 
+use crate::Builder;
 use crate::env;
 use crate::error::IoResultExt;
-use crate::Builder;
 
 mod imp;
 
@@ -49,7 +49,7 @@ mod imp;
 /// # Ok::<(), std::io::Error>(())
 /// ```
 pub fn tempfile() -> io::Result<File> {
-    tempfile_in(env::temp_dir())
+    tempfile_in(env::temp_dir()?)
 }
 
 /// Create a new temporary file in the specified directory. Also see [`tempfile`].
@@ -331,35 +331,6 @@ impl TempPath {
     /// This is mostly useful for interacting with libraries and external components that provide
     /// files to be consumed or expect a path with no existing file to be given.
     ///
-    /// When passed a relative path, this function first tries to make it absolute (relative to the
-    /// current directory). If this fails, this function uses the relative path as-is.
-    ///
-    /// **DEPRECATED:** Use [`TempPath::try_from_path`] instead to handle the case where looking up
-    /// the current directory fails.
-    #[deprecated = "use TempPath::try_from_path"]
-    pub fn from_path(path: impl Into<PathBuf>) -> Self {
-        let mut path = path.into();
-        // Best effort to resolve a relative path. If we fail, we keep the path as-is to
-        // preserve backwards compatibility.
-        //
-        // Ignore empty paths entirely. There's nothing we can do about them.
-        if path != Path::new("") && !path.is_absolute() {
-            if let Ok(cur_dir) = std::env::current_dir() {
-                path = cur_dir.join(path);
-            }
-        }
-        Self {
-            path: path.into_boxed_path(),
-            disable_cleanup: false,
-        }
-    }
-
-    /// Create a new TempPath from an existing path. This can be done even if no file exists at the
-    /// given path.
-    ///
-    /// This is mostly useful for interacting with libraries and external components that provide
-    /// files to be consumed or expect a path with no existing file to be given.
-    ///
     /// Relative paths are resolved relative to the current working directory. If the passed path is
     /// empty or if the current working directory cannot be determined, this function returns an
     /// error.
@@ -415,13 +386,13 @@ impl Deref for TempPath {
     }
 }
 
-impl AsRef<Path> for TempPath {
+impl AsRef<Path> for &TempPath {
     fn as_ref(&self) -> &Path {
         &self.path
     }
 }
 
-impl AsRef<OsStr> for TempPath {
+impl AsRef<OsStr> for &TempPath {
     fn as_ref(&self) -> &OsStr {
         self.path.as_os_str()
     }
@@ -505,7 +476,7 @@ impl<F> fmt::Debug for NamedTempFile<F> {
     }
 }
 
-impl<F> AsRef<Path> for NamedTempFile<F> {
+impl<F> AsRef<Path> for &NamedTempFile<F> {
     #[inline]
     fn as_ref(&self) -> &Path {
         self.path()
@@ -1068,11 +1039,18 @@ impl<F: Seek> Seek for NamedTempFile<F> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.as_file_mut().seek(pos).with_err_path(|| self.path())
     }
+    fn rewind(&mut self) -> io::Result<()> {
+        self.as_file_mut().rewind().with_err_path(|| self.path())
+    }
 }
 
 impl Seek for &NamedTempFile<File> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.as_file().seek(pos).with_err_path(|| self.path())
+    }
+
+    fn rewind(&mut self) -> io::Result<()> {
+        self.as_file().rewind().with_err_path(|| self.path())
     }
 }
 

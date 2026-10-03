@@ -12,7 +12,7 @@ patterns and surprisingly difficult to implement securely).
 
 ## Usage
 
-Minimum required Rust version: 1.63.0
+Minimum required Rust version: 1.85.0
 
 Add this to your `Cargo.toml`:
 
