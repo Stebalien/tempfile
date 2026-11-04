@@ -19,6 +19,177 @@ use crate::Builder;
 
 mod imp;
 
+/// Persist a temporary file to `new_path`.
+///
+/// Without the `persist-retry` feature this is a plain call to [`imp::persist`].
+/// With the feature enabled, the rename is retried with a short backoff when it
+/// fails with an error that's typically transient (see [`retry`]).
+fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
+    #[cfg(not(feature = "persist-retry"))]
+    {
+        imp::persist(old_path, new_path, overwrite)
+    }
+    #[cfg(feature = "persist-retry")]
+    {
+        retry::persist(|| imp::persist(old_path, new_path, overwrite))
+    }
+}
+
+#[cfg(feature = "persist-retry")]
+mod retry {
+    use std::io;
+    use std::thread;
+    use std::time::Duration;
+
+    // Total amount of time we're willing to spend sleeping between retries. This
+    // mirrors the roughly one-second window used by `graceful-fs`, the prior art
+    // referenced when this feature was requested.
+    const RETRY_BUDGET: Duration = Duration::from_secs(1);
+    // Initial backoff, doubled after each attempt up to `MAX_BACKOFF`.
+    const INITIAL_BACKOFF: Duration = Duration::from_millis(1);
+    const MAX_BACKOFF: Duration = Duration::from_millis(100);
+
+    /// Run `op`, retrying while it fails with a transient error, sleeping with an
+    /// exponential backoff between attempts.
+    pub(super) fn persist<F>(op: F) -> io::Result<()>
+    where
+        F: FnMut() -> io::Result<()>,
+    {
+        retry_with(op, thread::sleep)
+    }
+
+    /// The retry loop, with the sleep call factored out so tests can drive it
+    /// without actually sleeping. We bound the loop by the total backoff we've
+    /// scheduled rather than by wall-clock time so that behavior is independent
+    /// of how long each attempt takes.
+    fn retry_with<F, S>(mut op: F, mut sleep: S) -> io::Result<()>
+    where
+        F: FnMut() -> io::Result<()>,
+        S: FnMut(Duration),
+    {
+        let mut backoff = INITIAL_BACKOFF;
+        let mut slept = Duration::ZERO;
+        loop {
+            match op() {
+                Ok(()) => return Ok(()),
+                Err(e) => {
+                    if !is_retryable(&e) || slept >= RETRY_BUDGET {
+                        return Err(e);
+                    }
+                    sleep(backoff);
+                    slept = slept.saturating_add(backoff);
+                    backoff = (backoff * 2).min(MAX_BACKOFF);
+                }
+            }
+        }
+    }
+
+    /// Whether an error from `persist` is worth retrying.
+    ///
+    /// Antivirus and file-indexing software on Windows transiently lock files,
+    /// causing the rename in `persist` to fail with an access-denied or
+    /// sharing-violation error. Those are the cases worth retrying.
+    fn is_retryable(error: &io::Error) -> bool {
+        if error.kind() == io::ErrorKind::PermissionDenied {
+            return true;
+        }
+        // `ERROR_SHARING_VIOLATION` has no dedicated `ErrorKind`, so match the
+        // raw OS error code.
+        #[cfg(windows)]
+        {
+            const ERROR_SHARING_VIOLATION: i32 = 32;
+            if error.raw_os_error() == Some(ERROR_SHARING_VIOLATION) {
+                return true;
+            }
+        }
+        false
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use std::cell::Cell;
+
+        fn perm_denied() -> io::Error {
+            io::Error::from(io::ErrorKind::PermissionDenied)
+        }
+
+        #[test]
+        fn succeeds_without_retrying() {
+            let calls = Cell::new(0);
+            let mut slept = Vec::new();
+            let result = retry_with(
+                || {
+                    calls.set(calls.get() + 1);
+                    Ok(())
+                },
+                |d| slept.push(d),
+            );
+            assert!(result.is_ok());
+            assert_eq!(calls.get(), 1);
+            assert!(slept.is_empty());
+        }
+
+        #[test]
+        fn retries_then_succeeds() {
+            let calls = Cell::new(0);
+            let mut slept = Vec::new();
+            let result = retry_with(
+                || {
+                    calls.set(calls.get() + 1);
+                    if calls.get() < 3 {
+                        Err(perm_denied())
+                    } else {
+                        Ok(())
+                    }
+                },
+                |d| slept.push(d),
+            );
+            assert!(result.is_ok());
+            assert_eq!(calls.get(), 3);
+            // Two failures means two sleeps, growing exponentially.
+            assert_eq!(slept, vec![INITIAL_BACKOFF, INITIAL_BACKOFF * 2]);
+        }
+
+        #[test]
+        fn does_not_retry_non_transient_errors() {
+            let calls = Cell::new(0);
+            let mut slept = Vec::new();
+            let result = retry_with(
+                || {
+                    calls.set(calls.get() + 1);
+                    Err(io::Error::from(io::ErrorKind::NotFound))
+                },
+                |d| slept.push(d),
+            );
+            assert_eq!(result.unwrap_err().kind(), io::ErrorKind::NotFound);
+            assert_eq!(calls.get(), 1);
+            assert!(slept.is_empty());
+        }
+
+        #[test]
+        fn gives_up_after_the_budget_is_exhausted() {
+            let mut slept = Vec::new();
+            let result = retry_with(|| Err(perm_denied()), |d| slept.push(d));
+            assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
+            // We slept at least once and never longer than the cap, and the total
+            // scheduled backoff stayed close to the budget rather than looping
+            // forever.
+            assert!(!slept.is_empty());
+            assert!(slept.iter().all(|&d| d <= MAX_BACKOFF));
+            let total: Duration = slept.iter().sum();
+            assert!(total >= RETRY_BUDGET);
+            assert!(total <= RETRY_BUDGET + MAX_BACKOFF);
+        }
+
+        #[test]
+        fn is_retryable_classifies_errors() {
+            assert!(is_retryable(&perm_denied()));
+            assert!(!is_retryable(&io::Error::from(io::ErrorKind::NotFound)));
+        }
+    }
+}
+
 /// Create a new temporary file. Also see [`tempfile_in`].
 ///
 /// The file will be created in the location returned by [`env::temp_dir()`].
@@ -176,6 +347,15 @@ impl TempPath {
     /// synchronized, so the update may not yet have reached the disk when
     /// `persist` returns.
     ///
+    /// # Retrying
+    ///
+    /// If the `persist-retry` crate feature is enabled, the underlying rename is
+    /// retried with a short (roughly one second), bounded backoff when it fails
+    /// with a transient error. This works around antivirus and file-indexing
+    /// software on Windows, which briefly lock files and make the rename fail
+    /// with a sharing violation or access-denied error. The feature is disabled
+    /// by default and has no effect on the behavior described above when off.
+    ///
     /// # Security
     ///
     /// Only use this method if you're positive that a temporary file cleaner
@@ -202,7 +382,7 @@ impl TempPath {
     ///
     /// [`PathPersistError`]: struct.PathPersistError.html
     pub fn persist<P: AsRef<Path>>(mut self, new_path: P) -> Result<(), PathPersistError> {
-        match imp::persist(&self.path, new_path.as_ref(), true) {
+        match persist(&self.path, new_path.as_ref(), true) {
             Ok(_) => {
                 // Don't drop `self`. We don't want to try deleting the old
                 // temporary file path. (It'll fail, but the failure is never
@@ -226,6 +406,9 @@ impl TempPath {
     /// Note: Temporary files cannot be persisted across filesystems. Also Note:
     /// This method is not atomic. It can leave the original link to the
     /// temporary file behind.
+    ///
+    /// Like [`persist`](Self::persist), this retries transient rename failures
+    /// when the `persist-retry` crate feature is enabled.
     ///
     /// # Security
     ///
@@ -257,7 +440,7 @@ impl TempPath {
         mut self,
         new_path: P,
     ) -> Result<(), PathPersistError> {
-        match imp::persist(&self.path, new_path.as_ref(), false) {
+        match persist(&self.path, new_path.as_ref(), false) {
             Ok(_) => {
                 // Don't drop `self`. We don't want to try deleting the old
                 // temporary file path. (It'll fail, but the failure is never
@@ -740,6 +923,9 @@ impl<F> NamedTempFile<F> {
     /// synchronized, so the update may not yet have reached the disk when
     /// `persist` returns.
     ///
+    /// When the `persist-retry` crate feature is enabled, transient rename
+    /// failures are retried; see [`TempPath::persist`] for details.
+    ///
     /// # Security
     ///
     /// This method persists the temporary file using its path and may not be
@@ -792,6 +978,9 @@ impl<F> NamedTempFile<F> {
     /// This can happen if either (a) we lack permission to "unlink" the original filename; (b) this
     /// program crashes while persisting the temporary file; or (c) the filesystem is removed,
     /// unmounted, etc. while we're performing this operation.
+    ///
+    /// When the `persist-retry` crate feature is enabled, transient rename
+    /// failures are retried; see [`TempPath::persist`] for details.
     ///
     /// # Security
     ///
