@@ -4,19 +4,78 @@ use std::os::windows::ffi::OsStrExt;
 use std::os::windows::fs::OpenOptionsExt;
 use std::os::windows::io::{AsRawHandle, FromRawHandle, RawHandle};
 use std::path::Path;
-use std::{io, iter};
+use std::{io, iter, ptr};
 
 use windows_sys::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::Storage::FileSystem::{
-    MoveFileExW, ReOpenFile, SetFileAttributesW, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_TEMPORARY,
-    FILE_FLAG_DELETE_ON_CLOSE, FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_DELETE,
-    FILE_SHARE_READ, FILE_SHARE_WRITE, MOVEFILE_REPLACE_EXISTING,
+    GetFullPathNameW, MoveFileExW, ReOpenFile, SetFileAttributesW, FILE_ATTRIBUTE_NORMAL,
+    FILE_ATTRIBUTE_TEMPORARY, FILE_FLAG_DELETE_ON_CLOSE, FILE_GENERIC_READ, FILE_GENERIC_WRITE,
+    FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE, MOVEFILE_REPLACE_EXISTING,
 };
 
 use crate::util;
 
 fn to_utf16(s: &Path) -> Vec<u16> {
     s.as_os_str().encode_wide().chain(iter::once(0)).collect()
+}
+
+/// Extended-length (verbatim) path prefixes.
+const VERBATIM_PREFIX: &str = "\\\\?\\";
+const VERBATIM_UNC_PREFIX: &str = "\\\\?\\UNC\\";
+
+/// Check whether a UTF-16-encoded path starts with the given prefix.
+fn has_utf16_prefix(path_u16: &[u16], prefix: &str) -> bool {
+    let n = prefix.encode_utf16().count();
+    path_u16.len() >= n && path_u16[..n].iter().copied().eq(prefix.encode_utf16())
+}
+
+/// Convert a path to an absolute path in Windows extended-length form, encoded
+/// as UTF-16 with a trailing null.
+///
+/// The Win32 functions we call directly (`SetFileAttributesW`, `MoveFileExW`)
+/// reject paths longer than the legacy MAX_PATH limit unless they are given in
+/// extended-length form. `std` performs this conversion itself when opening
+/// files, which is why creating a temporary file at such a path works while
+/// these calls used to fail with ERROR_PATH_NOT_FOUND (see #444).
+///
+/// Relative paths are resolved against the current working directory, matching
+/// how a raw relative path would have been interpreted by these functions, and
+/// UNC paths are converted to their `\\?\UNC\server\share` form. The conversion
+/// is purely lexical: symlinks are not resolved and no filesystem access beyond
+/// the current directory lookup happens. If the conversion fails, fall back to
+/// the plain encoding so we behave exactly as before.
+fn to_extended_length_utf16(path: &Path) -> Vec<u16> {
+    // First normalize the path to an absolute path.
+    let mut wide = to_utf16(path);
+    wide.pop(); // Drop the trailing null; re-added below.
+    unsafe {
+        // Passing a null buffer asks for the required size, including the null.
+        let len = GetFullPathNameW(wide.as_ptr(), 0, ptr::null_mut(), ptr::null_mut());
+        if len > 0 {
+            let mut abs = vec![0u16; len as usize];
+            let written = GetFullPathNameW(wide.as_ptr(), len, abs.as_mut_ptr(), ptr::null_mut());
+            if written > 0 && (written as usize) < abs.len() {
+                abs.truncate(written as usize);
+                wide = abs;
+            }
+        }
+    }
+
+    // Then add the verbatim prefix, unless it's already there or the path uses
+    // some other special (`\\.\`) form that must not be touched.
+    let mut result;
+    if has_utf16_prefix(&wide, VERBATIM_PREFIX) || has_utf16_prefix(&wide, "\\\\.\\") {
+        result = wide;
+    } else if has_utf16_prefix(&wide, "\\\\") {
+        // UNC path: \\server\share\rest -> \\?\UNC\server\share\rest
+        result = VERBATIM_UNC_PREFIX.encode_utf16().collect::<Vec<u16>>();
+        result.extend_from_slice(&wide[2..]);
+    } else {
+        result = VERBATIM_PREFIX.encode_utf16().collect::<Vec<u16>>();
+        result.extend_from_slice(&wide);
+    }
+    result.push(0);
+    result
 }
 
 fn not_supported<T>(msg: &str) -> io::Result<T> {
@@ -80,7 +139,7 @@ pub fn reopen(file: &File, _path: &Path) -> io::Result<File> {
 
 pub fn keep(path: &Path) -> io::Result<()> {
     unsafe {
-        let path_w = to_utf16(path);
+        let path_w = to_extended_length_utf16(path);
         if SetFileAttributesW(path_w.as_ptr(), FILE_ATTRIBUTE_NORMAL) == 0 {
             Err(io::Error::last_os_error())
         } else {
@@ -91,8 +150,8 @@ pub fn keep(path: &Path) -> io::Result<()> {
 
 pub fn persist(old_path: &Path, new_path: &Path, overwrite: bool) -> io::Result<()> {
     unsafe {
-        let old_path_w = to_utf16(old_path);
-        let new_path_w = to_utf16(new_path);
+        let old_path_w = to_extended_length_utf16(old_path);
+        let new_path_w = to_extended_length_utf16(new_path);
 
         // Don't succeed if this fails. We don't want to claim to have successfully persisted a file
         // still marked as temporary because this file won't have the same consistency guarantees.

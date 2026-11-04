@@ -697,3 +697,48 @@ fn test_overly_generic_bounds() {
         };
     }
 }
+
+// Issue #444: on Windows, creating a temporary file in a directory whose total
+// path exceeds the legacy MAX_PATH limit works because `std` converts paths to
+// extended-length form internally, but `keep` and `persist` pass raw paths to
+// the Win32 APIs, which then fail with ERROR_PATH_NOT_FOUND.
+#[test]
+#[cfg(windows)]
+fn test_windows_long_paths() {
+    let base = tempdir().unwrap();
+
+    // Build a directory tree whose total path exceeds the legacy MAX_PATH
+    // limit of 260 characters.
+    let mut long_dir = base.path().to_path_buf();
+    while long_dir.as_os_str().len() <= 260 {
+        long_dir.push("issue-444-long-path-test-component");
+        std::fs::create_dir(&long_dir).unwrap();
+    }
+
+    // Persisting a file created in the long directory used to fail in
+    // `SetFileAttributesW`.
+    let mut tmpfile = NamedTempFile::new_in(&long_dir).unwrap();
+    write!(tmpfile, "abcde").unwrap();
+    let persist_path = long_dir.join("persisted");
+    let mut persisted = tmpfile.persist(&persist_path).unwrap();
+    assert!(persist_path.exists());
+    persisted.seek(SeekFrom::Start(0)).unwrap();
+    let mut buf = String::new();
+    persisted.read_to_string(&mut buf).unwrap();
+    assert_eq!(buf, "abcde");
+    std::fs::remove_file(&persist_path).unwrap();
+
+    // A long destination path used to fail in `MoveFileExW`.
+    let tmpfile = NamedTempFile::new().unwrap();
+    tmpfile
+        .persist(long_dir.join("persisted-long-dest"))
+        .unwrap();
+    assert!(long_dir.join("persisted-long-dest").exists());
+    std::fs::remove_file(long_dir.join("persisted-long-dest")).unwrap();
+
+    // `keep` used to fail in `SetFileAttributesW`.
+    let tmpfile = NamedTempFile::new_in(&long_dir).unwrap();
+    let (_, kept_path) = tmpfile.keep().unwrap();
+    assert!(kept_path.exists());
+    std::fs::remove_file(&kept_path).unwrap();
+}
