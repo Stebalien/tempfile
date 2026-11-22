@@ -9,6 +9,7 @@ on:
 env:
   CARGO_TARGET_WASM32_WASIP1_RUNNER: "wasmtime --dir /tmp"
   CARGO_TARGET_WASM32_WASIP2_RUNNER: "wasmtime --dir /tmp"
+  CARGO_TARGET_WASM32_WASIP3_RUNNER: "wasmtime --dir /tmp"
   RUSTFLAGS: "-D warnings"
   RUSTDOCFLAGS: "-D warnings"
   NDK_VERSION: "r26d"
@@ -62,6 +63,10 @@ jobs:
             os: ubuntu-latest
             target: wasm32-wasip2
             test-flags: --tests
+          - name: "WASI P3"
+            os: ubuntu-latest
+            target: wasm32-wasip3
+            test-flags: --tests
         exclude:
           - rust-version: "1.63"
             platform:
@@ -79,6 +84,12 @@ jobs:
               name: "WASI P2"
               os: ubuntu-latest
               target: wasm32-wasip2
+              test-flags: --tests
+          - rust-version: "1.63"
+            platform:
+              name: "WASI P3"
+              os: ubuntu-latest
+              target: wasm32-wasip3
               test-flags: --tests
     name: Platform Test (${{ matrix.platform.name }} / ${{ matrix.rust-version }})
     runs-on: ${{ matrix.platform.os }}

@@ -40,15 +40,15 @@ This crate supports all major operating systems:
 - MacOS (ios, watchos, visionos, etc.)
 - RedoxOS
 - Wasm
-    - WASI P1 & P2.
+    - WASI P1, P2 & P3.
     - Wasm (build and link only, Wasm doesn't have a filesystem)
 - Windows
 
 However:
 
 - Android, RedoxOS, Wasm, and WASI targets all require the latest stable rust compiler.
-- WASI P1/P2 does not define a default temporary directory. You'll need to explicitly call `tempfile::env::override_temp_dir` with a valid directory or temporary file creation will panic on this platform.
-- WASI P1/P2 does not have file permissions.
+- WASI P1/P2/P3 does not define a default temporary directory. You'll need to explicitly call `tempfile::env::override_temp_dir` with a valid directory or temporary file creation will panic on this platform.
+- WASI P1/P2/P3 does not have file permissions.
 - You _may_ need to override the temporary directory in Android as well to point at your application's per-app cache directory.
 - None of the BSD/Illumostargets are tested for compatibility with older rust compilers.
 

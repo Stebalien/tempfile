@@ -23,8 +23,11 @@ fastrand = "2.1.1"
 # Not available in stdlib until 1.70, but we support 1.63 to support Debian stable.
 once_cell = { version = "1.19.0", default-features = false, features = ["std"] }
 
-[target.'cfg(any(unix, windows, target_os = "wasi"))'.dependencies]
+[target.'cfg(all(any(unix, windows, target_os = "wasi"), not(target_env = "p3")))'.dependencies]
 getrandom = { version = ">=0.3.0, <0.5", default-features = false, optional = true }
+
+[target.'cfg(all(target_os = "wasi", target_env = "p3"))'.dependencies]
+getrandom = { version = "0.4", default-features = false, optional = true }
 
 [target.'cfg(any(unix, target_os = "wasi"))'.dependencies]
 rustix = { version = "1.1.4", features = ["fs"] }
